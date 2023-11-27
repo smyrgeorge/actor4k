@@ -24,7 +24,11 @@ data class ReplyA(
 fun main(args: Array<String>) {
     log.info { "Hello World" }
 
-    val a = object : AbstractActor<CmdA, ReplyA>() {}
+    val a = object : AbstractActor<CmdA, ReplyA>() {
+        override fun onMessage(cmd: CmdA) {
+           log.info { "Received message: $cmd" }
+        }
+    }
 
     runBlocking {
         val cmd = CmdA(msg = "Hello World!")

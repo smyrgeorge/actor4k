@@ -19,12 +19,10 @@ abstract class AbstractActor<C : Cmd, R : Reply> {
     init {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
-            // For each channel, consume the task requests.
-            ch.consumeEach { cmd ->
-                log.info { "Received: $cmd" }
-            }
+            ch.consumeEach { onMessage(it) }
         }
     }
 
+    abstract fun onMessage(cmd: C)
     suspend fun tell(cmd: C): Unit = ch.send(cmd)
 }
