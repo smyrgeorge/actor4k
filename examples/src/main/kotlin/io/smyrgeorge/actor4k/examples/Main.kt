@@ -1,8 +1,10 @@
 package io.smyrgeorge.actor4k.examples
 
-import io.smyrgeorge.actor4k.actor.Actor
+import io.smyrgeorge.actor4k.actor.ActorRegistry
+import io.smyrgeorge.actor4k.actor.ActorSystem
 import io.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.smyrgeorge.actor4k.actor.cmd.Reply
+import io.smyrgeorge.actor4k.actor.types.ManagedActor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.util.*
@@ -20,12 +22,14 @@ data class Response(
 
 fun main(args: Array<String>) {
 
-    val a = object : Actor<Request, Response>() {
+    val a = object : ManagedActor<Request, Response>() {
         override fun onCmd(cmd: Request): Response {
             log.info { "Received message: $cmd" }
             return Response(cmd.reqId)
         }
     }
+
+    val a1 = ActorRegistry.get<Request, Reply>(a::class.java)
 
     runBlocking {
         val cmd = Request(msg = "Hello World!")
