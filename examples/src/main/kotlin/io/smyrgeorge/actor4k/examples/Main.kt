@@ -1,6 +1,6 @@
-package io.smyrgeorge.actor4k
+package io.smyrgeorge.actor4k.examples
 
-import io.smyrgeorge.actor4k.actor.AbstractActor
+import io.smyrgeorge.actor4k.actor.Actor
 import io.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.smyrgeorge.actor4k.actor.cmd.Reply
 import kotlinx.coroutines.delay
@@ -9,29 +9,29 @@ import java.util.*
 
 class Main
 
-data class CmdA(
+data class Request(
     override val reqId: UUID = UUID.randomUUID(),
     val msg: String
 ) : Cmd
 
-data class ReplyA(
+data class Response(
     override val reqId: UUID = UUID.randomUUID()
 ) : Reply
 
 fun main(args: Array<String>) {
 
-    val a = object : AbstractActor<CmdA, ReplyA>() {
-        override fun onCmd(cmd: CmdA): ReplyA {
+    val a = object : Actor<Request, Response>() {
+        override fun onCmd(cmd: Request): Response {
             log.info { "Received message: $cmd" }
-            return ReplyA(cmd.reqId)
+            return Response(cmd.reqId)
         }
     }
 
     runBlocking {
-        val cmd = CmdA(msg = "Hello World!")
+        val cmd = Request(msg = "Hello World!")
         a.tell(cmd)
         delay(5_000)
-        val r: ReplyA = a.ask(cmd)
+        val r: Response = a.ask(cmd)
         println(r)
         delay(5_000)
     }
