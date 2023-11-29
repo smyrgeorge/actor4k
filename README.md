@@ -2,10 +2,15 @@
 
 A small actor system written in kotlin using Coroutines (kotlinx.coroutines).
 
-The goal is to create a minimal replacement for the akka actor system.
+The main goal is to build a minimal actor system that can work in cluster mode.
+
+For this particular reason we make use of `scalecube-cluster` (implementation of SWIM).
 
 ## Todo
-- [ ] Sharding
+
+A lot of things need to be done, so sit tight…
+
+- [ ] Cluster
 - [ ] Persistence
 - [ ] Serialization
 - [ ] Logging
@@ -21,3 +26,5 @@ Check the `examples` for additional info.
 - https://doc.akka.io/docs/akka/current/general/actor-systems.html
 - https://en.wikipedia.org/wiki/Actor_model
 - https://www.baeldung.com/kotlin/suspend-functions-from-java
+- https://github.com/scalecube/scalecube-cluster/tree/master
+- https://www.cs.cornell.edu/projects/Quicksilver/public_pdfs/SWIM.pdf

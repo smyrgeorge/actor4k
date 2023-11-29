@@ -33,6 +33,10 @@ dependencies {
     api("io.arrow-kt:arrow-core:1.2.1")
     api("io.arrow-kt:arrow-fx-coroutines:1.2.1")
 
+    // https://central.sonatype.com/artifact/io.scalecube/scalecube-cluster
+    api("io.scalecube:scalecube-cluster:2.7.0.rc")
+    api("io.scalecube:scalecube-transport-netty:2.7.0.rc")
+
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
     testApi("org.mockito.kotlin:mockito-kotlin:5.1.0")
