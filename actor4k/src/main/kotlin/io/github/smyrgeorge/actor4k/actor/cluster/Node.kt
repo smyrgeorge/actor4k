@@ -9,6 +9,7 @@ import io.scalecube.cluster.Cluster as ScaleCluster
 class Node(
     private val alias: String,
     private val isSeed: Boolean,
+    private val seedPort: Int,
     private val seedMembers: List<Address>,
 ) {
 
@@ -33,6 +34,7 @@ class Node(
     private fun seedOf(): ClusterImpl =
         ClusterImpl()
             .config { it.memberAlias(alias) }
+            .transport { it.port(seedPort) }
 
     private fun nodeOf(): ClusterImpl =
         ClusterImpl()

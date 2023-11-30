@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  node-1:
+    image: actor4k
+    restart: unless-stopped
+    environment:
+      ACTOR_NODE_ID: node-1
+      ACTOR_NODE_IS_SEED: true
+      ACTOR_NODE_SEED_PORT: 61100
+  node-2:
+    image: actor4k
+    restart: unless-stopped
+    environment:
+      ACTOR_NODE_ID: node-2
+      ACTOR_SEED_MEMBERS: node-1:61100
+  node-3:
+    image: actor4k
+    restart: unless-stopped
+    environment:
+      ACTOR_NODE_ID: node-3
+      ACTOR_SEED_MEMBERS: node-1:61100
+  node-4:
+    image: actor4k
+    restart: unless-stopped
+    environment:
+      ACTOR_NODE_ID: node-4
+      ACTOR_SEED_MEMBERS: node-1:61100
