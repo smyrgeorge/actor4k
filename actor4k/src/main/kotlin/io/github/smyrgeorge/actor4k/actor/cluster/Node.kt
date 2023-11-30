@@ -1,4 +1,4 @@
-package io.smyrgeorge.actor4k.actor.cluster
+package io.github.smyrgeorge.actor4k.actor.cluster
 
 import io.scalecube.cluster.ClusterImpl
 import io.scalecube.cluster.ClusterMessageHandler

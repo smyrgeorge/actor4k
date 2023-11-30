@@ -1,9 +1,9 @@
-package io.smyrgeorge.actor4k.actor
+package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.smyrgeorge.actor4k.actor.cmd.Cmd
-import io.smyrgeorge.actor4k.actor.cmd.Reply
-import io.smyrgeorge.actor4k.actor.types.ManagedActor
+import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
+import io.github.smyrgeorge.actor4k.actor.cmd.Reply
+import io.github.smyrgeorge.actor4k.actor.types.ManagedActor
 import java.util.concurrent.ConcurrentHashMap
 
 object ActorRegistry {

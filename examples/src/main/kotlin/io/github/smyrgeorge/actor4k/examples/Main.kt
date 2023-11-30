@@ -1,9 +1,9 @@
-package io.smyrgeorge.actor4k.examples
+package io.github.smyrgeorge.actor4k.examples
 
-import io.smyrgeorge.actor4k.actor.ActorRegistry
-import io.smyrgeorge.actor4k.actor.cmd.Cmd
-import io.smyrgeorge.actor4k.actor.cmd.Reply
-import io.smyrgeorge.actor4k.actor.types.ManagedActor
+import io.github.smyrgeorge.actor4k.actor.ActorRegistry
+import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
+import io.github.smyrgeorge.actor4k.actor.cmd.Reply
+import io.github.smyrgeorge.actor4k.actor.types.ManagedActor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.util.*

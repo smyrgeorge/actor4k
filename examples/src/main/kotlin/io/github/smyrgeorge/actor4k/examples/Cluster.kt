@@ -1,4 +1,4 @@
-package io.smyrgeorge.actor4k.examples
+package io.github.smyrgeorge.actor4k.examples
 
 import io.scalecube.cluster.ClusterConfig
 import io.scalecube.cluster.ClusterImpl

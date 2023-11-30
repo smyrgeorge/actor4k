@@ -1,4 +1,4 @@
-package io.smyrgeorge.actor4k.actor.cmd
+package io.github.smyrgeorge.actor4k.actor.cmd
 
 import java.util.*
 

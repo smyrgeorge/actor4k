@@ -1,7 +1,7 @@
-package io.smyrgeorge.actor4k.actor
+package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.smyrgeorge.actor4k.actor.cluster.Cluster
+import io.github.smyrgeorge.actor4k.actor.cluster.Cluster
 
 object ActorSystem {
     private val log = KotlinLogging.logger {}

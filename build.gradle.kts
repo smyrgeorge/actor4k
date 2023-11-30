@@ -1,4 +1,4 @@
-group = "io.smyrgeorge"
+group = "io.github.smyrgeorge"
 version = "0.1.0"
 
 // Common plugin versions here.

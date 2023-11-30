@@ -1,8 +1,8 @@
-package io.smyrgeorge.actor4k.actor
+package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.smyrgeorge.actor4k.actor.cmd.Cmd
-import io.smyrgeorge.actor4k.actor.cmd.Reply
+import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
+import io.github.smyrgeorge.actor4k.actor.cmd.Reply
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
