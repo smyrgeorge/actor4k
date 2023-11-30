@@ -4,7 +4,7 @@ import io.scalecube.cluster.ClusterConfig
 import io.scalecube.cluster.ClusterImpl
 import io.scalecube.transport.netty.tcp.TcpTransportFactory
 
-class Cluster
+class ScaleCube
 
 fun main(args: Array<String>) {
 
@@ -22,4 +22,5 @@ fun main(args: Array<String>) {
         .transportFactory { TcpTransportFactory() }
         .startAwait()
     println("Bob join members: " + bob.members())
+    
 }
