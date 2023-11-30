@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: Maven
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
