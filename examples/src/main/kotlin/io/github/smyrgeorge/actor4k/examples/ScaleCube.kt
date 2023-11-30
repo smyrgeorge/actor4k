@@ -22,5 +22,5 @@ fun main(args: Array<String>) {
         .transportFactory { TcpTransportFactory() }
         .startAwait()
     println("Bob join members: " + bob.members())
-    
+
 }
