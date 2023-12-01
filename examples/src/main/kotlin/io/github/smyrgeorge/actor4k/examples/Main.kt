@@ -2,8 +2,8 @@ package io.github.smyrgeorge.actor4k.examples
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.cluster.Cluster
+import io.github.smyrgeorge.actor4k.actor.cluster.Envelope
 import io.github.smyrgeorge.actor4k.actor.cluster.Node
-import io.scalecube.cluster.transport.api.Message
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -15,7 +15,7 @@ import java.util.*
 class Main
 
 data class Msg(
-    val uuid: UUID = UUID.randomUUID(),
+    val id: UUID = UUID.randomUUID(),
     val message: String = "TEST MESSAGE"
 ) : Serializable
 
@@ -35,10 +35,10 @@ fun main(args: Array<String>) {
         .seedPort(seedPort)
         .seedMembers(seedMembers)
         .onGossip {
-//            log.info { "Received Gossip: $it" }
+            log.info { "Received Gossip: $it" }
         }
         .onMessage {
-//            log.info { "Received message: $it" }
+            log.debug { "Received message: $it" }
         }
         .onMembershipEvent {
             log.info { "Received membership-event: $it" }
@@ -50,12 +50,14 @@ fun main(args: Array<String>) {
         .node(node)
         .start()
 
+    fun Msg.toEnvelope(): Envelope<*> = Envelope(payload = this)
+
     runBlocking {
         withContext(Dispatchers.IO) {
             delay(10_000)
             while (true) {
                 val msg = Msg()
-                cluster.tell(msg.uuid, Message.fromData(msg))
+                cluster.tell(msg.id, msg.toEnvelope())
                 delay(50)
             }
         }

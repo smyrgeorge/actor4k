@@ -10,6 +10,7 @@ import io.scalecube.cluster.transport.api.Message
 import io.scalecube.transport.netty.tcp.TcpTransportFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactive.awaitSingle
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
@@ -49,36 +50,44 @@ class Cluster(
         cluster.spreadGossip(message).awaitFirstOrNull()
     }
 
-    suspend fun tell(member: Member, message: Message) {
+    suspend fun tell(member: Member, message: Envelope<*>) {
+        val msg = Message.fromData(message)
         // If the message needs to be delivered to the same service (that triggered the call),
         // we just directly call the [onMessage] handler function,
         // and thus we do not send data across the wire.
         if (member.alias() == cluster.member().alias()) {
             stats.plusMessage()
-            node.onMessage(message)
+            node.onMessage(msg)
             return
         }
 
-        cluster.send(member, message).awaitFirstOrNull()
+        cluster.send(member, msg).awaitFirstOrNull()
     }
 
-    suspend fun tell(key: String, message: Message) {
+    suspend fun tell(key: String, message: Envelope<*>) {
         val member: Member = memberOf(key)
         return tell(member, message)
     }
 
-    suspend fun tell(key: Any, message: Message) =
+    suspend fun tell(key: Any, message: Envelope<*>) =
         tell(key.hashCode().toString(), message)
 
-//    suspend fun ask(member: Member, message: Message): Message =
-//        cluster.requestResponse(member, message).awaitSingle()
-//
-//    suspend fun ask(key: String, message: Message): Message {
-//        val member: Member = memberOf(key)
-//        return  ask(member, message)
-//    }
+    suspend fun <T> ask(member: Member, message: Envelope<*>): Envelope<T> {
+        println(message)
+        val msg = Message.builder().data(message).correlationId(message.reqId.toString()).build()
+        return cluster.requestResponse(member, msg).awaitSingle().data() as? Envelope<T>
+            ?: error("Could not cast to the requested type.")
+    }
 
-    private fun memberOf(key: String): Member {
+    suspend fun <T> ask(key: String, message: Envelope<*>): Envelope<T> {
+        val member: Member = memberOf(key)
+        return ask(member, message)
+    }
+
+    suspend fun <T> ask(key: Any, message: Envelope<*>): Envelope<T> =
+        ask(key.hashCode().toString(), message)
+
+    fun memberOf(key: String): Member {
         val node = ring.locate(key).getOrNull()
             ?: error("Could not find a valid recipient (probably empty), ring.size='${ring.size()}'.")
         return members().find { it.alias() == node.dc }
