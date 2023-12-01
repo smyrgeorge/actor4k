@@ -11,10 +11,10 @@ For this particular reason we make use of `scalecube-cluster` (implementation of
 A lot of things need to be done, so sit tight…
 
 - [ ] Cluster/Sharding (in progress)
+- [ ] Metrics (in progress)
 - [ ] Logging (in progress)
-- [ ] Serialization
+- [ ] Serialization (in progress)
 - [ ] Java compatibility
-- [ ] Metrics
 - [ ] Persistence
 
 ## Work in progress
@@ -58,3 +58,7 @@ docker build . -t actor4k -f examples/src/main/docker/Dockerfile
 - https://www.cs.cornell.edu/projects/Quicksilver/public_pdfs/SWIM.pdf
 - https://www.baeldung.com/java-dockerize-app
 - http://highscalability.com/blog/2023/2/22/consistent-hashing-algorithm.html#:~:text=the%20hash%20ring.-,The%20hash%20ring%20is%20traversed%20in%20the%20clockwise%20direction%20starting,must%20hold%20the%20data%20object.
+- https://www.pubnub.com/blog/consistent-hashing-implementation/
+- https://github.com/Jaskey/ConsistentHash
+- https://github.com/ishugaliy/allgood-consistent-hash
+- https://github.com/ishugaliy/allgood-consistent-hash

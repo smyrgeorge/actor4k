@@ -38,6 +38,9 @@ dependencies {
     api("io.scalecube:scalecube-cluster:2.7.0.rc")
     api("io.scalecube:scalecube-transport-netty:2.7.0.rc")
 
+    // https://mvnrepository.com/artifact/com.github.ishugaliy/allgood-consistent-hash
+    api("com.github.ishugaliy:allgood-consistent-hash:1.0.0")
+
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
     testApi("org.mockito.kotlin:mockito-kotlin:5.1.0")

@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.examples
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.cluster.Cluster
 import io.github.smyrgeorge.actor4k.actor.cluster.Node
-import io.scalecube.cluster.Member
 import io.scalecube.cluster.transport.api.Message
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +11,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.Serializable
 import java.util.*
-import kotlin.random.Random
 
 class Main
 
@@ -36,9 +34,15 @@ fun main(args: Array<String>) {
         .isSeed(isSeed)
         .seedPort(seedPort)
         .seedMembers(seedMembers)
-        .onGossip { log.info { "Received Gossip: $it" } }
-        .onMessage { log.info { "Received message: $it" } }
-        .onMembershipEvent { log.info { "Received membership-event: $it" } }
+        .onGossip {
+//            log.info { "Received Gossip: $it" }
+        }
+        .onMessage {
+//            log.info { "Received message: $it" }
+        }
+        .onMembershipEvent {
+            log.info { "Received membership-event: $it" }
+        }
         .build()
 
     val cluster: Cluster = Cluster
@@ -48,12 +52,11 @@ fun main(args: Array<String>) {
 
     runBlocking {
         withContext(Dispatchers.IO) {
+            delay(10_000)
             while (true) {
-                delay(2000)
-                val members: List<Member> = cluster.members()
-                log.info { "Members: $members" }
-                val member: Member = members[Random.nextInt(0, members.size)]
-                cluster.tell(member, Message.fromData(Msg()))
+                val msg = Msg()
+                cluster.tell(msg.uuid, Message.fromData(msg))
+                delay(50)
             }
         }
     }
