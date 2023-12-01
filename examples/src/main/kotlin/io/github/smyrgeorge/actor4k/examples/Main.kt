@@ -3,9 +3,7 @@ package io.github.smyrgeorge.actor4k.examples
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.cluster.Cluster
 import io.github.smyrgeorge.actor4k.actor.cluster.Node
-import io.scalecube.cluster.ClusterMessageHandler
 import io.scalecube.cluster.Member
-import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
@@ -39,29 +37,21 @@ fun main(args: Array<String>) {
         System.getenv("ACTOR_SEED_MEMBERS")?.split(",")?.map { Address.from(it) }
             ?: emptyList()
 
-    val handler = object : ClusterMessageHandler {
-        override fun onMessage(message: Message) {
-            log.info { "Received message: $message" }
-        }
-
-        override fun onGossip(gossip: Message) {
-            log.info { "Received gossip: $gossip" }
-        }
-
-        override fun onMembershipEvent(event: MembershipEvent) {
-            log.info { "Received membership-event: $event" }
-        }
-    }
-
-    val node: Node = Node.Builder()
+    val node: Node = Node
+        .Builder()
         .alias(alias())
         .isSeed(isSeed())
         .seedPort(seedPort())
         .seedMembers(seedMembers())
-        .handler(handler)
+        .onGossip { log.info { "Received Gossip: $it" } }
+        .onMessage { log.info { "Received message: $it" } }
+        .onMembershipEvent { log.info { "Received membership-event: $it" } }
         .build()
 
-    val cluster = Cluster().node(node).start()
+    val cluster: Cluster = Cluster
+        .Builder()
+        .node(node)
+        .start()
 
     runBlocking {
         withContext(Dispatchers.IO) {

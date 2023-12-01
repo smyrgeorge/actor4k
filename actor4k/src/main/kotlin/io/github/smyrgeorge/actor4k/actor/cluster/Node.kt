@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.actor.cluster
 
-import io.scalecube.cluster.ClusterMessageHandler
+import io.scalecube.cluster.membership.MembershipEvent
+import io.scalecube.cluster.transport.api.Message
 import io.scalecube.net.Address
 
 class Node(
@@ -8,15 +9,19 @@ class Node(
     val isSeed: Boolean,
     val seedPort: Int,
     val seedMembers: List<Address>,
-    val handler: ClusterMessageHandler
+    val onGossip: (g: Message) -> Unit,
+    val onMessage: (m: Message) -> Unit,
+    val onMembershipEvent: (e: MembershipEvent) -> Unit
 ) {
 
     class Builder {
-        private var alias: String? = null
-        private var isSeed: Boolean? = null
-        private var seedPort: Int? = null
-        private var seedMembers: List<Address>? = null
-        private var handler: ClusterMessageHandler? = null
+        private lateinit var alias: String
+        private var isSeed: Boolean = false
+        private var seedPort: Int = 61100
+        private var seedMembers: List<Address> = emptyList()
+        private var onMessage: (m: Message) -> Unit = {}
+        private var onGossip: (m: Message) -> Unit = {}
+        private var onMembershipEvent: (m: MembershipEvent) -> Unit = {}
 
         fun alias(v: String): Builder {
             alias = v
@@ -38,12 +43,29 @@ class Node(
             return this
         }
 
-        fun handler(v: ClusterMessageHandler): Builder {
-            handler = v
+        fun onMessage(f: (m: Message) -> Unit): Builder {
+            onMessage = f
             return this
         }
 
-        fun build(): Node =
-            Node(alias!!, isSeed!!, seedPort!!, seedMembers!!, handler!!)
+        fun onGossip(f: (g: Message) -> Unit): Builder {
+            onGossip = f
+            return this
+        }
+
+        fun onMembershipEvent(f: (e: MembershipEvent) -> Unit): Builder {
+            onMembershipEvent = f
+            return this
+        }
+
+        fun build(): Node = Node(
+            alias = alias,
+            isSeed = isSeed,
+            seedPort = seedPort,
+            seedMembers = seedMembers,
+            onGossip = onGossip,
+            onMessage = onMessage,
+            onMembershipEvent = onMembershipEvent
+        )
     }
 }

@@ -3,7 +3,9 @@ package io.github.smyrgeorge.actor4k.actor.cluster
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.ActorSystem
 import io.scalecube.cluster.ClusterImpl
+import io.scalecube.cluster.ClusterMessageHandler
 import io.scalecube.cluster.Member
+import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
 import io.scalecube.net.Address
 import io.scalecube.transport.netty.tcp.TcpTransportFactory
@@ -12,11 +14,14 @@ import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitSingle
 import io.scalecube.cluster.Cluster as ScaleCluster
 
-class Cluster {
+@Suppress("unused")
+class Cluster(
+    private val node: Node,
+    private val cluster: ScaleCluster
+) {
 
     private val log = KotlinLogging.logger {}
-    private lateinit var cluster: ScaleCluster
-    private lateinit var node: Node
+
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -28,27 +33,16 @@ class Cluster {
         }
     }
 
-    fun node(n: Node): Cluster {
-        node = n
-        return this
-    }
-
-    fun start(): Cluster {
-        cluster = build()
-
-        // Register cluster to the ActorSystem.
-        ActorSystem.register(this)
-
-        return this
-    }
-
     private fun stats() {
         log.info { "Members: ${cluster.members()}" }
-        log.info { "Addresses: ${cluster.addresses()}" }
     }
 
     fun members(): List<Member> =
         cluster.members().toList()
+
+    suspend fun gossip(message: Message) {
+        cluster.spreadGossip(message).awaitFirstOrNull()
+    }
 
     suspend fun tell(member: Member, message: Message) {
         cluster.send(member, message).awaitFirstOrNull()
@@ -64,23 +58,41 @@ class Cluster {
     suspend fun ask(address: Address, message: Message): Message =
         cluster.requestResponse(address, message).awaitSingle()
 
+    class Builder {
 
-    private fun build(): ScaleCluster {
-        val c: ClusterImpl = if (node.isSeed) seedOf() else nodeOf()
-        return c
-            .handler { node.handler }
-            .transportFactory { TcpTransportFactory() }
-            .startAwait()
+        private lateinit var node: Node
+
+        fun node(n: Node): Builder {
+            node = n
+            return this
+        }
+
+        fun start(): Cluster {
+            // Build [Cluster]
+            val cluster = Cluster(node = node, cluster = build())
+
+            // Register cluster to the ActorSystem.
+            ActorSystem.register(cluster)
+
+            return cluster
+        }
+
+        private fun build(): ScaleCluster {
+            fun nodeOf(): ClusterImpl = ClusterImpl()
+            fun seedOf(): ClusterImpl = ClusterImpl().transport { it.port(node.seedPort) }
+
+            val c: ClusterImpl = if (node.isSeed) seedOf() else nodeOf()
+            return c
+                .config { it.memberAlias(node.alias) }
+                .membership { it.seedMembers(node.seedMembers) }
+                .transportFactory { TcpTransportFactory() }
+                .handler {
+                    object : ClusterMessageHandler {
+                        override fun onGossip(g: Message): Unit = node.onGossip(g)
+                        override fun onMessage(m: Message): Unit = node.onMessage(m)
+                        override fun onMembershipEvent(e: MembershipEvent): Unit = node.onMembershipEvent(e)
+                    }
+                }.startAwait()
+        }
     }
-
-    private fun seedOf(): ClusterImpl =
-        ClusterImpl()
-            .config { it.memberAlias(node.alias) }
-            .transport { it.port(node.seedPort) }
-
-    private fun nodeOf(): ClusterImpl =
-        ClusterImpl()
-            .config { it.memberAlias(node.alias) }
-            .membership { it.seedMembers(node.seedMembers) }
-
 }
