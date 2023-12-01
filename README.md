@@ -12,10 +12,10 @@ A lot of things need to be done, so sit tight…
 
 - [ ] Cluster/Sharding (in progress)
 - [ ] Logging (in progress)
-- [ ] Persistence
 - [ ] Serialization
-- [ ] Metrics
 - [ ] Java compatibility
+- [ ] Metrics
+- [ ] Persistence
 
 ## Work in progress
 
