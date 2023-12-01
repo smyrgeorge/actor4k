@@ -24,25 +24,17 @@ data class Msg(
 fun main(args: Array<String>) {
     val log = KotlinLogging.logger {}
 
-    fun alias(): String =
-        System.getenv("ACTOR_NODE_ID") ?: "node"
-
-    fun isSeed(): Boolean =
-        System.getenv("ACTOR_NODE_IS_SEED")?.toBoolean() ?: false
-
-    fun seedPort(): Int =
-        System.getenv("ACTOR_NODE_SEED_PORT")?.toInt() ?: 61100
-
-    fun seedMembers(): List<Address> =
-        System.getenv("ACTOR_SEED_MEMBERS")?.split(",")?.map { Address.from(it) }
-            ?: emptyList()
+    val alias = System.getenv("ACTOR_NODE_ID") ?: "node"
+    val isSeed = System.getenv("ACTOR_NODE_IS_SEED")?.toBoolean() ?: false
+    val seedPort = System.getenv("ACTOR_NODE_SEED_PORT")?.toInt() ?: 61100
+    val seedMembers = System.getenv("ACTOR_SEED_MEMBERS")?.split(",")?.map { Address.from(it) } ?: emptyList()
 
     val node: Node = Node
         .Builder()
-        .alias(alias())
-        .isSeed(isSeed())
-        .seedPort(seedPort())
-        .seedMembers(seedMembers())
+        .alias(alias)
+        .isSeed(isSeed)
+        .seedPort(seedPort)
+        .seedMembers(seedMembers)
         .onGossip { log.info { "Received Gossip: $it" } }
         .onMessage { log.info { "Received message: $it" } }
         .onMembershipEvent { log.info { "Received membership-event: $it" } }
