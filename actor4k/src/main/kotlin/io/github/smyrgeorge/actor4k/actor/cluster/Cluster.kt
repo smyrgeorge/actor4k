@@ -22,7 +22,6 @@ class Cluster(
 
     private val log = KotlinLogging.logger {}
 
-
     init {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
@@ -82,8 +81,10 @@ class Cluster(
             fun seedOf(): ClusterImpl = ClusterImpl().transport { it.port(node.seedPort) }
 
             val c: ClusterImpl = if (node.isSeed) seedOf() else nodeOf()
+
             return c
                 .config { it.memberAlias(node.alias) }
+                .membership { it.namespace(node.namespace) }
                 .membership { it.seedMembers(node.seedMembers) }
                 .transportFactory { TcpTransportFactory() }
                 .handler {

@@ -24,7 +24,7 @@ data class Msg(
 fun main(args: Array<String>) {
     val log = KotlinLogging.logger {}
 
-    val alias = System.getenv("ACTOR_NODE_ID") ?: "node"
+    val alias = System.getenv("ACTOR_NODE_ID") ?: "node-1"
     val isSeed = System.getenv("ACTOR_NODE_IS_SEED")?.toBoolean() ?: false
     val seedPort = System.getenv("ACTOR_NODE_SEED_PORT")?.toInt() ?: 61100
     val seedMembers = System.getenv("ACTOR_SEED_MEMBERS")?.split(",")?.map { Address.from(it) } ?: emptyList()
@@ -32,6 +32,7 @@ fun main(args: Array<String>) {
     val node: Node = Node
         .Builder()
         .alias(alias)
+        .namespace("actor4k")
         .isSeed(isSeed)
         .seedPort(seedPort)
         .seedMembers(seedMembers)

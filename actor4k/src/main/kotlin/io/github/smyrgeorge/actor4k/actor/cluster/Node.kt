@@ -6,6 +6,7 @@ import io.scalecube.net.Address
 
 class Node(
     val alias: String,
+    val namespace: String,
     val isSeed: Boolean,
     val seedPort: Int,
     val seedMembers: List<Address>,
@@ -16,6 +17,7 @@ class Node(
 
     class Builder {
         private lateinit var alias: String
+        private lateinit var namespace: String
         private var isSeed: Boolean = false
         private var seedPort: Int = 61100
         private var seedMembers: List<Address> = emptyList()
@@ -25,6 +27,11 @@ class Node(
 
         fun alias(v: String): Builder {
             alias = v
+            return this
+        }
+
+        fun namespace(v: String): Builder {
+            namespace = v
             return this
         }
 
@@ -60,6 +67,7 @@ class Node(
 
         fun build(): Node = Node(
             alias = alias,
+            namespace = namespace,
             isSeed = isSeed,
             seedPort = seedPort,
             seedMembers = seedMembers,
