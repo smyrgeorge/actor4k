@@ -1,44 +1,49 @@
 package io.github.smyrgeorge.actor4k.actor.cluster
 
-import io.scalecube.cluster.ClusterImpl
 import io.scalecube.cluster.ClusterMessageHandler
 import io.scalecube.net.Address
-import io.scalecube.transport.netty.tcp.TcpTransportFactory
-import io.scalecube.cluster.Cluster as ScaleCluster
 
 class Node(
-    private val alias: String,
-    private val isSeed: Boolean,
-    private val seedPort: Int,
-    private val seedMembers: List<Address>,
+    val alias: String,
+    val isSeed: Boolean,
+    val seedPort: Int,
+    val seedMembers: List<Address>,
+    val handler: ClusterMessageHandler
 ) {
 
-    private lateinit var handler: ClusterMessageHandler
+    class Builder {
+        private var alias: String? = null
+        private var isSeed: Boolean? = null
+        private var seedPort: Int? = null
+        private var seedMembers: List<Address>? = null
+        private var handler: ClusterMessageHandler? = null
 
-    fun handler(h: ClusterMessageHandler): Node {
-        handler = h
-        return this
+        fun alias(v: String): Builder {
+            alias = v
+            return this
+        }
+
+        fun isSeed(v: Boolean): Builder {
+            isSeed = v
+            return this
+        }
+
+        fun seedPort(v: Int): Builder {
+            seedPort = v
+            return this
+        }
+
+        fun seedMembers(v: List<Address>): Builder {
+            seedMembers = v
+            return this
+        }
+
+        fun handler(v: ClusterMessageHandler): Builder {
+            handler = v
+            return this
+        }
+
+        fun build(): Node =
+            Node(alias!!, isSeed!!, seedPort!!, seedMembers!!, handler!!)
     }
-
-    fun build(): ScaleCluster = clusterOf()
-
-    private fun clusterOf(): ScaleCluster {
-        val c: ClusterImpl = if (isSeed) seedOf() else nodeOf()
-
-        return c
-            .handler { handler }
-            .transportFactory { TcpTransportFactory() }
-            .startAwait()
-    }
-
-    private fun seedOf(): ClusterImpl =
-        ClusterImpl()
-            .config { it.memberAlias(alias) }
-            .transport { it.port(seedPort) }
-
-    private fun nodeOf(): ClusterImpl =
-        ClusterImpl()
-            .config { it.memberAlias(alias) }
-            .membership { it.seedMembers(seedMembers) }
-
 }

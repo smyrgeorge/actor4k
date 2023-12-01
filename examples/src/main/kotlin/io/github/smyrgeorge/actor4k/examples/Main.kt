@@ -53,15 +53,23 @@ fun main(args: Array<String>) {
         }
     }
 
-    val node = Node(alias(), isSeed(), seedPort(), seedMembers()).handler(handler)
-    val cluster = Cluster().register(node)
+    val node: Node = Node.Builder()
+        .alias(alias())
+        .isSeed(isSeed())
+        .seedPort(seedPort())
+        .seedMembers(seedMembers())
+        .handler(handler)
+        .build()
+
+    val cluster = Cluster().node(node).start()
 
     runBlocking {
         withContext(Dispatchers.IO) {
             while (true) {
                 delay(2000)
                 val members: List<Member> = cluster.members()
-                val member: Member = members[Random(11111).nextInt(0, members.size)]
+                log.info { "Members: $members" }
+                val member: Member = members[Random.nextInt(0, members.size)]
                 cluster.tell(member, Message.fromData(Msg()))
             }
         }

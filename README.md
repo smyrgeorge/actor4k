@@ -10,10 +10,10 @@ For this particular reason we make use of `scalecube-cluster` (implementation of
 
 A lot of things need to be done, so sit tight…
 
-- [ ] Cluster (in progress)
+- [ ] Cluster/Sharding (in progress)
+- [ ] Logging (in progress)
 - [ ] Persistence
 - [ ] Serialization
-- [ ] Logging
 - [ ] Metrics
 - [ ] Java compatibility
 
@@ -38,6 +38,10 @@ docker build . -t actor4k -f examples/src/main/docker/Dockerfile
 
 ```shell
 java -jar examples/build/libs/*.jar
+```
+
+```shell
+docker compose up
 ```
 
 ## References
