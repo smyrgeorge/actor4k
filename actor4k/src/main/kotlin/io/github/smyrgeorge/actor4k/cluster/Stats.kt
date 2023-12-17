@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster
 
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
 
 data class Stats(
@@ -13,18 +14,22 @@ data class Stats(
     init {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
-            while (true) {
-                val oldMessages = tM
-                val oldGossipMessages = tG
-                delay(1_000)
-                mPS = tM - oldMessages
-                gPs = tG - oldGossipMessages
-            }
+            // Delay first calculation until the system warms up.
+            delay(5_000)
+            while (true) calculate()
         }
     }
 
-    fun members(m: Int) {
-        members = m
+    private suspend fun calculate() {
+        // Set cluster members size.
+        members = ActorSystem.cluster.members().size
+
+        // Calculate messages per second.
+        val oldMessages = tM
+        val oldGossipMessages = tG
+        delay(1_000)
+        mPS = tM - oldMessages
+        gPs = tG - oldGossipMessages
     }
 
     fun message(): Long = tM++

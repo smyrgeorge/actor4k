@@ -5,6 +5,7 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.scalecube.cluster.ClusterImpl
 import io.scalecube.cluster.Member
 import io.scalecube.cluster.transport.api.Message
+import io.scalecube.net.Address
 import io.scalecube.transport.netty.tcp.TcpTransportFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactive.awaitFirstOrNull
@@ -37,8 +38,6 @@ class Cluster(
     }
 
     private fun stats() {
-        // Set cluster members to [Stats].
-        stats.members(cluster.members().size)
         // Log [Stats].
         log.info { stats }
     }
@@ -47,6 +46,10 @@ class Cluster(
 
     suspend fun gossip(message: Message) {
         cluster.spreadGossip(message).awaitFirstOrNull()
+    }
+
+    suspend fun tell(receiver: List<Address>, message: Message) {
+        cluster.send(receiver, message).awaitFirstOrNull()
     }
 
     suspend fun tell(member: Member, message: Envelope<*>) {
@@ -141,7 +144,7 @@ class Cluster(
                 .membership { it.namespace(node.namespace) }
                 .membership { it.seedMembers(node.seedMembers) }
                 .transportFactory { TcpTransportFactory() }
-                .handler { MessageHandler(node, stats, it, ring) }
+                .handler { MessageHandler(node = node, stats = stats, ring = ring) }
                 .startAwait()
 
             // Append current node to hash ring.

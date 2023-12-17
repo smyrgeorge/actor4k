@@ -42,10 +42,10 @@ The above script will do the following:
 If everything goes well, you should see something like the following (`mPS` consists messages per second):
 ```text
 ...
-node-1-1  | 55406 [DefaultDispatcher-worker-2] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=288139, mPS=8041)
-node-4-1  | 55616 [DefaultDispatcher-worker-4] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=286887, mPS=7950)
-node-3-1  | 55719 [DefaultDispatcher-worker-1] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=280909, mPS=7719)
-node-2-1  | 55693 [DefaultDispatcher-worker-4] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=279226, mPS=7652)
+node-1-1  | 50354 [DefaultDispatcher-worker-6] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=285746, mPS=8618)
+node-4-1  | 50490 [DefaultDispatcher-worker-8] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=289627, mPS=8965)
+node-2-1  | 50483 [DefaultDispatcher-worker-9] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=288036, mPS=8534)
+node-3-1  | 50539 [DefaultDispatcher-worker-7] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=286542, mPS=8843)
 ```
 
 ### Cleanup

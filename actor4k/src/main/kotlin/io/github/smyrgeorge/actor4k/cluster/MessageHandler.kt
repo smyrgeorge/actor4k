@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster
 
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.scalecube.cluster.Member
 import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
@@ -7,28 +8,32 @@ import io.scalecube.net.Address
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
-import io.scalecube.cluster.Cluster as ScaleCubeCluster
 import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHandler
 
 class MessageHandler(
     private val node: Node,
     private val stats: Stats,
-    private val cluster: ScaleCubeCluster,
     private val ring: ConsistentHash<ServerNode>
 ) : ScaleCubeClusterMessageHandler {
+
+    // Number of reply workers.
+    private val replyWorkers = 10
 
     private data class Reply(val sender: List<Address>, val message: Message)
 
     private val replies = Channel<Reply>(capacity = Channel.UNLIMITED)
 
     init {
-        @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
-            replies.consumeEach {
-                cluster.send(it.sender, it.message).awaitFirstOrNull()
+        // Start n workers (async), responsible to send the reply messages.
+        repeat(replyWorkers) {
+            @OptIn(DelicateCoroutinesApi::class)
+            GlobalScope.launch(Dispatchers.IO) {
+                replies.consumeEach {
+                    // TODO: find another way (do not use ActorSystem).
+                    ActorSystem.cluster.tell(it.sender, it.message)
+                }
             }
         }
     }
