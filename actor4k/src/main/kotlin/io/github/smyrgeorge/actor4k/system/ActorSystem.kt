@@ -8,9 +8,12 @@ object ActorSystem {
     private val log = KotlinLogging.logger {}
 
     val registry = ActorRegistry
+
+    var clusterMode: Boolean = false
     lateinit var cluster: Cluster
 
     fun register(c: Cluster): ActorSystem {
+        clusterMode = true
         cluster = c
         return this
     }

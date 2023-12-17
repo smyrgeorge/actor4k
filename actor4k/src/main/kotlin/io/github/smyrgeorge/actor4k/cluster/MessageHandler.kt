@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster
 
+import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.scalecube.cluster.Member
 import io.scalecube.cluster.membership.MembershipEvent
@@ -20,8 +21,6 @@ class MessageHandler(
 
     // Number of reply workers.
     private val replyWorkers = 10
-
-    private data class Reply(val sender: List<Address>, val message: Message)
 
     private val replies = Channel<Reply>(capacity = Channel.UNLIMITED)
 
@@ -45,21 +44,29 @@ class MessageHandler(
 
     override fun onMessage(m: Message) {
         stats.message()
-        if (m.correlationId() == null) {
-            // Handle a simple message.
-            node.onMessage(m.data())
-        } else if (m.correlationId() != null && m.header(X_IS_REPLY) != null) {
-            // Handle a response (to a request) message (same as a simple message).
-            node.onMessage(m.data())
-        } else {
+
+        if (m.correlationId() != null
+            && m.header(X_IS_REPLY) != null) {
             // Handle a request for response message.
-            val resp: Envelope<*> = node.onRequest(m.data())
+            val resp: Envelope<*> = when (val data = m.data<Envelope<Any>>().payload) {
+                is Cluster.Cmd.Spawn -> {
+                    val ref = ActorRegistry.spawn(data.className, data.key).toRemoteRef()
+                    Envelope(ref)
+                }
+
+                else -> node.onRequest(m.data())
+            }
+
             val message = Message.builder()
                 .correlationId(m.correlationId())
                 .header(X_IS_REPLY, "t")
                 .data(resp)
                 .build()
+
             runBlocking { replies.send(Reply(m.sender(), message)) }
+        } else {
+            // Handle a simple message.
+            node.onMessage(m.data())
         }
     }
 
@@ -79,6 +86,8 @@ class MessageHandler(
 
         node.onMembershipEvent(e)
     }
+
+    private data class Reply(val sender: List<Address>, val message: Message)
 
     companion object {
         private const val X_IS_REPLY = "x-is-reply"

@@ -14,6 +14,7 @@ import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
+import java.io.Serializable
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
 import io.scalecube.cluster.Cluster as ScaleCubeCluster
@@ -154,5 +155,13 @@ class Cluster(
 
             return Triple(ring, cluster, stats)
         }
+    }
+
+    sealed interface Cmd {
+        fun toEnvelope(): Envelope<Cmd> = Envelope(this)
+        data class Spawn(
+            val className: String,
+            val key: String
+        ) : Cmd, Serializable
     }
 }

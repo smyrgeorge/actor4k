@@ -8,16 +8,16 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
-import java.util.*
+import kotlin.reflect.KClass
 import kotlin.time.Duration
 
 abstract class Actor<C : Cmd, R : Reply>(
-    private val key: String = UUID.randomUUID().toString()
+    private val key: String
 ) {
 
     protected val log = KotlinLogging.logger {}
-    protected val name: String = "${this::class.simpleName ?: "anonymous"}-$key"
 
+    val name: String = nameOf(this::class, key)
     private val mail = Channel<Patterns<C, R>>(capacity = Channel.UNLIMITED)
 
     init {
@@ -46,8 +46,7 @@ abstract class Actor<C : Cmd, R : Reply>(
     suspend fun ask(cmd: C, timeout: Duration): R =
         withTimeout(timeout) { ask(cmd) }
 
-    fun ref(): Ref<C, R> = Ref.Local(key = key, name = name, actor = this)
-    fun remoteRef(): Ref<C, R> = Ref.Remote(key = key, name = name)
+    fun ref(): Ref.Local<C, R> = Ref.Local(key = key, name = name, actor = this)
 
     private data class Patterns<C : Cmd, R : Reply>(
         val cmd: C,
@@ -74,6 +73,8 @@ abstract class Actor<C : Cmd, R : Reply>(
         ) : Ref<C, R>(key, name) {
             override suspend fun tell(cmd: C): Unit = actor.tell(cmd)
             override suspend fun ask(cmd: C): R = actor.ask(cmd)
+
+            fun toRemoteRef(): Remote<C, R> = Remote(key, name)
         }
 
         data class Remote<C : Cmd, R : Reply>(
@@ -88,5 +89,14 @@ abstract class Actor<C : Cmd, R : Reply>(
                 // TODO: fix this
                 ActorSystem.cluster.ask<R>(key, Envelope("CHANGE ME")).payload
         }
+    }
+
+    companion object {
+
+        fun <C : Cmd, R : Reply, A : Actor<C, R>> nameOf(actor: KClass<A>, key: String): String =
+            nameOf(actor.java, key)
+
+        fun <C : Cmd, R : Reply, A : Actor<C, R>> nameOf(actor: Class<A>, key: String): String =
+            "${actor.simpleName ?: "anonymous"}-$key"
     }
 }

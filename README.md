@@ -79,4 +79,3 @@ docker build . -t actor4k -f examples/src/main/docker/Dockerfile
 - https://www.pubnub.com/blog/consistent-hashing-implementation/
 - https://github.com/Jaskey/ConsistentHash
 - https://github.com/ishugaliy/allgood-consistent-hash
-- https://github.com/ishugaliy/allgood-consistent-hash

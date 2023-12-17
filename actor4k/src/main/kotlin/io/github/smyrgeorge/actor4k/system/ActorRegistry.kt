@@ -1,27 +1,53 @@
 package io.github.smyrgeorge.actor4k.system
 
-import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.github.smyrgeorge.actor4k.actor.cmd.Reply
-import io.github.smyrgeorge.actor4k.actor.types.ManagedActor
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 object ActorRegistry {
-    private val log = KotlinLogging.logger {}
 
-    private val registry: ConcurrentHashMap<String, ManagedActor<*, *>> =
-        ConcurrentHashMap<String, ManagedActor<*, *>>(/* initialCapacity = */ 100)
+    private val registry = ConcurrentHashMap<String, Actor.Ref<*, *>>(/* initialCapacity = */ 1024)
 
-    fun register(actor: ManagedActor<*, *>) {
-        val existing = registry[actor::class.java.name]
-        if (existing != null) error("A managed actor ${actor::class.java.name} is already registered.")
+    suspend fun <C : Cmd, R : Reply, A : Actor<C, R>> get(actor: KClass<A>, key: String): Actor.Ref<C, R> =
+        get(actor.java, key)
 
-        registry[actor::class.java.name] = actor
-        log.debug { "${actor::class.java} registered." }
+    suspend fun <C : Cmd, R : Reply, A : Actor<C, R>> get(actor: Class<A>, key: String): Actor.Ref<C, R> {
+        // Check if the actor already exists in the local registry.
+        registry[Actor.nameOf(actor, key)]?.let {
+            @Suppress("UNCHECKED_CAST")
+            return it as Actor.Ref<C, R>
+        }
+
+        // Create actor.
+        val ref: Actor.Ref<C, R> = if (ActorSystem.clusterMode) {
+            val msg = Cluster.Cmd.Spawn(actor.canonicalName, key).toEnvelope()
+            ActorSystem.cluster.ask<Actor.Ref.Remote<C, R>>(key, msg).payload
+        } else {
+            spawn(actor, key)
+        }
+
+        return ref
     }
 
-    @Suppress("UNCHECKED_CAST")
-    fun <C : Cmd, R : Reply> get(clazz: Class<*>): ManagedActor<C, R> =
-        registry[clazz.name] as? ManagedActor<C, R>
-            ?: error("Requested ${clazz.name} actor is not registered.")
+    /**
+     * Spawns an actor locally.
+     * Stores [Actor.Ref] to the local storage.
+     */
+    private fun <C : Cmd, R : Reply, A : Actor<C, R>> spawn(actor: Class<A>, key: String): Actor.Ref.Local<C, R> {
+        @Suppress("NAME_SHADOWING")
+        val actor = actor.getConstructor(String::class.java).newInstance(key)
+        val ref: Actor.Ref.Local<C, R> = actor.ref()
+        registry[ref.name] = ref
+        return ref
+    }
+
+    fun spawn(clazz: String, key: String): Actor.Ref.Local<*, *> {
+        @Suppress("UNCHECKED_CAST")
+        val actor = Class.forName(clazz) as? Class<Actor<Cmd, Reply>>
+            ?: error("Could not find requested actor class='$clazz'.")
+        return spawn(actor, key)
+    }
 }
