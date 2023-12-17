@@ -15,7 +15,7 @@ object ActorRegistry {
         get(actor.java, key)
 
     suspend fun <C : Cmd, R : Reply, A : Actor<C, R>> get(actor: Class<A>, key: String): Actor.Ref<C, R> {
-        // Check if the actor already exists in the local registry.
+        // Check if the actor already exists in the local storage.
         registry[Actor.nameOf(actor, key)]?.let {
             @Suppress("UNCHECKED_CAST")
             return it as Actor.Ref<C, R>
@@ -40,6 +40,7 @@ object ActorRegistry {
         @Suppress("NAME_SHADOWING")
         val actor = actor.getConstructor(String::class.java).newInstance(key)
         val ref: Actor.Ref.Local<C, R> = actor.ref()
+        // Store [Actor.Ref] to the local storage.
         registry[ref.name] = ref
         return ref
     }
