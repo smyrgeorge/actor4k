@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.actor
+package io.github.smyrgeorge.actor4k.system
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.cmd.Cmd

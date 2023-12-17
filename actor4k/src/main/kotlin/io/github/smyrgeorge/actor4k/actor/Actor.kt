@@ -1,18 +1,24 @@
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.cluster.Envelope
 import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.github.smyrgeorge.actor4k.actor.cmd.Reply
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
+import java.util.*
 import kotlin.time.Duration
 
-abstract class Actor<C : Cmd, R : Reply> {
-
-    private val mail = Channel<Patterns<C, R>>(capacity = Channel.UNLIMITED)
+abstract class Actor<C : Cmd, R : Reply>(
+    private val key: String = UUID.randomUUID().toString()
+) {
 
     protected val log = KotlinLogging.logger {}
+    protected val name: String = "${this::class.simpleName ?: "anonymous"}-$key"
+
+    private val mail = Channel<Patterns<C, R>>(capacity = Channel.UNLIMITED)
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -40,6 +46,9 @@ abstract class Actor<C : Cmd, R : Reply> {
     suspend fun ask(cmd: C, timeout: Duration): R =
         withTimeout(timeout) { ask(cmd) }
 
+    fun ref(): Ref<C, R> = Ref.Local(key = key, name = name, actor = this)
+    fun remoteRef(): Ref<C, R> = Ref.Remote(key = key, name = name)
+
     private data class Patterns<C : Cmd, R : Reply>(
         val cmd: C,
         val replyTo: Channel<R>? = null
@@ -47,6 +56,36 @@ abstract class Actor<C : Cmd, R : Reply> {
         companion object {
             fun <C : Cmd, R : Reply> tell(cmd: C) = Patterns<C, R>(cmd = cmd)
             fun <C : Cmd, R : Reply> ask(cmd: C) = Patterns(cmd = cmd, replyTo = Channel<R>(Channel.RENDEZVOUS))
+        }
+    }
+
+    sealed class Ref<C : Cmd, R : Reply>(
+        open val key: String,
+        open val name: String
+    ) {
+
+        abstract suspend fun tell(cmd: C)
+        abstract suspend fun ask(cmd: C): R
+
+        data class Local<C : Cmd, R : Reply>(
+            override val key: String,
+            override val name: String,
+            private val actor: Actor<C, R>
+        ) : Ref<C, R>(key, name) {
+            override suspend fun tell(cmd: C): Unit = actor.tell(cmd)
+            override suspend fun ask(cmd: C): R = actor.ask(cmd)
+        }
+
+        data class Remote<C: Cmd, R: Reply>(
+            override val key: String,
+            override val name: String,
+        ) : Ref<C, R>(key, name) {
+            override suspend fun tell(cmd: C): Unit =
+                // TODO: fix this
+                ActorSystem.cluster.tell(key, Envelope(cmd.reqId, "CHANGE ME"))
+            override suspend fun ask(cmd: C): R =
+                // TODO: fix this
+                ActorSystem.cluster.ask<R>(key, Envelope(cmd.reqId, "CHANGE ME")).payload
         }
     }
 }

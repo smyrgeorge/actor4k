@@ -1,17 +1,16 @@
-package io.github.smyrgeorge.actor4k.actor
+package io.github.smyrgeorge.actor4k.system
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.actor.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 
 @Suppress("unused")
 object ActorSystem {
     private val log = KotlinLogging.logger {}
 
     val registry = ActorRegistry
-    private var cluster: Cluster? = null
+    lateinit var cluster: Cluster
 
     fun register(c: Cluster): ActorSystem {
-        if (cluster != null) error("Cluster already registered.")
         cluster = c
         return this
     }

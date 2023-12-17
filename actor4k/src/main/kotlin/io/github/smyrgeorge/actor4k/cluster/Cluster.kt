@@ -1,11 +1,9 @@
-package io.github.smyrgeorge.actor4k.actor.cluster
+package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.actor.ActorSystem
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.scalecube.cluster.ClusterImpl
-import io.scalecube.cluster.ClusterMessageHandler
 import io.scalecube.cluster.Member
-import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
 import io.scalecube.transport.netty.tcp.TcpTransportFactory
 import kotlinx.coroutines.*
@@ -16,13 +14,13 @@ import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import kotlin.jvm.optionals.getOrNull
-import io.scalecube.cluster.Cluster as ScaleCluster
+import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 class Cluster(
     private val node: Node,
     private val stats: Stats,
-    private val cluster: ScaleCluster,
+    private val cluster: ScaleCubeCluster,
     private val ring: ConsistentHash<ServerNode>
 ) {
 
@@ -39,9 +37,10 @@ class Cluster(
     }
 
     private fun stats() {
+        // Set cluster members to [Stats].
+        stats.members(cluster.members().size)
+        // Log [Stats].
         log.info { stats }
-        log.info { "Cluster members: ${cluster.members()}" }
-        log.info { "Ring members: $ring" }
     }
 
     fun members(): List<Member> = cluster.members().toList()
@@ -51,16 +50,16 @@ class Cluster(
     }
 
     suspend fun tell(member: Member, message: Envelope<*>) {
-        val msg = Message.fromData(message)
         // If the message needs to be delivered to the same service (that triggered the call),
         // we just directly call the [onMessage] handler function,
         // and thus we do not send data across the wire.
         if (member.alias() == cluster.member().alias()) {
-            stats.plusMessage()
-            node.onMessage(msg)
+            stats.message()
+            node.onMessage(message)
             return
         }
 
+        val msg = Message.fromData(message)
         cluster.send(member, msg).awaitFirstOrNull()
     }
 
@@ -73,7 +72,6 @@ class Cluster(
         tell(key.hashCode().toString(), message)
 
     suspend fun <T> ask(member: Member, message: Envelope<*>): Envelope<T> {
-        println(message)
         val msg = Message.builder().data(message).correlationId(message.reqId.toString()).build()
         return cluster.requestResponse(member, msg).awaitSingle().data() as? Envelope<T>
             ?: error("Could not cast to the requested type.")
@@ -92,30 +90,6 @@ class Cluster(
             ?: error("Could not find a valid recipient (probably empty), ring.size='${ring.size()}'.")
         return members().find { it.alias() == node.dc }
             ?: error("Could not find any member in the network with id='${node.dc}'.")
-    }
-
-    data class Stats(
-        private var messages: Long = 0,
-        private var gossipMessages: Long = 0,
-        private var messagesPerSecond: Long = 0,
-        private var gossipMessagesPerSecond: Long = 0,
-    ) {
-
-        init {
-            @OptIn(DelicateCoroutinesApi::class)
-            GlobalScope.launch(Dispatchers.IO) {
-                while (true) {
-                    val oldMessages = messages
-                    val oldGossipMessages = gossipMessages
-                    delay(1_000)
-                    messagesPerSecond = messages - oldMessages
-                    gossipMessagesPerSecond = gossipMessages - oldGossipMessages
-                }
-            }
-        }
-
-        fun plusMessage(): Long = messages++
-        fun plusGossipMessage(): Long = gossipMessages++
     }
 
     class Builder {
@@ -140,7 +114,8 @@ class Cluster(
             return cluster
         }
 
-        private fun build(): Triple<ConsistentHash<ServerNode>, ScaleCluster, Stats> {
+        private fun build(): Triple<ConsistentHash<ServerNode>, ScaleCubeCluster, Stats> {
+
             fun nodeOf(): ClusterImpl = ClusterImpl()
             fun seedOf(): ClusterImpl = ClusterImpl().transport { it.port(node.seedPort) }
 
@@ -161,37 +136,13 @@ class Cluster(
                 .build()
 
             // Build cluster.
-            val cluster: ScaleCluster = (if (node.isSeed) seedOf() else nodeOf())
+            val cluster: ScaleCubeCluster = (if (node.isSeed) seedOf() else nodeOf())
                 .config { it.memberAlias(node.alias) }
                 .membership { it.namespace(node.namespace) }
                 .membership { it.seedMembers(node.seedMembers) }
                 .transportFactory { TcpTransportFactory() }
-                .handler {
-                    object : ClusterMessageHandler {
-                        override fun onGossip(g: Message) {
-                            stats.plusGossipMessage()
-                            node.onGossip(g)
-                        }
-
-                        override fun onMessage(m: Message) {
-                            stats.plusMessage()
-                            node.onMessage(m)
-                        }
-
-                        override fun onMembershipEvent(e: MembershipEvent) {
-
-                            when (e.type()) {
-                                MembershipEvent.Type.ADDED -> ring.add(e.member().toServerNode())
-                                MembershipEvent.Type.REMOVED -> ring.remove(e.member().toServerNode())
-                                MembershipEvent.Type.LEAVING -> ring.remove(e.member().toServerNode())
-                                MembershipEvent.Type.UPDATED -> Unit
-                                else -> error("Sanity check failed :: MembershipEvent.type was null.")
-                            }
-
-                            node.onMembershipEvent(e)
-                        }
-                    }
-                }.startAwait()
+                .handler { MessageHandler(node, stats, it, ring) }
+                .startAwait()
 
             // Append current node to hash ring.
             ring.add(cluster.member().toServerNode())

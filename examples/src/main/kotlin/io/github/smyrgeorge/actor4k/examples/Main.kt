@@ -1,9 +1,9 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.actor.cluster.Cluster
-import io.github.smyrgeorge.actor4k.actor.cluster.Envelope
-import io.github.smyrgeorge.actor4k.actor.cluster.Node
+import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.Envelope
+import io.github.smyrgeorge.actor4k.cluster.Node
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -14,10 +14,19 @@ import java.util.*
 
 class Main
 
-data class Msg(
+data class Ping(
     val id: UUID = UUID.randomUUID(),
-    val message: String = "TEST MESSAGE"
-) : Serializable
+    val message: String = "Ping!"
+) : Serializable {
+    fun toEnvelope() = Envelope(reqId = id, payload = this)
+}
+
+data class Pong(
+    val id: UUID,
+    val message: String = "Pong!"
+) : Serializable {
+    fun toEnvelope() = Envelope(reqId = id, payload = this)
+}
 
 fun main(args: Array<String>) {
     val log = KotlinLogging.logger {}
@@ -35,13 +44,17 @@ fun main(args: Array<String>) {
         .seedPort(seedPort)
         .seedMembers(seedMembers)
         .onGossip {
-            log.info { "Received Gossip: $it" }
+            log.debug { "Received Gossip: $it" }
         }
-        .onMessage {
+        .onMessage<Ping> {
             log.debug { "Received message: $it" }
         }
+        .onRequest<Ping, Pong> {
+            log.debug { "Received request: $it" }
+            Pong(it.payload.id).toEnvelope()
+        }
         .onMembershipEvent {
-            log.info { "Received membership-event: $it" }
+            log.debug { "Received membership-event: $it" }
         }
         .build()
 
@@ -50,15 +63,14 @@ fun main(args: Array<String>) {
         .node(node)
         .start()
 
-    fun Msg.toEnvelope(): Envelope<*> = Envelope(payload = this)
-
     runBlocking {
         withContext(Dispatchers.IO) {
             delay(10_000)
             while (true) {
-                val msg = Msg()
-                cluster.tell(msg.id, msg.toEnvelope())
-                delay(50)
+                val ping = Ping()
+//                cluster.tell(ping.id, ping.toEnvelope())
+                val pong = cluster.ask<Pong>(ping.id, ping.toEnvelope())
+//                println("Ping: $ping :::: Pong: ${pong.payload}")
             }
         }
     }

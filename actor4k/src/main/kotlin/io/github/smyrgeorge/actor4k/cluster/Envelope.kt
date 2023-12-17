@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.actor.cluster
+package io.github.smyrgeorge.actor4k.cluster
 
 import java.io.Serializable
 import java.util.*

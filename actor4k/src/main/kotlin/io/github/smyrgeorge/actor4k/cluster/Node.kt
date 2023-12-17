@@ -1,8 +1,9 @@
-package io.github.smyrgeorge.actor4k.actor.cluster
+package io.github.smyrgeorge.actor4k.cluster
 
 import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
 import io.scalecube.net.Address
+import java.util.*
 
 class Node(
     val alias: String,
@@ -11,7 +12,8 @@ class Node(
     val seedPort: Int,
     val seedMembers: List<Address>,
     val onGossip: (g: Message) -> Unit,
-    val onMessage: (m: Message) -> Unit,
+    val onMessage: (m: Envelope<*>) -> Unit,
+    val onRequest: (m: Envelope<*>) -> Envelope<*>,
     val onMembershipEvent: (e: MembershipEvent) -> Unit
 ) {
 
@@ -21,7 +23,8 @@ class Node(
         private var isSeed: Boolean = false
         private var seedPort: Int = 61100
         private var seedMembers: List<Address> = emptyList()
-        private var onMessage: (m: Message) -> Unit = {}
+        private var onMessage: (m: Envelope<*>) -> Unit = {}
+        private var onRequest: (m: Envelope<*>) -> Envelope<*> = { Envelope(UUID.randomUUID(), "EMPTY") }
         private var onGossip: (m: Message) -> Unit = {}
         private var onMembershipEvent: (m: MembershipEvent) -> Unit = {}
 
@@ -50,8 +53,15 @@ class Node(
             return this
         }
 
-        fun onMessage(f: (m: Message) -> Unit): Builder {
-            onMessage = f
+        @Suppress("UNCHECKED_CAST")
+        fun <T> onMessage(f: (m: Envelope<T>) -> Unit): Builder {
+            onMessage = f as (Envelope<*>) -> Unit
+            return this
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        fun <T, R> onRequest(f: (m: Envelope<T>) -> Envelope<R>): Builder {
+            onRequest = f as (Envelope<*>) -> Envelope<*>
             return this
         }
 
@@ -73,6 +83,7 @@ class Node(
             seedMembers = seedMembers,
             onGossip = onGossip,
             onMessage = onMessage,
+            onRequest = onRequest,
             onMembershipEvent = onMembershipEvent
         )
     }
