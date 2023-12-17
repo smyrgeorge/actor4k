@@ -1,9 +1,9 @@
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.Envelope
 import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.github.smyrgeorge.actor4k.actor.cmd.Reply
+import io.github.smyrgeorge.actor4k.cluster.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -76,16 +76,17 @@ abstract class Actor<C : Cmd, R : Reply>(
             override suspend fun ask(cmd: C): R = actor.ask(cmd)
         }
 
-        data class Remote<C: Cmd, R: Reply>(
+        data class Remote<C : Cmd, R : Reply>(
             override val key: String,
             override val name: String,
         ) : Ref<C, R>(key, name) {
             override suspend fun tell(cmd: C): Unit =
                 // TODO: fix this
-                ActorSystem.cluster.tell(key, Envelope(cmd.reqId, "CHANGE ME"))
+                ActorSystem.cluster.tell(key, Envelope("CHANGE ME"))
+
             override suspend fun ask(cmd: C): R =
                 // TODO: fix this
-                ActorSystem.cluster.ask<R>(key, Envelope(cmd.reqId, "CHANGE ME")).payload
+                ActorSystem.cluster.ask<R>(key, Envelope("CHANGE ME")).payload
         }
     }
 }

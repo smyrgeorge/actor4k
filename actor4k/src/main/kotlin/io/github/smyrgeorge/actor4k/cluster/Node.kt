@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.cluster
 import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
 import io.scalecube.net.Address
-import java.util.*
 
 class Node(
     val alias: String,
@@ -24,7 +23,7 @@ class Node(
         private var seedPort: Int = 61100
         private var seedMembers: List<Address> = emptyList()
         private var onMessage: (m: Envelope<*>) -> Unit = {}
-        private var onRequest: (m: Envelope<*>) -> Envelope<*> = { Envelope(UUID.randomUUID(), "EMPTY") }
+        private var onRequest: (m: Envelope<*>) -> Envelope<*> = { Envelope("EMPTY") }
         private var onGossip: (m: Message) -> Unit = {}
         private var onMembershipEvent: (m: MembershipEvent) -> Unit = {}
 

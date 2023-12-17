@@ -14,6 +14,7 @@ import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
+import java.util.*
 import kotlin.jvm.optionals.getOrNull
 import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
@@ -75,7 +76,8 @@ class Cluster(
         tell(key.hashCode().toString(), message)
 
     suspend fun <T> ask(member: Member, message: Envelope<*>): Envelope<T> {
-        val msg = Message.builder().data(message).correlationId(message.reqId.toString()).build()
+        val correlationId = UUID.randomUUID().toString()
+        val msg = Message.builder().data(message).correlationId(correlationId).build()
         return cluster.requestResponse(member, msg).awaitSingle().data() as? Envelope<T>
             ?: error("Could not cast to the requested type.")
     }

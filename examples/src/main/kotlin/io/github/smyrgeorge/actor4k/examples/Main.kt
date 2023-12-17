@@ -18,14 +18,14 @@ data class Ping(
     val id: UUID = UUID.randomUUID(),
     val message: String = "Ping!"
 ) : Serializable {
-    fun toEnvelope() = Envelope(reqId = id, payload = this)
+    fun toEnvelope() = Envelope(payload = this)
 }
 
 data class Pong(
     val id: UUID,
     val message: String = "Pong!"
 ) : Serializable {
-    fun toEnvelope() = Envelope(reqId = id, payload = this)
+    fun toEnvelope() = Envelope(payload = this)
 }
 
 fun main(args: Array<String>) {
