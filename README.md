@@ -17,10 +17,10 @@ A lot of things need to be done, so sit tight…
 
 - [ ] Cluster/Sharding (in progress)
   - [x] Implement `tell/ask` patterns across cluster nodes
-  - [x] Add support for cross-node actor reference (in progress)
+  - [x] Add support for cross-node actor reference
 - [ ] Serialization (in progress)
   - [x] Send messages across cluster using the gossip protocol
-  - [x] Use gRPC for the communication across cluster nodes. (in progress)
+  - [x] Use gRPC for the communication across cluster nodes
 - [ ] Metrics (in progress)
 - [ ] Logging (in progress)
 - [ ] Java compatibility

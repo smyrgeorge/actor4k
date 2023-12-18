@@ -29,9 +29,13 @@ object ActorRegistry {
             if (ActorSystem.clusterMode
                 && ActorSystem.cluster.memberOf(key).alias() != ActorSystem.cluster.node.alias
             ) {
+                // Case Remote.
+                // Forward the [Envelope.Spawn] message to the correct cluster node.
                 val msg = Envelope.Spawn(actor.canonicalName, key)
                 ActorSystem.cluster.ask<Envelope.ActorRef>(key, msg).toRef()
             } else {
+                // Case Local.
+                // Spawn the actor.
                 val ref = actor.getConstructor(String::class.java).newInstance(key).ref()
                 // Store [Actor.Ref] to the local storage.
                 registry[name] = ref
@@ -47,6 +51,4 @@ object ActorRegistry {
             ?: error("Could not find requested actor class='$clazz'.")
         return get(actor, key)
     }
-
-
 }

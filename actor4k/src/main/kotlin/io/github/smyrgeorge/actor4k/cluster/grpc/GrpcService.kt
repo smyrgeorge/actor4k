@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
-import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -30,7 +29,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun spawn(request: Cluster.Spawn): Cluster.ActorRef {
         ActorSystem.cluster.stats.message()
-        val ref: Actor.Ref<*, *> = ActorRegistry.get(request.className, request.key)
+        val ref = ActorRegistry.get(request.className, request.key)
         return Envelope.ActorRef(name = ref.name, key = ref.key, node = ActorSystem.cluster.node.alias).toProto()
     }
 }
