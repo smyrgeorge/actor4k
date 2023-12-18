@@ -15,7 +15,7 @@ class MessageHandler(
     private val node: Node,
     private val stats: Stats,
     private val ring: ConsistentHash<ServerNode>,
-    private val clients: ConcurrentHashMap<String, GrpcClient>,
+    private val grpcClients: ConcurrentHashMap<String, GrpcClient>,
 ) : ScaleCubeClusterMessageHandler {
 
     override fun onGossip(g: Message) {
@@ -30,11 +30,12 @@ class MessageHandler(
         }
 
         when (e.type()) {
+            // TODO: Error handling. Operations should be atomic. What about retries (create grpc client)?
             MembershipEvent.Type.ADDED -> {
                 // Add to hash-ring.
                 ring.add(e.member().toServerNode())
                 // Create the grpc client for the newly discovered node.
-                clients[e.member().alias()] = GrpcClient(e.member().addresses().first().host(), node.grpcPort)
+//                clients[e.member().alias()] = GrpcClient(e.member().addresses().first().host(), node.grpcPort)
             }
 
             MembershipEvent.Type.LEAVING, MembershipEvent.Type.REMOVED -> {
@@ -42,10 +43,10 @@ class MessageHandler(
                 ring.remove(e.member().toServerNode())
 
                 // Shutdown client.
-                clients[e.member().alias()]?.close()
+                grpcClients[e.member().alias()]?.close()
 
                 // Remove the client from clients-hashmap.
-                clients.remove(e.member().alias())
+                grpcClients.remove(e.member().alias())
             }
 
             MembershipEvent.Type.UPDATED -> Unit

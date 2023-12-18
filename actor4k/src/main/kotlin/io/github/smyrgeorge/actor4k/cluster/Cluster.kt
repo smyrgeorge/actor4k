@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
 import io.github.smyrgeorge.actor4k.cluster.swim.MessageHandler
@@ -24,11 +25,12 @@ import io.scalecube.cluster.Cluster as ScaleCubeCluster
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 class Cluster(
     private val node: Node,
-    private val stats: Stats,
-    private val grpc: GrpcServer,
+    val stats: Stats,
     private val swim: ScaleCubeCluster,
     private val ring: ConsistentHash<ServerNode>,
-    private val clients: ConcurrentHashMap<String, GrpcClient>,
+    private val grpc: GrpcServer,
+    private val grpcService: GrpcService,
+    private val grpcClients: ConcurrentHashMap<String, GrpcClient>,
 ) {
 
     private val log = KotlinLogging.logger {}
@@ -49,27 +51,26 @@ class Cluster(
     }
 
     fun members(): List<Member> = swim.members().toList()
-    fun clients(): Map<String, GrpcClient> = clients
 
     suspend fun gossip(message: Message) {
         swim.spreadGossip(message).awaitFirstOrNull()
     }
 
-//    suspend fun tell(key: String, message: Envelope) {
-//        val member: Member = memberOf(key)
-//        return tell(member, message)
-//    }
-//
-//    suspend fun tell(key: Any, message: Envelope) =
-//        tell(key.hashCode().toString(), message)
+    suspend fun <T : Envelope> ask(key: String, message: Envelope): T =
+        ask(memberOf(key), message)
 
-//    suspend fun <T> ask(key: String, message: Envelope): Envelope<T> {
-//        val member: Member = memberOf(key)
-//        return ask(member, message)
-//    }
-//
-//    suspend fun <T> ask(key: Any, message: Envelope<*>): Envelope<T> =
-//        ask(key.hashCode().toString(), message)
+    private suspend fun <T : Envelope> ask(member: Member, message: Envelope): T {
+        val res = if (member.alias() == node.alias) {
+            // Shortcut in case we need to send a message to self (same node).
+            grpcService.request(message)
+        } else {
+            grpcClients[member.alias()]?.request(message)
+                ?: error("An error occurred. Could not find a gRPC client for member='${member.alias()}'.")
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        return res as? T ?: error("Could not cast to the requested type.")
+    }
 
     private fun memberOf(key: String): Member {
         val node = ring.locate(key).getOrNull()
@@ -110,23 +111,27 @@ class Cluster(
             // Initialize stats object here.
             val stats = Stats()
 
-            // Build the GRPC server.
+            // Build the [GrpcService].
+            val grpcService = GrpcService()
+
+            // Build the gRPC server.
             val grpc: GrpcServer = ServerBuilder
                 .forPort(node.grpcPort)
-                .addService(GrpcService())
+                .addService(grpcService)
                 .build()
                 .start()
+
+            // Build gRPC clients HashMap.
+            val grpcClients = ConcurrentHashMap<String, GrpcClient>()
 
             // Build hash ring.
             val ring: ConsistentHash<ServerNode> = HashRing.newBuilder<ServerNode>()
                 // Hash ring name.
                 .name(node.namespace)
+                .partitionRate(1)
                 // Hash function to distribute partitions.
                 .hasher(DefaultHasher.METRO_HASH)
                 .build()
-
-            // Build grpc clients HashMap.
-            val clients = ConcurrentHashMap<String, GrpcClient>()
 
             // Build cluster.
             val cluster: ScaleCubeCluster = (if (node.isSeed) seedOf() else nodeOf())
@@ -134,7 +139,7 @@ class Cluster(
                 .membership { it.namespace(node.namespace) }
                 .membership { it.seedMembers(node.seedMembers) }
                 .transportFactory { TcpTransportFactory() }
-                .handler { MessageHandler(node = node, stats = stats, ring = ring, clients) }
+                .handler { MessageHandler(node = node, stats = stats, ring = ring, grpcClients) }
                 .startAwait()
 
             // Current cluster member.
@@ -144,9 +149,9 @@ class Cluster(
             ring.add(member.toServerNode())
 
             // Append current node to clients HashMap.
-            clients[node.alias] = GrpcClient(member.addresses().first().host(), node.grpcPort)
+//            clients[node.alias] = GrpcClient(member.addresses().first().host(), node.grpcPort)
 
-            return Cluster(node, stats, grpc, cluster, ring, clients)
+            return Cluster(node, stats, cluster, ring, grpc, grpcService, grpcClients)
         }
     }
 }

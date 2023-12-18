@@ -2,31 +2,16 @@ package io.github.smyrgeorge.actor4k.examples
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
-import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.Node
+import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import java.io.Serializable
 import java.util.*
 
 class Main
-
-data class Ping(
-    val id: UUID = UUID.randomUUID(),
-    val message: String = "Ping!"
-) : Serializable {
-    fun toEnvelope() = Envelope.Message(payload = toString().toByteArray())
-}
-
-data class Pong(
-    val id: UUID,
-    val message: String = "Pong!"
-) : Serializable {
-    fun toEnvelope() = Envelope.Message(payload = toString().toByteArray())
-}
 
 fun main(args: Array<String>) {
     val log = KotlinLogging.logger {}
@@ -60,18 +45,19 @@ fun main(args: Array<String>) {
 
     runBlocking {
         withContext(Dispatchers.IO) {
-            delay(5_000)
+
+            delay(10_000)
+
+            val ping = Envelope.Ping(id = UUID.randomUUID(), message = "Ping!")
+
             while (true) {
-//                val ping = Ping()
+//                val pong = cluster.ask<Envelope.Pong>(ping.id, ping)
+//                println("$ping :::: $pong")
 //                cluster.tell(ping.id, ping.toEnvelope())
-//                val pong = cluster.ask<Pong>(ping.id, ping.toEnvelope())
-//                println("$ping :::: ${pong.payload}")
 
 //                val ref = ActorRegistry.get(TestActor::class, "KEY")
 //                println(ref)
 
-                println(cluster.members())
-                println(cluster.clients())
                 delay(2_000)
             }
         }

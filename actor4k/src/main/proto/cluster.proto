@@ -2,11 +2,22 @@ syntax = "proto3";
 package io.github.smyrgeorge.actor4k.proto;
 
 service NodeService {
-  rpc message(Message) returns (Message) {}
+  rpc ping(Ping) returns (Pong) {}
+  rpc raw(Raw) returns (Raw) {}
   rpc spawn(Spawn) returns (ActorRef) {}
 }
 
-message Message {
+message Ping {
+  string id = 1;
+  string message = 2;
+}
+
+message Pong {
+  string id = 1;
+  string message = 2;
+}
+
+message Raw {
   bytes payload = 1;
 }
 
