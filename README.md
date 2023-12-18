@@ -17,10 +17,10 @@ A lot of things need to be done, so sit tight…
 
 - [ ] Cluster/Sharding (in progress)
   - [x] Implement `tell/ask` patterns across cluster nodes
-  - [ ] Add support for cross-node actor reference (in progress)
+  - [x] Add support for cross-node actor reference (in progress)
 - [ ] Serialization (in progress)
   - [x] Send messages across cluster using the gossip protocol
-  - [ ] Change the serialization method (do not use java serialization)
+  - [x] Use gRPC for the communication across cluster nodes. (in progress)
 - [ ] Metrics (in progress)
 - [ ] Logging (in progress)
 - [ ] Java compatibility
@@ -39,13 +39,13 @@ The above script will do the following:
 - Build the docker image `actor4k:latest`.
 - Will run the `docker compose` (will start four custer nodes).
 
-If everything goes well, you should see something like the following (`mPS` consists messages per second):
+If everything goes well, you should see something like the following (`mPS` ping messages per second):
 ```text
 ...
-node-1-1  | 50354 [DefaultDispatcher-worker-6] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=285746, mPS=8618)
-node-4-1  | 50490 [DefaultDispatcher-worker-8] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=289627, mPS=8965)
-node-2-1  | 50483 [DefaultDispatcher-worker-9] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=288036, mPS=8534)
-node-3-1  | 50539 [DefaultDispatcher-worker-7] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=286542, mPS=8843)
+node-1-1  | 55365 [DefaultDispatcher-worker-6] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=138385, mPS=4596)
+node-2-1  | 55669 [DefaultDispatcher-worker-2] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=142243, mPS=4706)
+node-4-1  | 55721 [DefaultDispatcher-worker-3] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=139882, mPS=4696)
+node-3-1  | 55882 [DefaultDispatcher-worker-5] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=131900, mPS=4391)
 ```
 
 ### Cleanup

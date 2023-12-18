@@ -9,28 +9,35 @@ import kotlin.reflect.KClass
 
 object ActorRegistry {
 
-    private val registry = ConcurrentHashMap<String, Actor.Ref<*, *>>(/* initialCapacity = */ 1024)
+    // Only stores [Actor.Ref.Local].
+    private val registry = ConcurrentHashMap<String, Actor.Ref.Local<*, *>>(/* initialCapacity = */ 1024)
 
     suspend fun <C : Cmd, R : Reply, A : Actor<C, R>> get(actor: KClass<A>, key: String): Actor.Ref<C, R> =
         get(actor.java, key)
 
     suspend fun <C : Cmd, R : Reply, A : Actor<C, R>> get(actor: Class<A>, key: String): Actor.Ref<C, R> {
+        val name = Actor.nameOf(actor, key)
+
         // Check if the actor already exists in the local storage.
-        registry[Actor.nameOf(actor, key)]?.let {
+        registry[name]?.let {
             @Suppress("UNCHECKED_CAST")
             return it as Actor.Ref<C, R>
         }
 
-        // Create actor.
-        val ref: Actor.Ref<C, R> = if (ActorSystem.clusterMode) {
-            val msg = Envelope.Spawn(actor.canonicalName, key)
-            ActorSystem.cluster.ask<Envelope.ActorRef>(key, msg).toRef()
-        } else {
-            actor.getConstructor(String::class.java).newInstance(key).ref()
-        }
+        // Create Local/Remote actor.
+        val ref: Actor.Ref<C, R> =
+            if (ActorSystem.clusterMode
+                && ActorSystem.cluster.memberOf(key).alias() != ActorSystem.cluster.node.alias
+            ) {
+                val msg = Envelope.Spawn(actor.canonicalName, key)
+                ActorSystem.cluster.ask<Envelope.ActorRef>(key, msg).toRef()
+            } else {
+                val ref = actor.getConstructor(String::class.java).newInstance(key).ref()
+                // Store [Actor.Ref] to the local storage.
+                registry[name] = ref
+                ref
+            }
 
-        // Store [Actor.Ref] to the local storage.
-        registry[ref.name] = ref
         return ref
     }
 
@@ -40,4 +47,6 @@ object ActorRegistry {
             ?: error("Could not find requested actor class='$clazz'.")
         return get(actor, key)
     }
+
+
 }

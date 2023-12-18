@@ -71,13 +71,12 @@ abstract class Actor<C : Cmd, R : Reply>(
         ) : Ref<C, R>(key, name) {
             override suspend fun tell(cmd: C): Unit = actor.tell(cmd)
             override suspend fun ask(cmd: C): R = actor.ask(cmd)
-
-            fun toRemoteRef(): Remote<C, R> = Remote(key, name)
         }
 
         data class Remote<C : Cmd, R : Reply>(
             override val key: String,
             override val name: String,
+            val node: String
         ) : Ref<C, R>(key, name) {
             override suspend fun tell(cmd: C): Unit = TODO()
 //                ActorSystem.cluster.tell(key, Envelope("CHANGE ME"))

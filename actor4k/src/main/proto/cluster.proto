@@ -29,4 +29,5 @@ message Spawn {
 message ActorRef {
   string key = 1;
   string name = 2;
+  string node = 3;
 }

@@ -20,9 +20,14 @@ repositories {
     mavenLocal()
 }
 
+val grpcVersion: String by rootProject.extra
+
 dependencies {
     // Internal dependencies.
     implementation(project(":actor4k"))
+
+    // Resolves: Address types of NameResolver 'unix' for 'node-2:50051' not supported by transport
+    api("io.grpc:grpc-all:$grpcVersion")
 }
 
 tasks.withType<KotlinCompile> {
@@ -65,6 +70,8 @@ tasks.getByName<Jar>("jar") {
 tasks.withType<ShadowJar> {
     // Removes "-all" from the final jar file.
     archiveClassifier.set("")
+    // Resolves: https://stackoverflow.com/questions/55484043/how-to-fix-could-not-find-policy-pick-first-with-google-tts-java-client
+    mergeServiceFiles()
 }
 
 application {

@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.system
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
+import kotlin.math.truncate
 
 @Suppress("unused")
 object ActorSystem {

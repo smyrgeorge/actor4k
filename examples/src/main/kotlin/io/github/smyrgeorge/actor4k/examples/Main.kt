@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
+import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -46,19 +47,17 @@ fun main(args: Array<String>) {
     runBlocking {
         withContext(Dispatchers.IO) {
 
-            delay(10_000)
-
-            val ping = Envelope.Ping(id = UUID.randomUUID(), message = "Ping!")
+            delay(30_000)
 
             while (true) {
+//                val ping = Envelope.Ping(id = UUID.randomUUID(), message = "Ping!")
 //                val pong = cluster.ask<Envelope.Pong>(ping.id, ping)
 //                println("$ping :::: $pong")
-//                cluster.tell(ping.id, ping.toEnvelope())
 
-//                val ref = ActorRegistry.get(TestActor::class, "KEY")
-//                println(ref)
+                val ref = ActorRegistry.get(TestActor::class, "KEY")
+                println(ref)
 
-                delay(2_000)
+                delay(1_000)
             }
         }
     }

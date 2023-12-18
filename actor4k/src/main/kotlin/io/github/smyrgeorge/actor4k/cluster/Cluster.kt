@@ -17,6 +17,7 @@ import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
@@ -24,7 +25,7 @@ import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 class Cluster(
-    private val node: Node,
+    val node: Node,
     val stats: Stats,
     private val swim: ScaleCubeCluster,
     private val ring: ConsistentHash<ServerNode>,
@@ -59,6 +60,9 @@ class Cluster(
     suspend fun <T : Envelope> ask(key: String, message: Envelope): T =
         ask(memberOf(key), message)
 
+    suspend fun <T : Envelope> ask(key: UUID, message: Envelope): T =
+        ask(key.toString(), message)
+
     private suspend fun <T : Envelope> ask(member: Member, message: Envelope): T {
         val res = if (member.alias() == node.alias) {
             // Shortcut in case we need to send a message to self (same node).
@@ -72,7 +76,7 @@ class Cluster(
         return res as? T ?: error("Could not cast to the requested type.")
     }
 
-    private fun memberOf(key: String): Member {
+    fun memberOf(key: String): Member {
         val node = ring.locate(key).getOrNull()
             ?: error("Could not find a valid recipient (probably empty), ring.size='${ring.size()}'.")
         return members().find { it.alias() == node.dc }
@@ -128,7 +132,6 @@ class Cluster(
             val ring: ConsistentHash<ServerNode> = HashRing.newBuilder<ServerNode>()
                 // Hash ring name.
                 .name(node.namespace)
-                .partitionRate(1)
                 // Hash function to distribute partitions.
                 .hasher(DefaultHasher.METRO_HASH)
                 .build()
@@ -149,7 +152,7 @@ class Cluster(
             ring.add(member.toServerNode())
 
             // Append current node to clients HashMap.
-//            clients[node.alias] = GrpcClient(member.addresses().first().host(), node.grpcPort)
+            grpcClients[node.alias] = GrpcClient(member.addresses().first().host(), node.grpcPort)
 
             return Cluster(node, stats, cluster, ring, grpc, grpcService, grpcClients)
         }

@@ -35,7 +35,7 @@ class MessageHandler(
                 // Add to hash-ring.
                 ring.add(e.member().toServerNode())
                 // Create the grpc client for the newly discovered node.
-//                clients[e.member().alias()] = GrpcClient(e.member().addresses().first().host(), node.grpcPort)
+                grpcClients[e.member().alias()] = GrpcClient(e.member().addresses().first().host(), node.grpcPort)
             }
 
             MembershipEvent.Type.LEAVING, MembershipEvent.Type.REMOVED -> {
