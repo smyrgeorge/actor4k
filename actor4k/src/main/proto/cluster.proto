@@ -3,7 +3,8 @@ package io.github.smyrgeorge.actor4k.proto;
 
 service NodeService {
   rpc ping(Ping) returns (Pong) {}
-  rpc raw(Raw) returns (Raw) {}
+  rpc ask(Ask) returns (Response) {}
+  rpc tell(Tell) returns (Response) {}
   rpc spawn(Spawn) returns (ActorRef) {}
 }
 
@@ -17,17 +18,34 @@ message Pong {
   string message = 2;
 }
 
-message Raw {
-  bytes payload = 1;
+message Ask {
+  string clazz = 1;
+  string key = 2;
+  bytes payload = 3;
+  string payload_class = 4;
+}
+
+message Tell {
+  string clazz = 1;
+  string key = 2;
+  bytes payload = 3;
+  string payload_class = 4;
+}
+
+message Response {
+  string clazz = 1;
+  bytes payload = 2;
+  string payload_class = 3;
 }
 
 message Spawn {
-  string class_name = 1;
+  string clazz = 1;
   string key = 2;
 }
 
 message ActorRef {
-  string key = 1;
+  string clazz = 1;
   string name = 2;
-  string node = 3;
+  string key = 3;
+  string node = 4;
 }

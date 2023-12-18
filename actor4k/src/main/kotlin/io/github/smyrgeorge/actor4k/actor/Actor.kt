@@ -3,6 +3,8 @@ package io.github.smyrgeorge.actor4k.actor
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.github.smyrgeorge.actor4k.actor.cmd.Reply
+import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
@@ -57,16 +59,15 @@ abstract class Actor<C : Cmd, R : Reply>(
     }
 
     sealed class Ref<C : Cmd, R : Reply>(
-        open val key: String,
-        open val name: String
+        open val name: String,
+        open val key: String
     ) {
-
         abstract suspend fun tell(cmd: C)
         abstract suspend fun ask(cmd: C): R
 
         data class Local<C : Cmd, R : Reply>(
-            override val key: String,
             override val name: String,
+            override val key: String,
             private val actor: Actor<C, R>
         ) : Ref<C, R>(key, name) {
             override suspend fun tell(cmd: C): Unit = actor.tell(cmd)
@@ -74,15 +75,27 @@ abstract class Actor<C : Cmd, R : Reply>(
         }
 
         data class Remote<C : Cmd, R : Reply>(
-            override val key: String,
             override val name: String,
+            override val key: String,
+            val clazz: String,
             val node: String
         ) : Ref<C, R>(key, name) {
-            override suspend fun tell(cmd: C): Unit = TODO()
-//                ActorSystem.cluster.tell(key, Envelope("CHANGE ME"))
+            override suspend fun tell(cmd: C) {
+                val actor: String = nameOf(name, key)
+                val payload = ActorSystem.cluster.serde.encode(cmd)
+                val message = Envelope.Tell(clazz, key, payload, cmd::class.java.canonicalName)
+                ActorSystem.cluster.ask<Envelope.Response>(actor, message)
+            }
 
-            override suspend fun ask(cmd: C): R = TODO()
-//                ActorSystem.cluster.ask<R>(key, Envelope("CHANGE ME")).payload
+            override suspend fun ask(cmd: C): R {
+                val actor: String = nameOf(name, key)
+                val payload = ActorSystem.cluster.serde.encode(cmd)
+                val message = Envelope.Ask(clazz, key, payload, cmd::class.java.canonicalName)
+                val res = ActorSystem.cluster.ask<Envelope.Response>(actor, message)
+                @Suppress("UNCHECKED_CAST")
+                return res.clazz as? R
+                    ?: error("Could not cast to the requested type.")
+            }
         }
     }
 
@@ -92,6 +105,9 @@ abstract class Actor<C : Cmd, R : Reply>(
             nameOf(actor.java, key)
 
         fun <C : Cmd, R : Reply, A : Actor<C, R>> nameOf(actor: Class<A>, key: String): String =
-            "${actor.simpleName ?: "anonymous"}-$key"
+            nameOf(actor.simpleName ?: "anonymous", key)
+
+        fun nameOf(actor: String, key: String): String =
+            "$actor-$key"
     }
 }

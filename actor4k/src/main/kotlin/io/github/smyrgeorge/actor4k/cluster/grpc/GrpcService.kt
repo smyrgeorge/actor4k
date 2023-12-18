@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
+import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -11,25 +12,39 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
     suspend fun request(m: Envelope): Envelope =
         when (m) {
             is Envelope.Ping -> ping(m.toProto()).toEnvelope()
-            is Envelope.Raw -> raw(m.toProto()).toEnvelope()
+            is Envelope.Ask -> ask(m.toProto()).toEnvelope()
+            is Envelope.Tell -> tell(m.toProto()).toEnvelope()
             is Envelope.Spawn -> spawn(m.toProto()).toEnvelope()
             is Envelope.Pong -> error("Not a valid gRPC method found.")
             is Envelope.ActorRef -> error("Not a valid gRPC method found.")
+            is Envelope.Response -> error("Not a valid gRPC method found.")
         }
 
     override suspend fun ping(request: Cluster.Ping): Cluster.Pong {
         ActorSystem.cluster.stats.message()
-        return Envelope.Pong(id = UUID.fromString(request.id), message = "Pong!").toProto()
+        return Envelope.Pong(UUID.fromString(request.id), "Pong!").toProto()
     }
 
-    override suspend fun raw(request: Cluster.Raw): Cluster.Raw {
+    override suspend fun ask(request: Cluster.Ask): Cluster.Response {
         ActorSystem.cluster.stats.message()
-        TODO("Not implemented yer!")
+        val actor = ActorRegistry.get(request.clazz, request.key)
+        val clazz: Class<*> = ActorSystem.cluster.serde.loadClass(request.payloadClass)
+        val cmd: Cmd = ActorSystem.cluster.serde.decode(clazz, request.payload.toByteArray())
+        TODO()
+    }
+
+    override suspend fun tell(request: Cluster.Tell): Cluster.Response {
+        ActorSystem.cluster.stats.message()
+        val actor = ActorRegistry.get(request.clazz, request.key)
+        val clazz: Class<*> = ActorSystem.cluster.serde.loadClass(request.payloadClass)
+        val cmd: Cmd = ActorSystem.cluster.serde.decode(clazz, request.payload.toByteArray())
+//        actor.tell(cmd)
+        TODO()
     }
 
     override suspend fun spawn(request: Cluster.Spawn): Cluster.ActorRef {
         ActorSystem.cluster.stats.message()
-        val ref = ActorRegistry.get(request.className, request.key)
-        return Envelope.ActorRef(name = ref.name, key = ref.key, node = ActorSystem.cluster.node.alias).toProto()
+        val ref = ActorRegistry.get(request.clazz, request.key)
+        return Envelope.ActorRef(request.clazz, ref.name, ref.key, ActorSystem.cluster.node.alias).toProto()
     }
 }

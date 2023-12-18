@@ -5,13 +5,13 @@ import io.github.smyrgeorge.actor4k.proto.*
 import java.util.*
 
 fun Cluster.Pong.toEnvelope() =
-    Envelope.Pong(id = UUID.fromString(id), message = message)
+    Envelope.Pong(UUID.fromString(id), message)
 
-fun Cluster.Raw.toEnvelope() =
-    Envelope.Raw(payload = payload.toByteArray())
+fun Cluster.Response.toEnvelope() =
+    Envelope.Response(clazz, payload.toByteArray(), payloadClass)
 
 fun Cluster.ActorRef.toEnvelope() =
-    Envelope.ActorRef(key = key, name = name, node = node)
+    Envelope.ActorRef(clazz, name, key, node)
 
 
 fun Envelope.Ping.toProto(): Cluster.Ping {
@@ -30,17 +30,39 @@ fun Envelope.Pong.toProto(): Cluster.Pong {
     }
 }
 
-fun Envelope.Raw.toProto(): Cluster.Raw {
+fun Envelope.Ask.toProto(): Cluster.Ask {
     val m = this
-    return raw {
+    return ask {
+        clazz = m.clazz
+        key = m.key
         payload = ByteString.copyFrom(m.payload)
+        payloadClass = m.payloadClass
+    }
+}
+
+fun Envelope.Tell.toProto(): Cluster.Tell {
+    val m = this
+    return tell {
+        clazz = m.clazz
+        key = m.key
+        payload = ByteString.copyFrom(m.payload)
+        payloadClass = m.payloadClass
+    }
+}
+
+fun Envelope.Response.toProto(): Cluster.Response {
+    val m = this
+    return response {
+        clazz = m.clazz
+        payload = ByteString.copyFrom(m.payload)
+        payloadClass = m.payloadClass
     }
 }
 
 fun Envelope.Spawn.toProto(): Cluster.Spawn {
     val m = this
     return spawn {
-        className = m.className
+        clazz = m.clazz
         key = m.key
     }
 }
@@ -48,6 +70,7 @@ fun Envelope.Spawn.toProto(): Cluster.Spawn {
 fun Envelope.ActorRef.toProto(): Cluster.ActorRef {
     val m = this
     return actorRef {
+        clazz = m.clazz
         name = m.name
         key = m.key
         node = m.node

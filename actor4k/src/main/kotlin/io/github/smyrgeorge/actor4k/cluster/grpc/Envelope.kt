@@ -18,21 +18,40 @@ sealed interface Envelope {
     ) : Envelope
 
     @Suppress("ArrayInDataClass")
-    data class Raw(
-        val payload: ByteArray
+    data class Ask(
+        val clazz: String,
+        val key: String,
+        val payload: ByteArray,
+        val payloadClass: String
+    ) : Envelope
+
+    @Suppress("ArrayInDataClass")
+    data class Tell(
+        val clazz: String,
+        val key: String,
+        val payload: ByteArray,
+        val payloadClass: String
+    ) : Envelope
+
+    @Suppress("ArrayInDataClass")
+    data class Response(
+        val clazz: String,
+        val payload: ByteArray,
+        val payloadClass: String
     ) : Envelope
 
     data class Spawn(
-        val className: String,
+        val clazz: String,
         val key: String
     ) : Envelope
 
     data class ActorRef(
+        val clazz: String,
         val name: String,
         val key: String,
         val node: String
     ) : Envelope {
         fun <C : Cmd, R : Reply> toRef(): Actor.Ref<C, R> =
-            Actor.Ref.Remote(key = key, name = name, node = node)
+            Actor.Ref.Remote(name, key, clazz, node)
     }
 }

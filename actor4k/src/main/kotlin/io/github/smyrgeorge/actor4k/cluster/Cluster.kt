@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
+import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
 import io.github.smyrgeorge.actor4k.cluster.swim.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.grpc.ServerBuilder
@@ -26,6 +27,7 @@ import io.scalecube.cluster.Cluster as ScaleCubeCluster
 class Cluster(
     val node: Node,
     val stats: Stats,
+    val serde: Serde,
     private val swim: ScaleCubeCluster,
     private val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
@@ -82,9 +84,15 @@ class Cluster(
     class Builder {
 
         private lateinit var node: Node
+        private var serde: Serde = Serde.Json()
 
         fun node(n: Node): Builder {
             node = n
+            return this
+        }
+
+        fun serde(s: Serde): Builder {
+            serde = s
             return this
         }
 
@@ -150,7 +158,7 @@ class Cluster(
             // Append current node to clients HashMap.
             grpcClients[node.alias] = GrpcClient(member.addresses().first().host(), node.grpcPort)
 
-            return Cluster(node, stats, cluster, ring, grpc, grpcService, grpcClients)
+            return Cluster(node, stats, serde, cluster, ring, grpc, grpcService, grpcClients)
         }
     }
 }
