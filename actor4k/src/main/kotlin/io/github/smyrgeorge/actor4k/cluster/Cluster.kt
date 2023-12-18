@@ -17,7 +17,6 @@ import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
@@ -57,11 +56,8 @@ class Cluster(
         swim.spreadGossip(message).awaitFirstOrNull()
     }
 
-    suspend fun <T : Envelope> ask(key: String, message: Envelope): T =
-        ask(memberOf(key), message)
-
-    suspend fun <T : Envelope> ask(key: UUID, message: Envelope): T =
-        ask(key.toString(), message)
+    suspend fun <T : Envelope> ask(actor: String, message: Envelope): T =
+        ask(memberOf(actor), message)
 
     private suspend fun <T : Envelope> ask(member: Member, message: Envelope): T {
         val res = if (member.alias() == node.alias) {
@@ -76,8 +72,8 @@ class Cluster(
         return res as? T ?: error("Could not cast to the requested type.")
     }
 
-    fun memberOf(key: String): Member {
-        val node = ring.locate(key).getOrNull()
+    fun memberOf(actor: String): Member {
+        val node = ring.locate(actor).getOrNull()
             ?: error("Could not find a valid recipient (probably empty), ring.size='${ring.size()}'.")
         return members().find { it.alias() == node.dc }
             ?: error("Could not find any member in the network with id='${node.dc}'.")

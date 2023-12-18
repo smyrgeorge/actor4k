@@ -51,7 +51,7 @@ fun main(args: Array<String>) {
 
             while (true) {
                 val ping = Envelope.Ping(id = UUID.randomUUID(), message = "Ping!")
-                val pong = cluster.ask<Envelope.Pong>(ping.id, ping)
+                val pong = cluster.ask<Envelope.Pong>(ping.id.toString(), ping)
                 println("$ping :::: $pong")
 
                 val ref = ActorRegistry.get(TestActor::class, "KEY")
