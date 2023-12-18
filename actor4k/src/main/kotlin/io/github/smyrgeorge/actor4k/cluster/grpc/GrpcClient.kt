@@ -11,11 +11,16 @@ import io.github.smyrgeorge.actor4k.proto.spawn
 import io.grpc.ManagedChannel
 import io.grpc.netty.NettyChannelBuilder
 import java.io.Closeable
+import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 class GrpcClient(host: String, port: Int) : Closeable {
 
-    private val channel: ManagedChannel = NettyChannelBuilder.forAddress(host, port).build()
+    private val channel: ManagedChannel = NettyChannelBuilder
+        .forAddress(InetSocketAddress.createUnresolved(host, port))
+        .usePlaintext()
+        .build()
+
     private val stub = NodeServiceGrpcKt.NodeServiceCoroutineStub(channel)
 
     suspend fun message(p: ByteArray): ByteArray {
@@ -35,6 +40,6 @@ class GrpcClient(host: String, port: Int) : Closeable {
     }
 
     override fun close() {
-        channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+        channel.shutdown().awaitTermination(2, TimeUnit.SECONDS)
     }
 }
