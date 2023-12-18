@@ -5,6 +5,8 @@ plugins {
     kotlin("jvm")
     `maven-publish`
     `java-library`
+    // https://plugins.gradle.org/plugin/com.google.protobuf
+    id("com.google.protobuf") version "0.9.4"
 }
 
 group = rootProject.group
@@ -16,6 +18,10 @@ repositories {
     // IMPORTANT: must be last.
     mavenLocal()
 }
+
+val grpcVersion: String by rootProject.extra
+val protobufVersion: String by rootProject.extra
+val grpcKotlinVersion: String by rootProject.extra
 
 dependencies {
     // Kotlin
@@ -40,6 +46,13 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.github.ishugaliy/allgood-consistent-hash
     api("com.github.ishugaliy:allgood-consistent-hash:1.0.0")
+
+    // Protobuf
+    api("io.grpc:grpc-api:$grpcVersion")
+    api("io.grpc:grpc-netty:$grpcVersion")
+    api("io.grpc:grpc-protobuf:$grpcVersion")
+    api("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
+    api("com.google.protobuf:protobuf-kotlin:$protobufVersion")
 
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
@@ -102,4 +115,29 @@ tasks.withType<Test> {
             }
         }
     })
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
+    }
+    plugins {
+        create("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+        }
+        create("grpckt") {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:$grpcKotlinVersion:jdk8@jar"
+        }
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.plugins {
+                create("grpc")
+                create("grpckt")
+            }
+            it.builtins {
+                create("kotlin")
+            }
+        }
+    }
 }

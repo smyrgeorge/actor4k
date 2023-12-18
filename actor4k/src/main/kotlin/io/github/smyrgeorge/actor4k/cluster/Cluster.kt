@@ -1,7 +1,9 @@
 package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.cluster.grpc.NodeService
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.grpc.ServerBuilder
 import io.scalecube.cluster.ClusterImpl
 import io.scalecube.cluster.Member
 import io.scalecube.cluster.transport.api.Message
@@ -17,12 +19,14 @@ import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.io.Serializable
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
+import io.grpc.Server as GrpcServer
 import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 class Cluster(
     private val node: Node,
     private val stats: Stats,
+    private val grpc: GrpcServer,
     private val cluster: ScaleCubeCluster,
     private val ring: ConsistentHash<ServerNode>
 ) {
@@ -108,11 +112,18 @@ class Cluster(
         }
 
         fun start(): Cluster {
+            // Start GRPC server.
+            val grpc: GrpcServer = ServerBuilder
+                .forPort(50051)
+                .addService(NodeService())
+                .build()
+                .start()
+
             // Build Cluster
             val (r, c, s) = build()
 
             // Build [Cluster]
-            val cluster = Cluster(node = node, stats = s, cluster = c, ring = r)
+            val cluster = Cluster(node, s, grpc, c, r)
 
             // Register cluster to the ActorSystem.
             ActorSystem.register(cluster)

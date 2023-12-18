@@ -4,7 +4,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Envelope
 import io.github.smyrgeorge.actor4k.cluster.Node
-import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -48,10 +47,10 @@ fun main(args: Array<String>) {
             log.debug { "Received Gossip: $it" }
         }
         .onMessage<Ping> {
-            log.info { "Received message: $it" }
+            log.debug { "Received message: $it" }
         }
         .onRequest<Ping, Pong> {
-            log.info { "Received request: $it" }
+            log.debug { "Received request: $it" }
             Pong(it.payload.id).toEnvelope()
         }
         .onMembershipEvent {

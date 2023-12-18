@@ -1,0 +1,10 @@
+syntax = "proto3";
+package io.github.smyrgeorge.actor4k.proto;
+
+message Envelope {
+  bytes payload = 1;
+}
+
+service NodeService {
+  rpc Command(Envelope) returns (Envelope) {}
+}
