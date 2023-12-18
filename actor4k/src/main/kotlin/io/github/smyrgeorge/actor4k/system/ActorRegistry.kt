@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.system
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.github.smyrgeorge.actor4k.actor.cmd.Reply
-import io.github.smyrgeorge.actor4k.cluster.Cluster
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
@@ -23,8 +22,9 @@ object ActorRegistry {
 
         // Create actor.
         val ref: Actor.Ref<C, R> = if (ActorSystem.clusterMode) {
-            val msg = Cluster.Cmd.Spawn(actor.canonicalName, key).toEnvelope()
-            ActorSystem.cluster.ask<Actor.Ref.Remote<C, R>>(key, msg).payload
+//            val msg = Cluster.Cmd.Spawn(actor.canonicalName, key).toEnvelope()
+//            ActorSystem.cluster.ask<Actor.Ref.Remote<C, R>>(key, msg).payload
+            TODO()
         } else {
             spawn(actor, key)
         }

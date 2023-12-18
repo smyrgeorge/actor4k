@@ -3,8 +3,6 @@ package io.github.smyrgeorge.actor4k.actor
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.github.smyrgeorge.actor4k.actor.cmd.Reply
-import io.github.smyrgeorge.actor4k.cluster.Envelope
-import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
@@ -81,13 +79,11 @@ abstract class Actor<C : Cmd, R : Reply>(
             override val key: String,
             override val name: String,
         ) : Ref<C, R>(key, name) {
-            override suspend fun tell(cmd: C): Unit =
-                // TODO: fix this
-                ActorSystem.cluster.tell(key, Envelope("CHANGE ME"))
+            override suspend fun tell(cmd: C): Unit = TODO()
+//                ActorSystem.cluster.tell(key, Envelope("CHANGE ME"))
 
-            override suspend fun ask(cmd: C): R =
-                // TODO: fix this
-                ActorSystem.cluster.ask<R>(key, Envelope("CHANGE ME")).payload
+            override suspend fun ask(cmd: C): R = TODO()
+//                ActorSystem.cluster.ask<R>(key, Envelope("CHANGE ME")).payload
         }
     }
 

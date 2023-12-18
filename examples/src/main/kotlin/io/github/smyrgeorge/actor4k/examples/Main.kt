@@ -46,13 +46,13 @@ fun main(args: Array<String>) {
         .onGossip {
             log.debug { "Received Gossip: $it" }
         }
-        .onMessage<Ping> {
-            log.debug { "Received message: $it" }
-        }
-        .onRequest<Ping, Pong> {
-            log.debug { "Received request: $it" }
-            Pong(it.payload.id).toEnvelope()
-        }
+//        .onMessage<Ping> {
+//            log.debug { "Received message: $it" }
+//        }
+//        .onRequest<Ping, Pong> {
+//            log.debug { "Received request: $it" }
+//            Pong(it.payload.id).toEnvelope()
+//        }
         .onMembershipEvent {
             log.debug { "Received membership-event: $it" }
         }
@@ -69,8 +69,8 @@ fun main(args: Array<String>) {
             while (true) {
                 val ping = Ping()
 //                cluster.tell(ping.id, ping.toEnvelope())
-                val pong = cluster.ask<Pong>(ping.id, ping.toEnvelope())
-                println("$ping :::: ${pong.payload}")
+//                val pong = cluster.ask<Pong>(ping.id, ping.toEnvelope())
+//                println("$ping :::: ${pong.payload}")
 
 //                val ref = ActorRegistry.get(TestActor::class, "KEY")
 //                println(ref)

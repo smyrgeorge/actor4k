@@ -11,8 +11,8 @@ class Node(
     val seedPort: Int,
     val seedMembers: List<Address>,
     val onGossip: (g: Message) -> Unit,
-    val onMessage: (m: Envelope<*>) -> Unit,
-    val onRequest: (m: Envelope<*>) -> Envelope<*>,
+//    val onMessage: (m: Envelope<*>) -> Unit,
+//    val onRequest: (m: Envelope<*>) -> Envelope<*>,
     val onMembershipEvent: (e: MembershipEvent) -> Unit
 ) {
 
@@ -22,8 +22,9 @@ class Node(
         private var isSeed: Boolean = false
         private var seedPort: Int = 61100
         private var seedMembers: List<Address> = emptyList()
-        private var onMessage: (m: Envelope<*>) -> Unit = {}
-        private var onRequest: (m: Envelope<*>) -> Envelope<*> = { Envelope("EMPTY") }
+
+        //        private var onMessage: (m: Envelope<*>) -> Unit = {}
+//        private var onRequest: (m: Envelope<*>) -> Envelope<*> = { Envelope("EMPTY") }
         private var onGossip: (m: Message) -> Unit = {}
         private var onMembershipEvent: (m: MembershipEvent) -> Unit = {}
 
@@ -52,17 +53,17 @@ class Node(
             return this
         }
 
-        @Suppress("UNCHECKED_CAST")
-        fun <T> onMessage(f: (m: Envelope<T>) -> Unit): Builder {
-            onMessage = f as (Envelope<*>) -> Unit
-            return this
-        }
-
-        @Suppress("UNCHECKED_CAST")
-        fun <T, R> onRequest(f: (m: Envelope<T>) -> Envelope<R>): Builder {
-            onRequest = f as (Envelope<*>) -> Envelope<*>
-            return this
-        }
+//        @Suppress("UNCHECKED_CAST")
+//        fun <T> onMessage(f: (m: Envelope<T>) -> Unit): Builder {
+//            onMessage = f as (Envelope<*>) -> Unit
+//            return this
+//        }
+//
+//        @Suppress("UNCHECKED_CAST")
+//        fun <T, R> onRequest(f: (m: Envelope<T>) -> Envelope<R>): Builder {
+//            onRequest = f as (Envelope<*>) -> Envelope<*>
+//            return this
+//        }
 
         fun onGossip(f: (g: Message) -> Unit): Builder {
             onGossip = f
@@ -81,8 +82,8 @@ class Node(
             seedPort = seedPort,
             seedMembers = seedMembers,
             onGossip = onGossip,
-            onMessage = onMessage,
-            onRequest = onRequest,
+//            onMessage = onMessage,
+//            onRequest = onRequest,
             onMembershipEvent = onMembershipEvent
         )
     }

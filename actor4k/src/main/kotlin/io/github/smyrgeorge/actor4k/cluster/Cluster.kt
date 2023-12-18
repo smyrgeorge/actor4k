@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.grpc.NodeService
+import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.grpc.ServerBuilder
 import io.scalecube.cluster.ClusterImpl
@@ -16,13 +16,12 @@ import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
-import java.io.Serializable
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
 import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
-@Suppress("unused", "MemberVisibilityCanBePrivate")
+//@Suppress("unused", "MemberVisibilityCanBePrivate")
 class Cluster(
     private val node: Node,
     private val stats: Stats,
@@ -54,48 +53,48 @@ class Cluster(
         cluster.spreadGossip(message).awaitFirstOrNull()
     }
 
-    suspend fun tell(receiver: List<Address>, message: Message) {
-        cluster.send(receiver, message).awaitFirstOrNull()
-    }
+//    suspend fun tell(receiver: List<Address>, message: Message) {
+//        cluster.send(receiver, message).awaitFirstOrNull()
+//    }
+//
+//    suspend fun tell(member: Member, message: Envelope<*>) {
+//        // If the message needs to be delivered to the same service (that triggered the call),
+//        // we just directly call the [onMessage] handler function,
+//        // and thus we do not send data across the wire.
+//        if (member.alias() == cluster.member().alias()) {
+//            stats.message()
+//            node.onMessage(message)
+//            return
+//        }
+//
+//        val msg = Message.fromData(message)
+//        cluster.send(member, msg).awaitFirstOrNull()
+//    }
+//
+//    suspend fun tell(key: String, message: Envelope<*>) {
+//        val member: Member = memberOf(key)
+//        return tell(member, message)
+//    }
+//
+//    suspend fun tell(key: Any, message: Envelope<*>) =
+//        tell(key.hashCode().toString(), message)
+//
+//    suspend fun <T> ask(member: Member, message: Envelope<*>): Envelope<T> {
+//        val correlationId = UUID.randomUUID().toString()
+//        val msg = Message.builder().data(message).correlationId(correlationId).build()
+//        return cluster.requestResponse(member, msg).awaitSingle().data() as? Envelope<T>
+//            ?: error("Could not cast to the requested type.")
+//    }
+//
+//    suspend fun <T> ask(key: String, message: Envelope<*>): Envelope<T> {
+//        val member: Member = memberOf(key)
+//        return ask(member, message)
+//    }
+//
+//    suspend fun <T> ask(key: Any, message: Envelope<*>): Envelope<T> =
+//        ask(key.hashCode().toString(), message)
 
-    suspend fun tell(member: Member, message: Envelope<*>) {
-        // If the message needs to be delivered to the same service (that triggered the call),
-        // we just directly call the [onMessage] handler function,
-        // and thus we do not send data across the wire.
-        if (member.alias() == cluster.member().alias()) {
-            stats.message()
-            node.onMessage(message)
-            return
-        }
-
-        val msg = Message.fromData(message)
-        cluster.send(member, msg).awaitFirstOrNull()
-    }
-
-    suspend fun tell(key: String, message: Envelope<*>) {
-        val member: Member = memberOf(key)
-        return tell(member, message)
-    }
-
-    suspend fun tell(key: Any, message: Envelope<*>) =
-        tell(key.hashCode().toString(), message)
-
-    suspend fun <T> ask(member: Member, message: Envelope<*>): Envelope<T> {
-        val correlationId = UUID.randomUUID().toString()
-        val msg = Message.builder().data(message).correlationId(correlationId).build()
-        return cluster.requestResponse(member, msg).awaitSingle().data() as? Envelope<T>
-            ?: error("Could not cast to the requested type.")
-    }
-
-    suspend fun <T> ask(key: String, message: Envelope<*>): Envelope<T> {
-        val member: Member = memberOf(key)
-        return ask(member, message)
-    }
-
-    suspend fun <T> ask(key: Any, message: Envelope<*>): Envelope<T> =
-        ask(key.hashCode().toString(), message)
-
-    fun memberOf(key: String): Member {
+    private fun memberOf(key: String): Member {
         val node = ring.locate(key).getOrNull()
             ?: error("Could not find a valid recipient (probably empty), ring.size='${ring.size()}'.")
         return members().find { it.alias() == node.dc }
@@ -115,7 +114,7 @@ class Cluster(
             // Start GRPC server.
             val grpc: GrpcServer = ServerBuilder
                 .forPort(50051)
-                .addService(NodeService())
+                .addService(GrpcService())
                 .build()
                 .start()
 
@@ -168,11 +167,11 @@ class Cluster(
         }
     }
 
-    sealed interface Cmd {
-        fun toEnvelope(): Envelope<Cmd> = Envelope(this)
-        data class Spawn(
-            val className: String,
-            val key: String
-        ) : Cmd, Serializable
-    }
+//    sealed interface Cmd {
+//        fun toEnvelope(): Envelope<Cmd> = Envelope(this)
+//        data class Spawn(
+//            val className: String,
+//            val key: String
+//        ) : Cmd, Serializable
+//    }
 }
