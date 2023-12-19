@@ -29,8 +29,8 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         val actor = ActorRegistry.get(request.clazz, request.key)
         val clazz: Class<*> = ActorSystem.cluster.serde.loadClass(request.payloadClass)
         val cmd = ActorSystem.cluster.serde.decode<Any>(clazz, request.payload.toByteArray())
-//        val res = actor.ask<Any>(cmd)
-        TODO()
+        val res = actor.ask<Any>(cmd)
+        return Envelope.Response(ActorSystem.cluster.serde.encode(res), res::class.java.canonicalName).toProto()
     }
 
     override suspend fun tell(request: Cluster.Tell): Cluster.Response {

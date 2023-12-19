@@ -3,14 +3,12 @@ package io.github.smyrgeorge.actor4k.examples
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
-import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import java.util.*
 
 class Main
 
@@ -47,9 +45,9 @@ fun main(args: Array<String>) {
     runBlocking {
         withContext(Dispatchers.IO) {
 
-            delay(30_000)
+            delay(10_000)
 
-            val req = Request("Hello!!")
+            val req = Req("Hello!!")
             val ref = ActorRegistry.get(TestActor::class, "KEY")
 
             while (true) {
@@ -57,7 +55,7 @@ fun main(args: Array<String>) {
 //                val pong = cluster.ask<Envelope.Pong>(ping.id.toString(), ping)
 //                log.info { "$ping :::: $pong" }
 
-                val res = ref.ask<Response>(req)
+                val res = ref.ask<Resp>(req)
                 log.info { res }
 
                 delay(2_000)
