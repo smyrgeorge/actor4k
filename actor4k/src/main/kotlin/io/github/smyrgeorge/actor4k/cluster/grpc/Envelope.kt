@@ -1,8 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
-import io.github.smyrgeorge.actor4k.actor.cmd.Reply
 import java.util.*
 
 sealed interface Envelope {
@@ -35,7 +33,6 @@ sealed interface Envelope {
 
     @Suppress("ArrayInDataClass")
     data class Response(
-        val clazz: String,
         val payload: ByteArray,
         val payloadClass: String
     ) : Envelope
@@ -51,7 +48,6 @@ sealed interface Envelope {
         val key: String,
         val node: String
     ) : Envelope {
-        fun <C : Cmd, R : Reply> toRef(): Actor.Ref<C, R> =
-            Actor.Ref.Remote(name, key, clazz, node)
+        fun toRef(): Actor.Ref = Actor.Ref.Remote(name, key, clazz, node)
     }
 }

@@ -1,8 +1,6 @@
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
-import io.github.smyrgeorge.actor4k.actor.cmd.Reply
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
@@ -11,103 +9,96 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlin.reflect.KClass
 import kotlin.time.Duration
 
-abstract class Actor<C : Cmd, R : Reply>(
+abstract class Actor(
     private val key: String
 ) {
 
     protected val log = KotlinLogging.logger {}
 
     val name: String = nameOf(this::class, key)
-    private val mail = Channel<Patterns<C, R>>(capacity = Channel.UNLIMITED)
+    private val mail = Channel<Patterns>(capacity = Channel.UNLIMITED)
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             mail.consumeEach {
-                val reply: R = onCmd(it.cmd)
-                it.replyTo?.send(reply)
+                val reply = onReceive(it.cmd)
+                when (it) {
+                    is Patterns.Tell -> Unit
+                    is Patterns.Ask -> it.replyTo.send(reply)
+                }
             }
         }
     }
 
-    abstract fun onCmd(cmd: C): R
+    abstract fun <C> onReceive(cmd: C): Any
 
-    suspend fun tell(cmd: C): Unit =
-        Patterns.tell<C, R>(cmd).let {
+    suspend fun <C> tell(cmd: C): Unit =
+        Patterns.Tell(cmd as Any).let { mail.send(it) }
+
+    suspend fun <C, R> ask(cmd: C): R =
+        Patterns.Ask(cmd as Any).let {
             mail.send(it)
+            @Suppress("UNCHECKED_CAST")
+            it.replyTo.receive() as? R ?: error("Could not cast to the requested type.")
         }
 
-    suspend fun ask(cmd: C): R =
-        Patterns.ask<C, R>(cmd).let {
-            mail.send(it)
-            it.replyTo!!.receive()
-        }
-
-    suspend fun ask(cmd: C, timeout: Duration): R =
+    suspend fun <C, R> ask(cmd: C, timeout: Duration): R =
         withTimeout(timeout) { ask(cmd) }
 
-    fun ref(): Ref.Local<C, R> = Ref.Local(key = key, name = name, actor = this)
+    fun ref(): Ref.Local = Ref.Local(key = key, name = name, actor = this)
 
-    private data class Patterns<C : Cmd, R : Reply>(
-        val cmd: C,
-        val replyTo: Channel<R>? = null
-    ) {
-        companion object {
-            fun <C : Cmd, R : Reply> tell(cmd: C) = Patterns<C, R>(cmd = cmd)
-            fun <C : Cmd, R : Reply> ask(cmd: C) = Patterns(cmd = cmd, replyTo = Channel<R>(Channel.RENDEZVOUS))
-        }
+    private sealed interface Patterns {
+        val cmd: Any
+
+        data class Tell(override val cmd: Any) : Patterns
+        data class Ask(override val cmd: Any, val replyTo: Channel<Any> = Channel(Channel.RENDEZVOUS)) : Patterns
     }
 
-    sealed class Ref<C : Cmd, R : Reply>(
+    sealed class Ref(
         open val name: String,
         open val key: String
     ) {
-        abstract suspend fun tell(cmd: C)
-        abstract suspend fun ask(cmd: C): R
+        abstract suspend fun tell(cmd: Any)
+        abstract suspend fun <R> ask(cmd: Any): R
 
-        data class Local<C : Cmd, R : Reply>(
+        data class Local(
             override val name: String,
             override val key: String,
-            private val actor: Actor<C, R>
-        ) : Ref<C, R>(key, name) {
-            override suspend fun tell(cmd: C): Unit = actor.tell(cmd)
-            override suspend fun ask(cmd: C): R = actor.ask(cmd)
+            private val actor: Actor
+        ) : Ref(key, name) {
+            override suspend fun tell(cmd: Any): Unit = actor.tell(cmd)
+            override suspend fun <R> ask(cmd: Any): R = actor.ask(cmd)
         }
 
-        data class Remote<C : Cmd, R : Reply>(
+        data class Remote(
             override val name: String,
             override val key: String,
             val clazz: String,
             val node: String
-        ) : Ref<C, R>(key, name) {
-            override suspend fun tell(cmd: C) {
+        ) : Ref(key, name) {
+            override suspend fun tell(cmd: Any) {
                 val actor: String = nameOf(name, key)
-                val payload = ActorSystem.cluster.serde.encode(cmd)
+                val payload: ByteArray = ActorSystem.cluster.serde.encode(cmd)
                 val message = Envelope.Tell(clazz, key, payload, cmd::class.java.canonicalName)
-                ActorSystem.cluster.ask<Envelope.Response>(actor, message)
+                ActorSystem.cluster.msg<Envelope.Response>(actor, message)
             }
 
-            override suspend fun ask(cmd: C): R {
+            override suspend fun <R> ask(cmd: Any): R {
                 val actor: String = nameOf(name, key)
-                val payload = ActorSystem.cluster.serde.encode(cmd)
+                val payload: ByteArray = ActorSystem.cluster.serde.encode(cmd)
                 val message = Envelope.Ask(clazz, key, payload, cmd::class.java.canonicalName)
-                val res = ActorSystem.cluster.ask<Envelope.Response>(actor, message)
                 @Suppress("UNCHECKED_CAST")
-                return res.clazz as? R
+                return ActorSystem.cluster.msg<Envelope.Response>(actor, message) as? R
                     ?: error("Could not cast to the requested type.")
             }
         }
     }
 
     companion object {
+        fun nameOf(actor: String, key: String): String = "$actor-$key"
+        fun <A : Actor> nameOf(actor: KClass<A>, key: String): String = nameOf(actor.java, key)
+        fun <A : Actor> nameOf(actor: Class<A>, key: String): String = nameOf(actor.simpleName ?: "anonymous", key)
 
-        fun <C : Cmd, R : Reply, A : Actor<C, R>> nameOf(actor: KClass<A>, key: String): String =
-            nameOf(actor.java, key)
-
-        fun <C : Cmd, R : Reply, A : Actor<C, R>> nameOf(actor: Class<A>, key: String): String =
-            nameOf(actor.simpleName ?: "anonymous", key)
-
-        fun nameOf(actor: String, key: String): String =
-            "$actor-$key"
     }
 }

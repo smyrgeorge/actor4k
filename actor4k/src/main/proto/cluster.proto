@@ -33,9 +33,8 @@ message Tell {
 }
 
 message Response {
-  string clazz = 1;
-  bytes payload = 2;
-  string payload_class = 3;
+  bytes payload = 1;
+  string payload_class = 2;
 }
 
 message Spawn {

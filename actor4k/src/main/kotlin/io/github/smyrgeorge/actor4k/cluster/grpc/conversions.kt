@@ -8,7 +8,7 @@ fun Cluster.Pong.toEnvelope() =
     Envelope.Pong(UUID.fromString(id), message)
 
 fun Cluster.Response.toEnvelope() =
-    Envelope.Response(clazz, payload.toByteArray(), payloadClass)
+    Envelope.Response(payload.toByteArray(), payloadClass)
 
 fun Cluster.ActorRef.toEnvelope() =
     Envelope.ActorRef(clazz, name, key, node)
@@ -53,7 +53,6 @@ fun Envelope.Tell.toProto(): Cluster.Tell {
 fun Envelope.Response.toProto(): Cluster.Response {
     val m = this
     return response {
-        clazz = m.clazz
         payload = ByteString.copyFrom(m.payload)
         payloadClass = m.payloadClass
     }

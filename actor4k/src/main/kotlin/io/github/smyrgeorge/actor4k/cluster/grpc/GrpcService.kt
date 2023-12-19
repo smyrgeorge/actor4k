@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
-import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -29,7 +28,8 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         ActorSystem.cluster.stats.message()
         val actor = ActorRegistry.get(request.clazz, request.key)
         val clazz: Class<*> = ActorSystem.cluster.serde.loadClass(request.payloadClass)
-        val cmd: Cmd = ActorSystem.cluster.serde.decode(clazz, request.payload.toByteArray())
+        val cmd = ActorSystem.cluster.serde.decode<Any>(clazz, request.payload.toByteArray())
+//        val res = actor.ask<Any>(cmd)
         TODO()
     }
 
@@ -37,9 +37,9 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         ActorSystem.cluster.stats.message()
         val actor = ActorRegistry.get(request.clazz, request.key)
         val clazz: Class<*> = ActorSystem.cluster.serde.loadClass(request.payloadClass)
-        val cmd: Cmd = ActorSystem.cluster.serde.decode(clazz, request.payload.toByteArray())
-//        actor.tell(cmd)
-        TODO()
+        val cmd = ActorSystem.cluster.serde.decode<Any>(clazz, request.payload.toByteArray())
+        actor.tell(cmd)
+        return Envelope.Response(ActorSystem.cluster.serde.encode("."), String::class.java.canonicalName).toProto()
     }
 
     override suspend fun spawn(request: Cluster.Spawn): Cluster.ActorRef {

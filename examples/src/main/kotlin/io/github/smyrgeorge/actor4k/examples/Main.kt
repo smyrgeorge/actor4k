@@ -47,15 +47,18 @@ fun main(args: Array<String>) {
     runBlocking {
         withContext(Dispatchers.IO) {
 
-            delay(10_000)
+            delay(30_000)
+
+            val req = Request("Hello!!")
+            val ref = ActorRegistry.get(TestActor::class, "KEY")
 
             while (true) {
-                val ping = Envelope.Ping(id = UUID.randomUUID(), message = "Ping!")
-                val pong = cluster.ask<Envelope.Pong>(ping.id.toString(), ping)
-                println("$ping :::: $pong")
+//                val ping = Envelope.Ping(id = UUID.randomUUID(), message = "Ping!")
+//                val pong = cluster.ask<Envelope.Pong>(ping.id.toString(), ping)
+//                log.info { "$ping :::: $pong" }
 
-                val ref = ActorRegistry.get(TestActor::class, "KEY")
-                println(ref)
+                val res = ref.ask<Response>(req)
+                log.info { res }
 
                 delay(2_000)
             }

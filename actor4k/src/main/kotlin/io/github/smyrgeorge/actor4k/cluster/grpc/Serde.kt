@@ -9,22 +9,20 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import io.github.smyrgeorge.actor4k.actor.cmd.Cmd
-import io.github.smyrgeorge.actor4k.actor.cmd.Reply
 
 interface Serde {
-    fun encode(cmd: Cmd): ByteArray
-    fun encode(reply: Reply): ByteArray
-    fun <T : Cmd> decode(clazz: Class<*>, bytes: ByteArray): T
+    fun <C> encode(value: C): ByteArray
+    fun <T> decode(clazz: Class<*>, bytes: ByteArray): T
     fun loadClass(clazz: String): Class<*>
 
     class Json : Serde {
         private val om: ObjectMapper = create()
-        override fun encode(cmd: Cmd): ByteArray = om.writeValueAsBytes(cmd)
-        override fun encode(reply: Reply): ByteArray = om.writeValueAsBytes(reply)
+        override fun <C> encode(value: C): ByteArray = om.writeValueAsBytes(value)
+
         @Suppress("UNCHECKED_CAST")
-        override fun <T : Cmd> decode(clazz: Class<*>, bytes: ByteArray): T =
+        override fun <T> decode(clazz: Class<*>, bytes: ByteArray): T =
             om.readValue(bytes, clazz) as? T ?: error("Could not cast to the requested type")
+
         override fun loadClass(clazz: String): Class<*> = this::class.java.classLoader.loadClass(clazz)
 
         private fun create(): ObjectMapper =

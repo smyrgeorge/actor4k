@@ -58,10 +58,10 @@ class Cluster(
         swim.spreadGossip(message).awaitFirstOrNull()
     }
 
-    suspend fun <T : Envelope> ask(actor: String, message: Envelope): T =
-        ask(memberOf(actor), message)
+    suspend fun <T : Envelope> msg(actor: String, message: Envelope): T =
+        msg(memberOf(actor), message)
 
-    private suspend fun <T : Envelope> ask(member: Member, message: Envelope): T {
+    private suspend fun <T : Envelope> msg(member: Member, message: Envelope): T {
         val res = if (member.alias() == node.alias) {
             // Shortcut in case we need to send a message to self (same node).
             grpcService.request(message)

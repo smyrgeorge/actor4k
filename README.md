@@ -21,6 +21,7 @@ A lot of things need to be done, so sit tight…
 - [ ] Serialization (in progress)
   - [x] Send messages across cluster using the gossip protocol
   - [x] Use gRPC for the communication across cluster nodes
+  - [ ] Use protobuf for all messages (in progress)
 - [ ] Metrics (in progress)
 - [ ] Logging (in progress)
 - [ ] Java compatibility
