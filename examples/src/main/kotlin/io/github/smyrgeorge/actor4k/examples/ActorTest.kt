@@ -28,7 +28,9 @@ fun main(args: Array<String>) {
         val r = a.ask<Resp>(req2)
         println(r)
 
-        val a2: Actor.Ref = ActorRegistry.get(TestActor::class, "KEY")
+        val a2: Actor.Ref.Local = ActorRegistry.get(TestActor::class, "KEY") as Actor.Ref.Local
+        println(a2.status())
+        a2.stop()
         a2.tell(req)
     }
 }

@@ -2,10 +2,12 @@ package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
+import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consume
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -14,9 +16,21 @@ abstract class Actor(
 ) {
 
     protected val log = KotlinLogging.logger {}
+    protected val name: String = nameOf(this::class.java)
+    protected val address: String = addressOf(this::class.java, key)
 
-    val name: String = nameOf(this::class.java)
+    private var status = Status.INITIALISING
     private val mail = Channel<Patterns>(capacity = Channel.UNLIMITED)
+
+    @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
+    private suspend inline fun <E> ReceiveChannel<E>.consumeEach(action: (E) -> Unit): Unit =
+        consume {
+            for (e in this) action(e)
+            if (isClosedForReceive && isEmpty) {
+                status = Status.FINISHED
+                ActorRegistry.unregister(this@Actor::class.java, key)
+            }
+        }
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -30,6 +44,8 @@ abstract class Actor(
                 }
             }
         }
+
+        status = Status.READY
     }
 
     data class Message(
@@ -41,17 +57,26 @@ abstract class Actor(
 
     abstract fun onReceive(m: Message): Any
 
-    suspend fun <C> tell(msg: C): Unit =
+    suspend fun <C> tell(msg: C) {
+        if (status != Status.READY) error("$address is in status='$status' and thus is not accepting messages.")
         Patterns.Tell(msg as Any).let { mail.send(it) }
+    }
 
-    suspend fun <C, R> ask(msg: C, timeout: Duration = 30.seconds): R =
-        withTimeout(timeout) {
+    suspend fun <C, R> ask(msg: C, timeout: Duration = 30.seconds): R {
+        if (status != Status.READY) error("$address is in status='$status' and thus is not accepting messages.")
+        return withTimeout(timeout) {
             Patterns.Ask(msg as Any).let {
                 mail.send(it)
                 @Suppress("UNCHECKED_CAST")
                 it.replyTo.receive() as? R ?: error("Could not cast to the requested type.")
             }
         }
+    }
+
+    fun stop(cause: Throwable? = null) {
+        status = Status.FINISHING
+        mail.close(cause)
+    }
 
     fun ref(): Ref.Local = Ref.Local(name = name, key = key, actor = this)
 
@@ -60,6 +85,13 @@ abstract class Actor(
 
         data class Tell(override val msg: Any) : Patterns
         data class Ask(override val msg: Any, val replyTo: Channel<Any> = Channel(Channel.RENDEZVOUS)) : Patterns
+    }
+
+    enum class Status {
+        INITIALISING,
+        READY,
+        FINISHING,
+        FINISHED
     }
 
     sealed class Ref(
@@ -76,6 +108,9 @@ abstract class Actor(
         ) : Ref(name, key) {
             override suspend fun tell(msg: Any): Unit = actor.tell(msg)
             override suspend fun <R> ask(msg: Any): R = actor.ask(msg)
+
+            fun status(): Status = actor.status
+            fun stop(cause: Throwable? = null) = actor.stop(null)
         }
 
         data class Remote(

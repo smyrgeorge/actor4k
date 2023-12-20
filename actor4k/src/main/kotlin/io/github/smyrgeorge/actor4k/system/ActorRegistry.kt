@@ -14,26 +14,26 @@ object ActorRegistry {
         get(actor.java, key)
 
     suspend fun <A : Actor> get(actor: Class<A>, key: String): Actor.Ref {
-        val name = Actor.addressOf(actor, key)
+        val address = Actor.addressOf(actor, key)
 
         // Check if the actor already exists in the local storage.
-        registry[name]?.let { return it }
+        registry[address]?.let { return it }
 
         // Create Local/Remote actor.
         val ref: Actor.Ref =
             if (ActorSystem.clusterMode
-                && ActorSystem.cluster.memberOf(name).alias() != ActorSystem.cluster.node.alias
+                && ActorSystem.cluster.memberOf(address).alias() != ActorSystem.cluster.node.alias
             ) {
                 // Case Remote.
                 // Forward the [Envelope.Spawn] message to the correct cluster node.
                 val msg = Envelope.Spawn(actor.canonicalName, key)
-                ActorSystem.cluster.msg<Envelope.ActorRef>(name, msg).toRef()
+                ActorSystem.cluster.msg<Envelope.ActorRef>(address, msg).toRef()
             } else {
                 // Case Local.
                 // Spawn the actor.
-                val ref = actor.getConstructor(String::class.java).newInstance(key).ref()
+                val ref: Actor.Ref.Local = actor.getConstructor(String::class.java).newInstance(key).ref()
                 // Store [Actor.Ref] to the local storage.
-                registry[name] = ref
+                registry[address] = ref
                 ref
             }
 
@@ -45,5 +45,13 @@ object ActorRegistry {
         val actor = Class.forName(clazz) as? Class<Actor>
             ?: error("Could not find requested actor class='$clazz'.")
         return get(actor, key)
+    }
+
+    fun <A : Actor> unregister(actor: Class<A>, key: String) {
+        val address = Actor.addressOf(actor, key)
+        registry[address]?.let {
+            if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
+            registry.remove(address)
+        }
     }
 }
