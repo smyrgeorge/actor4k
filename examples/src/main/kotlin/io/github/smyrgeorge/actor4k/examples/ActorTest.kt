@@ -10,9 +10,9 @@ data class Req(val msg: String)
 data class Resp(val msg: String)
 
 data class TestActor(val key: String) : Actor(key) {
-    override fun <C> onReceive(cmd: C): Any {
-        cmd as Req
-        log.info { "[$name] Received message: $cmd" }
+    override fun onReceive(m: Message): Any {
+        val msg = m.cast<Req>()
+        log.info { "[$name] Received message: $msg" }
         return Resp("Pong!")
     }
 }
@@ -21,14 +21,14 @@ fun main(args: Array<String>) {
     runBlocking {
         val a: Actor.Ref = ActorRegistry.get(TestActor::class, "KEY")
 
-        val cmd1 = Req(msg = "[tell] Hello World!")
-        a.tell(cmd1)
+        val req = Req(msg = "[tell] Hello World!")
+        a.tell(req)
 
-        val cmd2 = Req(msg = "[ask] Ping!")
-        val r = a.ask<Resp>(cmd2)
+        val req2 = Req(msg = "[ask] Ping!")
+        val r = a.ask<Resp>(req2)
         println(r)
 
         val a2: Actor.Ref = ActorRegistry.get(TestActor::class, "KEY")
-        a2.tell(cmd1)
+        a2.tell(req)
     }
 }
