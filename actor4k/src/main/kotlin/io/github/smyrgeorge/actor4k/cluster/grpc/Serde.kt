@@ -13,7 +13,8 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 interface Serde {
     fun <C> encode(value: C): ByteArray
     fun <T> decode(clazz: Class<*>, bytes: ByteArray): T
-    fun loadClass(clazz: String): Class<*>
+    fun <T> decode(clazz: String, bytes: ByteArray): T = decode(loadClass(clazz), bytes)
+    fun loadClass(clazz: String): Class<*> = this::class.java.classLoader.loadClass(clazz)
 
     class Json : Serde {
         private val om: ObjectMapper = create()
@@ -22,8 +23,6 @@ interface Serde {
         @Suppress("UNCHECKED_CAST")
         override fun <T> decode(clazz: Class<*>, bytes: ByteArray): T =
             om.readValue(bytes, clazz) as? T ?: error("Could not cast to the requested type")
-
-        override fun loadClass(clazz: String): Class<*> = this::class.java.classLoader.loadClass(clazz)
 
         private fun create(): ObjectMapper =
             ObjectMapper().apply {

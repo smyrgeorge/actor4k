@@ -7,6 +7,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 abstract class Actor(
     private val key: String
@@ -35,15 +36,14 @@ abstract class Actor(
     suspend fun <C> tell(cmd: C): Unit =
         Patterns.Tell(cmd as Any).let { mail.send(it) }
 
-    suspend fun <C, R> ask(cmd: C): R =
-        Patterns.Ask(cmd as Any).let {
-            mail.send(it)
-            @Suppress("UNCHECKED_CAST")
-            it.replyTo.receive() as? R ?: error("Could not cast to the requested type.")
+    suspend fun <C, R> ask(cmd: C, timeout: Duration = 30.seconds): R =
+        withTimeout(timeout) {
+            Patterns.Ask(cmd as Any).let {
+                mail.send(it)
+                @Suppress("UNCHECKED_CAST")
+                it.replyTo.receive() as? R ?: error("Could not cast to the requested type.")
+            }
         }
-
-    suspend fun <C, R> ask(cmd: C, timeout: Duration): R =
-        withTimeout(timeout) { ask(cmd) }
 
     fun ref(): Ref.Local = Ref.Local(name = name, key = key, actor = this)
 
@@ -88,8 +88,7 @@ abstract class Actor(
                 val payload: ByteArray = ActorSystem.cluster.serde.encode(cmd)
                 val message = Envelope.Ask(clazz, key, payload, cmd::class.java.canonicalName)
                 val res = ActorSystem.cluster.msg<Envelope.Response>(actor, message)
-                val clazz: Class<*> = ActorSystem.cluster.serde.loadClass(res.payloadClass)
-                return ActorSystem.cluster.serde.decode(clazz, res.payload)
+                return ActorSystem.cluster.serde.decode(res.payloadClass, res.payload)
             }
         }
     }

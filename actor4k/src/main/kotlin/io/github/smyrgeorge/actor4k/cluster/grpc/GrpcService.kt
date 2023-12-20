@@ -27,8 +27,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
         ActorSystem.cluster.stats.message()
         val actor = ActorRegistry.get(request.clazz, request.key)
-        val clazz: Class<*> = ActorSystem.cluster.serde.loadClass(request.payloadClass)
-        val cmd = ActorSystem.cluster.serde.decode<Any>(clazz, request.payload.toByteArray())
+        val cmd = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
         val res = actor.ask<Any>(cmd)
         return Envelope.Response(ActorSystem.cluster.serde.encode(res), res::class.java.canonicalName).toProto()
     }
@@ -36,8 +35,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
     override suspend fun tell(request: Cluster.Tell): Cluster.Response {
         ActorSystem.cluster.stats.message()
         val actor = ActorRegistry.get(request.clazz, request.key)
-        val clazz: Class<*> = ActorSystem.cluster.serde.loadClass(request.payloadClass)
-        val cmd = ActorSystem.cluster.serde.decode<Any>(clazz, request.payload.toByteArray())
+        val cmd = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
         actor.tell(cmd)
         return Envelope.Response(ActorSystem.cluster.serde.encode("."), String::class.java.canonicalName).toProto()
     }
