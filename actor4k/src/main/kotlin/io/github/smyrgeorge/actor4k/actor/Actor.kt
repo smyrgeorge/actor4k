@@ -6,7 +6,6 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
-import kotlin.reflect.KClass
 import kotlin.time.Duration
 
 abstract class Actor(
@@ -15,7 +14,7 @@ abstract class Actor(
 
     protected val log = KotlinLogging.logger {}
 
-    val name: String = nameOf(this::class, key)
+    val name: String = nameOf(this::class.java)
     private val mail = Channel<Patterns>(capacity = Channel.UNLIMITED)
 
     init {
@@ -46,7 +45,7 @@ abstract class Actor(
     suspend fun <C, R> ask(cmd: C, timeout: Duration): R =
         withTimeout(timeout) { ask(cmd) }
 
-    fun ref(): Ref.Local = Ref.Local(key = key, name = name, actor = this)
+    fun ref(): Ref.Local = Ref.Local(name = name, key = key, actor = this)
 
     private sealed interface Patterns {
         val cmd: Any
@@ -66,7 +65,7 @@ abstract class Actor(
             override val name: String,
             override val key: String,
             private val actor: Actor
-        ) : Ref(key, name) {
+        ) : Ref(name, key) {
             override suspend fun tell(cmd: Any): Unit = actor.tell(cmd)
             override suspend fun <R> ask(cmd: Any): R = actor.ask(cmd)
         }
@@ -76,29 +75,28 @@ abstract class Actor(
             override val key: String,
             val clazz: String,
             val node: String
-        ) : Ref(key, name) {
+        ) : Ref(name, key) {
             override suspend fun tell(cmd: Any) {
-                val actor: String = nameOf(name, key)
+                val actor: String = addressOf(name, key)
                 val payload: ByteArray = ActorSystem.cluster.serde.encode(cmd)
                 val message = Envelope.Tell(clazz, key, payload, cmd::class.java.canonicalName)
                 ActorSystem.cluster.msg<Envelope.Response>(actor, message)
             }
 
             override suspend fun <R> ask(cmd: Any): R {
-                val actor: String = nameOf(name, key)
+                val actor: String = addressOf(name, key)
                 val payload: ByteArray = ActorSystem.cluster.serde.encode(cmd)
                 val message = Envelope.Ask(clazz, key, payload, cmd::class.java.canonicalName)
-                @Suppress("UNCHECKED_CAST")
-                return ActorSystem.cluster.msg<Envelope.Response>(actor, message) as? R
-                    ?: error("Could not cast to the requested type.")
+                val res = ActorSystem.cluster.msg<Envelope.Response>(actor, message)
+                val clazz: Class<*> = ActorSystem.cluster.serde.loadClass(res.payloadClass)
+                return ActorSystem.cluster.serde.decode(clazz, res.payload)
             }
         }
     }
 
     companion object {
-        fun nameOf(actor: String, key: String): String = "$actor-$key"
-        fun <A : Actor> nameOf(actor: KClass<A>, key: String): String = nameOf(actor.java, key)
-        fun <A : Actor> nameOf(actor: Class<A>, key: String): String = nameOf(actor.simpleName ?: "anonymous", key)
-
+        private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"
+        fun <A : Actor> addressOf(actor: Class<A>, key: String): String = addressOf(nameOf(actor), key)
+        private fun addressOf(actor: String, key: String): String = "$actor-$key"
     }
 }

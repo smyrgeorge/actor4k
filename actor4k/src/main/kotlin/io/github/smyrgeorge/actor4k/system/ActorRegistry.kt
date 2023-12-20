@@ -14,7 +14,7 @@ object ActorRegistry {
         get(actor.java, key)
 
     suspend fun <A : Actor> get(actor: Class<A>, key: String): Actor.Ref {
-        val name = Actor.nameOf(actor, key)
+        val name = Actor.addressOf(actor, key)
 
         // Check if the actor already exists in the local storage.
         registry[name]?.let { return it }
