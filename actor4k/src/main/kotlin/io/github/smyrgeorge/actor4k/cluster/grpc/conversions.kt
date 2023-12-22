@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import com.google.protobuf.ByteString
+import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Shard
 import io.github.smyrgeorge.actor4k.proto.*
 import java.util.*
@@ -12,7 +13,7 @@ fun Cluster.Response.toEnvelope() =
     Envelope.Response(payload.toByteArray(), payloadClass)
 
 fun Cluster.ActorRef.toEnvelope() =
-    Envelope.ActorRef(Shard.Key.of(shard), clazz, name, key, node)
+    Envelope.ActorRef(Shard.Key(shard), clazz, name, Actor.Key(key), node)
 
 
 fun Envelope.Ping.toProto(): Cluster.Ping {
@@ -36,7 +37,7 @@ fun Envelope.Ask.toProto(): Cluster.Ask {
     return ask {
         shard = m.shard.value
         actorClazz = m.actorClazz
-        actorKey = m.actorKey
+        actorKey = m.actorKey.value
         payload = ByteString.copyFrom(m.payload)
         payloadClass = m.payloadClass
     }
@@ -47,7 +48,7 @@ fun Envelope.Tell.toProto(): Cluster.Tell {
     return tell {
         shard = m.shard.value
         actorClazz = m.actorClazz
-        actorKey = m.actorKey
+        actorKey = m.actorKey.value
         payload = ByteString.copyFrom(m.payload)
         payloadClass = m.payloadClass
     }
@@ -66,7 +67,7 @@ fun Envelope.GetActorRef.toProto(): Cluster.GetActorRef {
     return getActorRef {
         shard = m.shard.value
         actorClazz = m.actorClazz
-        actorKey = m.actorKey
+        actorKey = m.actorKey.value
     }
 }
 
@@ -76,7 +77,7 @@ fun Envelope.ActorRef.toProto(): Cluster.ActorRef {
         shard = m.shard.value
         clazz = m.clazz
         name = m.name
-        key = m.key
+        key = m.key.value
         node = m.node
     }
 }

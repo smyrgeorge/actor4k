@@ -11,10 +11,17 @@ object ActorRegistry {
     // Only stores [Actor.Ref.Local].
     private val registry = ConcurrentHashMap<String, Actor.Ref.Local>(/* initialCapacity = */ 1024)
 
-    suspend fun <A : Actor> get(actor: KClass<A>, key: String, shard: Shard.Key = Shard.Key.of(key)): Actor.Ref =
-        get(actor.java, key, shard)
+    suspend fun <A : Actor> get(
+        actor: KClass<A>,
+        key: Actor.Key,
+        shard: Shard.Key = Shard.Key(key.value)
+    ): Actor.Ref = get(actor.java, key, shard)
 
-    suspend fun <A : Actor> get(actor: Class<A>, key: String, shard: Shard.Key = Shard.Key.of(key)): Actor.Ref {
+    suspend fun <A : Actor> get(
+        actor: Class<A>,
+        key: Actor.Key,
+        shard: Shard.Key = Shard.Key(key.value)
+    ): Actor.Ref {
         val address = Actor.addressOf(actor, key)
 
         // Check if the actor already exists in the local storage.
@@ -33,7 +40,7 @@ object ActorRegistry {
                 // Case Local.
                 // Spawn the actor.
                 val ref: Actor.Ref.Local = actor
-                    .getConstructor(Shard.Key::class.java, String::class.java)
+                    .getConstructor(Shard.Key::class.java, Actor.Key::class.java)
                     .newInstance(shard, key)
                     .ref()
 
@@ -45,14 +52,14 @@ object ActorRegistry {
         return ref
     }
 
-    suspend fun get(clazz: String, key: String, shard: Shard.Key): Actor.Ref {
+    suspend fun get(clazz: String, key: Actor.Key, shard: Shard.Key): Actor.Ref {
         @Suppress("UNCHECKED_CAST")
         val actor = Class.forName(clazz) as? Class<Actor>
             ?: error("Could not find requested actor class='$clazz'.")
         return get(actor, key, shard)
     }
 
-    fun <A : Actor> unregister(actor: Class<A>, key: String) {
+    fun <A : Actor> unregister(actor: Class<A>, key: Actor.Key) {
         val address = Actor.addressOf(actor, key)
         registry[address]?.let {
             if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")

@@ -20,7 +20,7 @@ sealed interface Envelope {
     data class Ask(
         val shard: Shard.Key,
         val actorClazz: String,
-        val actorKey: String,
+        val actorKey: Actor.Key,
         val payload: ByteArray,
         val payloadClass: String
     ) : Envelope
@@ -29,7 +29,7 @@ sealed interface Envelope {
     data class Tell(
         val shard: Shard.Key,
         val actorClazz: String,
-        val actorKey: String,
+        val actorKey: Actor.Key,
         val payload: ByteArray,
         val payloadClass: String
     ) : Envelope
@@ -43,14 +43,14 @@ sealed interface Envelope {
     data class GetActorRef(
         val shard: Shard.Key,
         val actorClazz: String,
-        val actorKey: String
+        val actorKey: Actor.Key
     ) : Envelope
 
     data class ActorRef(
         val shard: Shard.Key,
         val clazz: String,
         val name: String,
-        val key: String,
+        val key: Actor.Key,
         val node: String
     ) : Envelope {
         fun toRef(shard: Shard.Key): Actor.Ref = Actor.Ref.Remote(shard, name, key, clazz, node)

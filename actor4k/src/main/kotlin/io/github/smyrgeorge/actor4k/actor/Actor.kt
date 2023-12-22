@@ -14,7 +14,7 @@ import kotlin.time.Duration.Companion.seconds
 
 abstract class Actor(
     private val shard: Shard.Key,
-    private val key: String
+    private val key: Key
 ) {
 
     protected val log = KotlinLogging.logger {}
@@ -99,7 +99,7 @@ abstract class Actor(
     sealed class Ref(
         open val shard: Shard.Key,
         open val name: String,
-        open val key: String
+        open val key: Key
     ) {
         abstract suspend fun tell(msg: Any)
         abstract suspend fun <R> ask(msg: Any): R
@@ -107,7 +107,7 @@ abstract class Actor(
         data class Local(
             override val shard: Shard.Key,
             override val name: String,
-            override val key: String,
+            override val key: Key,
             private val actor: Actor
         ) : Ref(shard, name, key) {
             override suspend fun tell(msg: Any): Unit = actor.tell(msg)
@@ -120,7 +120,7 @@ abstract class Actor(
         data class Remote(
             override val shard: Shard.Key,
             override val name: String,
-            override val key: String,
+            override val key: Key,
             val clazz: String,
             val node: String
         ) : Ref(shard, name, key) {
@@ -139,9 +139,11 @@ abstract class Actor(
         }
     }
 
+    data class Key(val value: String)
+
     companion object {
         private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"
-        fun <A : Actor> addressOf(actor: Class<A>, key: String): String = addressOf(nameOf(actor), key)
-        private fun addressOf(actor: String, key: String): String = "$actor-$key"
+        fun <A : Actor> addressOf(actor: Class<A>, key: Key): String = addressOf(nameOf(actor), key)
+        private fun addressOf(actor: String, key: Key): String = "$actor-${key.value}"
     }
 }
