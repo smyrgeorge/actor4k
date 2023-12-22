@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import com.google.protobuf.ByteString
+import io.github.smyrgeorge.actor4k.cluster.Shard
 import io.github.smyrgeorge.actor4k.proto.*
 import java.util.*
 
@@ -11,7 +12,7 @@ fun Cluster.Response.toEnvelope() =
     Envelope.Response(payload.toByteArray(), payloadClass)
 
 fun Cluster.ActorRef.toEnvelope() =
-    Envelope.ActorRef(clazz, name, key, node)
+    Envelope.ActorRef(Shard.Key.of(shard), clazz, name, key, node)
 
 
 fun Envelope.Ping.toProto(): Cluster.Ping {
@@ -33,6 +34,7 @@ fun Envelope.Pong.toProto(): Cluster.Pong {
 fun Envelope.Ask.toProto(): Cluster.Ask {
     val m = this
     return ask {
+        shard = m.shard.value
         actorClazz = m.actorClazz
         actorKey = m.actorKey
         payload = ByteString.copyFrom(m.payload)
@@ -43,6 +45,7 @@ fun Envelope.Ask.toProto(): Cluster.Ask {
 fun Envelope.Tell.toProto(): Cluster.Tell {
     val m = this
     return tell {
+        shard = m.shard.value
         actorClazz = m.actorClazz
         actorKey = m.actorKey
         payload = ByteString.copyFrom(m.payload)
@@ -61,6 +64,7 @@ fun Envelope.Response.toProto(): Cluster.Response {
 fun Envelope.GetActorRef.toProto(): Cluster.GetActorRef {
     val m = this
     return getActorRef {
+        shard = m.shard.value
         actorClazz = m.actorClazz
         actorKey = m.actorKey
     }
@@ -69,6 +73,7 @@ fun Envelope.GetActorRef.toProto(): Cluster.GetActorRef {
 fun Envelope.ActorRef.toProto(): Cluster.ActorRef {
     val m = this
     return actorRef {
+        shard = m.shard.value
         clazz = m.clazz
         name = m.name
         key = m.key

@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.cluster.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -12,6 +13,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 abstract class Actor(
+    private val shard: Shard.Key,
     private val key: String
 ) {
 
@@ -78,7 +80,7 @@ abstract class Actor(
         mail.close(cause)
     }
 
-    fun ref(): Ref.Local = Ref.Local(name = name, key = key, actor = this)
+    fun ref(): Ref.Local = Ref.Local(shard, name, key, this)
 
     private sealed interface Patterns {
         val msg: Any
@@ -95,6 +97,7 @@ abstract class Actor(
     }
 
     sealed class Ref(
+        open val shard: Shard.Key,
         open val name: String,
         open val key: String
     ) {
@@ -102,35 +105,35 @@ abstract class Actor(
         abstract suspend fun <R> ask(msg: Any): R
 
         data class Local(
+            override val shard: Shard.Key,
             override val name: String,
             override val key: String,
             private val actor: Actor
-        ) : Ref(name, key) {
+        ) : Ref(shard, name, key) {
             override suspend fun tell(msg: Any): Unit = actor.tell(msg)
             override suspend fun <R> ask(msg: Any): R = actor.ask(msg)
 
             fun status(): Status = actor.status
-            fun stop(cause: Throwable? = null) = actor.stop(null)
+            fun stop(cause: Throwable? = null) = actor.stop(cause)
         }
 
         data class Remote(
+            override val shard: Shard.Key,
             override val name: String,
             override val key: String,
             val clazz: String,
             val node: String
-        ) : Ref(name, key) {
+        ) : Ref(shard, name, key) {
             override suspend fun tell(msg: Any) {
-                val actor: String = addressOf(name, key)
                 val payload: ByteArray = ActorSystem.cluster.serde.encode(msg)
-                val message = Envelope.Tell(clazz, key, payload, msg::class.java.canonicalName)
-                ActorSystem.cluster.msg<Envelope.Response>(actor, message)
+                val message = Envelope.Tell(shard, clazz, key, payload, msg::class.java.canonicalName)
+                ActorSystem.cluster.msg<Envelope.Response>(shard, message)
             }
 
             override suspend fun <R> ask(msg: Any): R {
-                val actor: String = addressOf(name, key)
                 val payload: ByteArray = ActorSystem.cluster.serde.encode(msg)
-                val message = Envelope.Ask(clazz, key, payload, msg::class.java.canonicalName)
-                val res = ActorSystem.cluster.msg<Envelope.Response>(actor, message)
+                val message = Envelope.Ask(shard, clazz, key, payload, msg::class.java.canonicalName)
+                val res = ActorSystem.cluster.msg<Envelope.Response>(shard, message)
                 return ActorSystem.cluster.serde.decode(res.payloadClass, res.payload)
             }
         }

@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
+import io.github.smyrgeorge.actor4k.cluster.Shard
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -26,7 +27,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
         ActorSystem.cluster.stats.message()
-        val actor = ActorRegistry.get(request.actorClazz, request.actorKey)
+        val actor = ActorRegistry.get(request.actorClazz, request.actorKey, Shard.Key.of(request.shard))
         val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
         val res = actor.ask<Any>(msg)
         return Envelope.Response(ActorSystem.cluster.serde.encode(res), res::class.java.canonicalName).toProto()
@@ -34,7 +35,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun tell(request: Cluster.Tell): Cluster.Response {
         ActorSystem.cluster.stats.message()
-        val actor = ActorRegistry.get(request.actorClazz, request.actorKey)
+        val actor = ActorRegistry.get(request.actorClazz, request.actorKey, Shard.Key.of(request.shard))
         val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
         actor.tell(msg)
         return Envelope.Response(ActorSystem.cluster.serde.encode("."), String::class.java.canonicalName).toProto()
@@ -42,7 +43,13 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun getActorRef(request: Cluster.GetActorRef): Cluster.ActorRef {
         ActorSystem.cluster.stats.message()
-        val ref = ActorRegistry.get(request.actorClazz, request.actorKey)
-        return Envelope.ActorRef(request.actorClazz, ref.name, ref.key, ActorSystem.cluster.node.alias).toProto()
+        val actor = ActorRegistry.get(request.actorClazz, request.actorKey, Shard.Key.of(request.shard))
+        return Envelope.ActorRef(
+            shard = Shard.Key.of(request.shard),
+            clazz = request.actorClazz,
+            name = actor.name,
+            key = actor.key,
+            node = ActorSystem.cluster.node.alias
+        ).toProto()
     }
 }

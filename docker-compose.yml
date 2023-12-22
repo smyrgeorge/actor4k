@@ -14,15 +14,15 @@ services:
     environment:
       ACTOR_NODE_ID: node-2
       ACTOR_SEED_MEMBERS: node-1:61100
-  node-3:
-    image: actor4k
-    restart: unless-stopped
-    environment:
-      ACTOR_NODE_ID: node-3
-      ACTOR_SEED_MEMBERS: node-1:61100
-  node-4:
-    image: actor4k
-    restart: unless-stopped
-    environment:
-      ACTOR_NODE_ID: node-4
-      ACTOR_SEED_MEMBERS: node-1:61100
+#  node-3:
+#    image: actor4k
+#    restart: unless-stopped
+#    environment:
+#      ACTOR_NODE_ID: node-3
+#      ACTOR_SEED_MEMBERS: node-1:61100
+#  node-4:
+#    image: actor4k
+#    restart: unless-stopped
+#    environment:
+#      ACTOR_NODE_ID: node-4
+#      ACTOR_SEED_MEMBERS: node-1:61100

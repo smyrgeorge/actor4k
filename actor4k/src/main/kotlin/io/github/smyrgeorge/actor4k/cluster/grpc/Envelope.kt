@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.cluster.Shard
 import java.util.*
 
 sealed interface Envelope {
@@ -17,6 +18,7 @@ sealed interface Envelope {
 
     @Suppress("ArrayInDataClass")
     data class Ask(
+        val shard: Shard.Key,
         val actorClazz: String,
         val actorKey: String,
         val payload: ByteArray,
@@ -25,6 +27,7 @@ sealed interface Envelope {
 
     @Suppress("ArrayInDataClass")
     data class Tell(
+        val shard: Shard.Key,
         val actorClazz: String,
         val actorKey: String,
         val payload: ByteArray,
@@ -38,16 +41,18 @@ sealed interface Envelope {
     ) : Envelope
 
     data class GetActorRef(
+        val shard: Shard.Key,
         val actorClazz: String,
         val actorKey: String
     ) : Envelope
 
     data class ActorRef(
+        val shard: Shard.Key,
         val clazz: String,
         val name: String,
         val key: String,
         val node: String
     ) : Envelope {
-        fun toRef(): Actor.Ref = Actor.Ref.Remote(name, key, clazz, node)
+        fun toRef(shard: Shard.Key): Actor.Ref = Actor.Ref.Remote(shard, name, key, clazz, node)
     }
 }

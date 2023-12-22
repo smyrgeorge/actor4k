@@ -58,10 +58,9 @@ class Cluster(
         swim.spreadGossip(message).awaitFirstOrNull()
     }
 
-    suspend fun <T : Envelope> msg(actor: String, message: Envelope): T =
-        msg(memberOf(actor), message)
+    suspend fun <T : Envelope> msg(shard: Shard.Key, message: Envelope): T {
+        val member = memberOf(shard)
 
-    private suspend fun <T : Envelope> msg(member: Member, message: Envelope): T {
         val res = if (member.alias() == node.alias) {
             // Shortcut in case we need to send a message to self (same node).
             grpcService.request(message)
@@ -74,8 +73,8 @@ class Cluster(
         return res as? T ?: error("Could not cast to the requested type.")
     }
 
-    fun memberOf(actor: String): Member {
-        val node = ring.locate(actor).getOrNull()
+    fun memberOf(shard: Shard.Key): Member {
+        val node = ring.locate(shard.value).getOrNull()
             ?: error("Could not find a valid recipient (probably empty), ring.size='${ring.size()}'.")
         return members().find { it.alias() == node.dc }
             ?: error("Could not find any member in the network with id='${node.dc}'.")

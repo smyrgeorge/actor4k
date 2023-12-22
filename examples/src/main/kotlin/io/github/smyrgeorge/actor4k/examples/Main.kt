@@ -3,6 +3,7 @@ package io.github.smyrgeorge.actor4k.examples
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
+import io.github.smyrgeorge.actor4k.cluster.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
@@ -50,14 +51,15 @@ fun main(args: Array<String>) {
             delay(10_000)
 
             val req = Req("Hello!!")
-            val ref = ActorRegistry.get(TestActor::class, UUID.randomUUID().toString())
+            val ref = ActorRegistry.get(AccountActor::class, "ACC00011")
             println(ref)
 
             while (true) {
                 delay(2_000)
-                val ping = Envelope.Ping(id = UUID.randomUUID(), message = "Ping!")
-                val pong = cluster.msg<Envelope.Pong>(ping.id.toString(), ping)
-                log.info { "$ping :::: $pong" }
+//                val shard = Shard.Key(UUID.randomUUID().toString())
+//                val ping = Envelope.Ping(id = UUID.randomUUID(), message = "Ping!")
+//                val pong = cluster.msg<Envelope.Pong>(shard, ping)
+//                log.info { "$ping :::: $pong" }
 
                 val res = ref.ask<Resp>(req)
                 log.info { res }

@@ -19,17 +19,19 @@ message Pong {
 }
 
 message Ask {
-  string actor_clazz = 1;
-  string actor_key = 2;
-  bytes payload = 3;
-  string payload_class = 4;
+  string shard = 1;
+  string actor_clazz = 2;
+  string actor_key = 3;
+  bytes payload = 4;
+  string payload_class = 5;
 }
 
 message Tell {
-  string actor_clazz = 1;
-  string actor_key = 2;
-  bytes payload = 3;
-  string payload_class = 4;
+  string shard = 1;
+  string actor_clazz = 2;
+  string actor_key = 3;
+  bytes payload = 4;
+  string payload_class = 5;
 }
 
 message Response {
@@ -38,13 +40,15 @@ message Response {
 }
 
 message GetActorRef {
-  string actor_clazz = 1;
-  string actor_key = 2;
+  string shard = 1;
+  string actor_clazz = 2;
+  string actor_key = 3;
 }
 
 message ActorRef {
-  string clazz = 1;
-  string name = 2;
-  string key = 3;
-  string node = 4;
+  string shard = 1;
+  string clazz = 2;
+  string name = 3;
+  string key = 4;
+  string node = 5;
 }
