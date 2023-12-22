@@ -26,7 +26,7 @@ object ActorRegistry {
             ) {
                 // Case Remote.
                 // Forward the [Envelope.Spawn] message to the correct cluster node.
-                val msg = Envelope.Spawn(actor.canonicalName, key)
+                val msg = Envelope.GetActorRef(actor.canonicalName, key)
                 ActorSystem.cluster.msg<Envelope.ActorRef>(address, msg).toRef()
             } else {
                 // Case Local.

@@ -13,7 +13,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
             is Envelope.Ping -> ping(m.toProto()).toEnvelope()
             is Envelope.Ask -> ask(m.toProto()).toEnvelope()
             is Envelope.Tell -> tell(m.toProto()).toEnvelope()
-            is Envelope.Spawn -> spawn(m.toProto()).toEnvelope()
+            is Envelope.GetActorRef -> getActorRef(m.toProto()).toEnvelope()
             is Envelope.Pong -> error("Not a valid gRPC method found.")
             is Envelope.ActorRef -> error("Not a valid gRPC method found.")
             is Envelope.Response -> error("Not a valid gRPC method found.")
@@ -26,7 +26,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
         ActorSystem.cluster.stats.message()
-        val actor = ActorRegistry.get(request.clazz, request.key)
+        val actor = ActorRegistry.get(request.actorClazz, request.actorKey)
         val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
         val res = actor.ask<Any>(msg)
         return Envelope.Response(ActorSystem.cluster.serde.encode(res), res::class.java.canonicalName).toProto()
@@ -34,15 +34,15 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun tell(request: Cluster.Tell): Cluster.Response {
         ActorSystem.cluster.stats.message()
-        val actor = ActorRegistry.get(request.clazz, request.key)
+        val actor = ActorRegistry.get(request.actorClazz, request.actorKey)
         val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
         actor.tell(msg)
         return Envelope.Response(ActorSystem.cluster.serde.encode("."), String::class.java.canonicalName).toProto()
     }
 
-    override suspend fun spawn(request: Cluster.Spawn): Cluster.ActorRef {
+    override suspend fun getActorRef(request: Cluster.GetActorRef): Cluster.ActorRef {
         ActorSystem.cluster.stats.message()
-        val ref = ActorRegistry.get(request.clazz, request.key)
-        return Envelope.ActorRef(request.clazz, ref.name, ref.key, ActorSystem.cluster.node.alias).toProto()
+        val ref = ActorRegistry.get(request.actorClazz, request.actorKey)
+        return Envelope.ActorRef(request.actorClazz, ref.name, ref.key, ActorSystem.cluster.node.alias).toProto()
     }
 }

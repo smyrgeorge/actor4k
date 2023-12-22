@@ -17,16 +17,16 @@ sealed interface Envelope {
 
     @Suppress("ArrayInDataClass")
     data class Ask(
-        val clazz: String,
-        val key: String,
+        val actorClazz: String,
+        val actorKey: String,
         val payload: ByteArray,
         val payloadClass: String
     ) : Envelope
 
     @Suppress("ArrayInDataClass")
     data class Tell(
-        val clazz: String,
-        val key: String,
+        val actorClazz: String,
+        val actorKey: String,
         val payload: ByteArray,
         val payloadClass: String
     ) : Envelope
@@ -37,9 +37,9 @@ sealed interface Envelope {
         val payloadClass: String
     ) : Envelope
 
-    data class Spawn(
-        val clazz: String,
-        val key: String
+    data class GetActorRef(
+        val actorClazz: String,
+        val actorKey: String
     ) : Envelope
 
     data class ActorRef(

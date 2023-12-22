@@ -33,8 +33,8 @@ fun Envelope.Pong.toProto(): Cluster.Pong {
 fun Envelope.Ask.toProto(): Cluster.Ask {
     val m = this
     return ask {
-        clazz = m.clazz
-        key = m.key
+        actorClazz = m.actorClazz
+        actorKey = m.actorKey
         payload = ByteString.copyFrom(m.payload)
         payloadClass = m.payloadClass
     }
@@ -43,8 +43,8 @@ fun Envelope.Ask.toProto(): Cluster.Ask {
 fun Envelope.Tell.toProto(): Cluster.Tell {
     val m = this
     return tell {
-        clazz = m.clazz
-        key = m.key
+        actorClazz = m.actorClazz
+        actorKey = m.actorKey
         payload = ByteString.copyFrom(m.payload)
         payloadClass = m.payloadClass
     }
@@ -58,11 +58,11 @@ fun Envelope.Response.toProto(): Cluster.Response {
     }
 }
 
-fun Envelope.Spawn.toProto(): Cluster.Spawn {
+fun Envelope.GetActorRef.toProto(): Cluster.GetActorRef {
     val m = this
-    return spawn {
-        clazz = m.clazz
-        key = m.key
+    return getActorRef {
+        actorClazz = m.actorClazz
+        actorKey = m.actorKey
     }
 }
 

@@ -20,7 +20,7 @@ class GrpcClient(host: String, port: Int) : Closeable {
             is Envelope.Ping -> stub.ping(m.toProto()).toEnvelope()
             is Envelope.Ask -> stub.ask(m.toProto()).toEnvelope()
             is Envelope.Tell -> stub.tell(m.toProto()).toEnvelope()
-            is Envelope.Spawn -> stub.spawn(m.toProto()).toEnvelope()
+            is Envelope.GetActorRef -> stub.getActorRef(m.toProto()).toEnvelope()
             is Envelope.Pong -> error("Not a valid gRPC method found.")
             is Envelope.ActorRef -> error("Not a valid gRPC method found.")
             is Envelope.Response -> error("Not a valid gRPC method found.")
