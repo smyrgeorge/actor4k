@@ -24,10 +24,9 @@ class MessageHandler(
     }
 
     override fun onMembershipEvent(e: MembershipEvent) {
-        fun Member.toServerNode(): ServerNode {
-            val address = addresses().first()
-            return ServerNode(alias(), address.host(), address.port())
-        }
+        fun Member.toServerNode(): ServerNode =
+            ServerNode(alias(), address().host(), address().port())
+
 
         when (e.type()) {
             // TODO: Error handling. Operations should be atomic. What about retries (create grpc client)?
@@ -35,7 +34,7 @@ class MessageHandler(
                 // Add to hash-ring.
                 ring.add(e.member().toServerNode())
                 // Create the grpc client for the newly discovered node.
-                grpcClients[e.member().alias()] = GrpcClient(e.member().addresses().first().host(), node.grpcPort)
+                grpcClients[e.member().alias()] = GrpcClient(e.member().address().host(), node.grpcPort)
             }
 
             MembershipEvent.Type.LEAVING, MembershipEvent.Type.REMOVED -> {

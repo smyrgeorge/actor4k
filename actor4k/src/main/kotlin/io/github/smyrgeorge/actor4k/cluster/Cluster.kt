@@ -111,10 +111,8 @@ class Cluster(
             fun nodeOf(): ClusterImpl = ClusterImpl()
             fun seedOf(): ClusterImpl = ClusterImpl().transport { it.port(node.seedPort) }
 
-            fun Member.toServerNode(): ServerNode {
-                val address = addresses().first()
-                return ServerNode(alias(), address.host(), address.port())
-            }
+            fun Member.toServerNode(): ServerNode =
+                ServerNode(alias(), address().host(), address().port())
 
             // Initialize stats object here.
             val stats = Stats()
@@ -156,7 +154,7 @@ class Cluster(
             ring.add(member.toServerNode())
 
             // Append current node to clients HashMap.
-            grpcClients[node.alias] = GrpcClient(member.addresses().first().host(), node.grpcPort)
+            grpcClients[node.alias] = GrpcClient(member.address().host(), node.grpcPort)
 
             return Cluster(node, stats, serde, cluster, ring, grpc, grpcService, grpcClients)
         }
