@@ -25,17 +25,19 @@ interface Serde {
         override fun <C> encode(value: C): ByteArray = om.writeValueAsBytes(value)
         override fun <T> decode(clazz: Class<T>, bytes: ByteArray): T = om.readValue(bytes, clazz)
 
-        private fun create(): ObjectMapper =
-            ObjectMapper().apply {
-                registerKotlinModule()
-                registerModule(JavaTimeModule())
-                disable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
-                disable(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS)
-                enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)  // Timestamps as milliseconds
-                propertyNamingStrategy = PropertyNamingStrategies.LOWER_CAMEL_CASE
-                setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY)
-                setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
-                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            }
+        companion object {
+            fun create(): ObjectMapper =
+                ObjectMapper().apply {
+                    registerKotlinModule()
+                    registerModule(JavaTimeModule())
+                    disable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
+                    disable(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS)
+                    enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)  // Timestamps as milliseconds
+                    propertyNamingStrategy = PropertyNamingStrategies.LOWER_CAMEL_CASE
+                    setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY)
+                    setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
+                    disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                }
+        }
     }
 }

@@ -1,28 +1,38 @@
 version: '3'
 
 services:
-  node-1:
-    image: actor4k
+  nginx:
+    build: ./docker/nginx
+    restart: unless-stopped
+    ports:
+      - "9000:80"
+    networks:
+      - loadbalancing
+    depends_on:
+      - bank-1
+      - bank-2
+
+  bank-1:
+    image: actor4k-bank
     restart: unless-stopped
     environment:
-      ACTOR_NODE_ID: node-1
+      ACTOR_NODE_ID: bank-1
       ACTOR_NODE_IS_SEED: true
       ACTOR_NODE_SEED_PORT: 61100
-  node-2:
-    image: actor4k
+    ports:
+      - "9001:9000"
+    networks:
+      loadbalancing:
+  bank-2:
+    image: actor4k-bank
     restart: unless-stopped
     environment:
-      ACTOR_NODE_ID: node-2
-      ACTOR_SEED_MEMBERS: node-1:61100
-#  node-3:
-#    image: actor4k
-#    restart: unless-stopped
-#    environment:
-#      ACTOR_NODE_ID: node-3
-#      ACTOR_SEED_MEMBERS: node-1:61100
-#  node-4:
-#    image: actor4k
-#    restart: unless-stopped
-#    environment:
-#      ACTOR_NODE_ID: node-4
-#      ACTOR_SEED_MEMBERS: node-1:61100
+      ACTOR_NODE_ID: bank-2
+      ACTOR_SEED_MEMBERS: bank-1:61100
+    ports:
+      - "9002:9000"
+    networks:
+      loadbalancing:
+
+networks:
+  loadbalancing:
