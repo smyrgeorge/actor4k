@@ -9,6 +9,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
+import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -19,16 +20,17 @@ abstract class Actor(
 
     protected val log = KotlinLogging.logger {}
     protected val name: String = nameOf(this::class.java)
-    protected val address: String = addressOf(this::class.java, key)
 
+    private val stats: Stats = Stats()
     private var status = Status.INITIALISING
+    private val address: String = addressOf(this::class.java, key)
     private val mail = Channel<Patterns>(capacity = Channel.UNLIMITED)
 
-    @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
+    @OptIn(DelicateCoroutinesApi::class)
     private suspend inline fun <E> ReceiveChannel<E>.consumeEach(action: (E) -> Unit): Unit =
         consume {
             for (e in this) action(e)
-            if (isClosedForReceive && isEmpty) {
+            if (isClosedForReceive) {
                 status = Status.FINISHED
                 ActorRegistry.unregister(this@Actor::class.java, key)
             }
@@ -38,6 +40,7 @@ abstract class Actor(
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             mail.consumeEach {
+                stats.last = Instant.now()
                 val msg = Message(it.msg)
                 val reply = onReceive(msg)
                 when (it) {
@@ -75,12 +78,16 @@ abstract class Actor(
         }
     }
 
+    fun status(): Status = status
+    fun stats(): Stats = stats
+    fun address(): String = address
+
     fun stop(cause: Throwable? = null) {
         status = Status.FINISHING
         mail.close(cause)
     }
 
-    fun ref(): Ref.Local = Ref.Local(shard, name, key, this)
+    fun ref(): Ref.Local = Ref.Local(shard, name, key, this::class.java)
 
     private sealed interface Patterns {
         val msg: Any
@@ -108,13 +115,16 @@ abstract class Actor(
             override val shard: Shard.Key,
             override val name: String,
             override val key: Key,
-            private val actor: Actor
+            val actor: Class<out Actor>
         ) : Ref(shard, name, key) {
-            override suspend fun tell(msg: Any): Unit = actor.tell(msg)
-            override suspend fun <R> ask(msg: Any): R = actor.ask(msg)
+            override suspend fun tell(msg: Any): Unit =
+                ActorRegistry.get(this).tell(msg)
 
-            fun status(): Status = actor.status
-            fun stop(cause: Throwable? = null) = actor.stop(cause)
+            override suspend fun <R> ask(msg: Any): R =
+                ActorRegistry.get(this).ask(msg)
+
+            suspend fun status(): Status = ActorRegistry.get(this).status
+            suspend fun stop(cause: Throwable? = null) = ActorRegistry.get(this).stop(cause)
         }
 
         data class Remote(
@@ -138,6 +148,8 @@ abstract class Actor(
     }
 
     data class Key(val value: String)
+
+    data class Stats(var last: Instant = Instant.now())
 
     companion object {
         private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"

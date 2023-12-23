@@ -1,15 +1,30 @@
 package io.github.smyrgeorge.actor4k.system
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
+import io.github.smyrgeorge.actor4k.util.forEachParallel
+import kotlinx.coroutines.*
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 object ActorRegistry {
+    private val log = KotlinLogging.logger {}
 
     // Only stores [Actor.Ref.Local].
-    private val registry = ConcurrentHashMap<String, Actor.Ref.Local>(/* initialCapacity = */ 1024)
+    private val registry = ConcurrentHashMap<String, Actor>(/* initialCapacity = */ 1024)
+
+    init {
+        @OptIn(DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
+            while (true) {
+                delay(ActorSystem.conf.registryCleanup.toMillis())
+                cleanup()
+            }
+        }
+    }
 
     suspend fun <A : Actor> get(
         actor: KClass<A>,
@@ -25,7 +40,7 @@ object ActorRegistry {
         val address = Actor.addressOf(actor, key)
 
         // Check if the actor already exists in the local storage.
-        registry[address]?.let { return it }
+        registry[address]?.let { return it.ref() }
 
         // Create Local/Remote actor.
         val ref: Actor.Ref =
@@ -39,14 +54,13 @@ object ActorRegistry {
             } else {
                 // Case Local.
                 // Spawn the actor.
-                val ref: Actor.Ref.Local = actor
+                val a: Actor = actor
                     .getConstructor(Shard.Key::class.java, Actor.Key::class.java)
                     .newInstance(shard, key)
-                    .ref()
 
                 // Store [Actor.Ref] to the local storage.
-                registry[address] = ref
-                ref
+                registry[address] = a
+                a.ref()
             }
 
         return ref
@@ -59,11 +73,27 @@ object ActorRegistry {
         return get(actor, key, shard)
     }
 
+    suspend fun get(ref: Actor.Ref.Local): Actor {
+        val address = Actor.addressOf(ref.actor, ref.key)
+        return registry[address] // If actor is not in the registry (passivated) spawn a new one.
+            ?: get(ref.actor, ref.key).let { registry[address]!! }
+    }
+
     fun <A : Actor> unregister(actor: Class<A>, key: Actor.Key) {
         val address = Actor.addressOf(actor, key)
         registry[address]?.let {
             if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
             registry.remove(address)
+        }
+    }
+
+    private suspend fun cleanup() {
+        registry.values.forEachParallel {
+            val df = Instant.now().epochSecond - it.stats().last.epochSecond
+            if (df > ActorSystem.conf.actorExpiration.seconds) {
+                log.debug { "Closing ${it.address()} (expired)." }
+                it.stop()
+            }
         }
     }
 }

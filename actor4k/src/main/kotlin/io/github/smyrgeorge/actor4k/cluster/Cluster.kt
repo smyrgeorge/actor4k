@@ -41,7 +41,7 @@ class Cluster(
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             while (true) {
-                delay(5_000)
+                delay(ActorSystem.conf.clusterLogStats.toMillis())
                 stats()
             }
         }

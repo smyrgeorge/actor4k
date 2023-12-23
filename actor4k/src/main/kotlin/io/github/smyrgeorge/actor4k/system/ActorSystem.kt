@@ -1,12 +1,10 @@
 package io.github.smyrgeorge.actor4k.system
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
+import java.time.Duration
 
-@Suppress("unused")
 object ActorSystem {
-    private val log = KotlinLogging.logger {}
-
+    val conf = Conf()
     var clusterMode: Boolean = false
     lateinit var cluster: Cluster
 
@@ -16,5 +14,9 @@ object ActorSystem {
         return this
     }
 
-
+    data class Conf(
+        val clusterLogStats: Duration = Duration.ofSeconds(10),
+        val registryCleanup: Duration = Duration.ofSeconds(60),
+        val actorExpiration: Duration = Duration.ofMinutes(15)
+    )
 }

@@ -18,6 +18,8 @@ A lot of things need to be done, so sit tight…
 - [ ] Cluster/Sharding (in progress)
   - [x] Implement `tell/ask` patterns across cluster nodes
   - [x] Add support for cross-node actor reference
+  - [x] Introduce the concept of Shard.
+  - [ ] Shard rebalancing.
 - [ ] Serialization (in progress)
   - [x] Send messages across cluster using the gossip protocol
   - [x] Use gRPC for the communication across cluster nodes
