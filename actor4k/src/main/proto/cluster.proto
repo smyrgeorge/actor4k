@@ -2,20 +2,16 @@ syntax = "proto3";
 package io.github.smyrgeorge.actor4k.proto;
 
 service NodeService {
-  rpc ping(Ping) returns (Pong) {}
+  rpc ping(Ping) returns (Response) {}
   rpc ask(Ask) returns (Response) {}
   rpc tell(Tell) returns (Response) {}
-  rpc getActorRef(GetActorRef) returns (ActorRef) {}
+  rpc getActor(GetActor) returns (Response) {}
 }
 
 message Ping {
-  string id = 1;
-  string message = 2;
-}
-
-message Pong {
-  string id = 1;
-  string message = 2;
+  string shard = 1;
+  string id = 2;
+  string message = 3;
 }
 
 message Ask {
@@ -34,21 +30,15 @@ message Tell {
   string payload_class = 5;
 }
 
-message Response {
-  bytes payload = 1;
-  string payload_class = 2;
-}
-
-message GetActorRef {
+message GetActor {
   string shard = 1;
   string actor_clazz = 2;
   string actor_key = 3;
 }
 
-message ActorRef {
+message Response {
   string shard = 1;
-  string clazz = 2;
-  string name = 3;
-  string key = 4;
-  string node = 5;
+  bytes payload = 2;
+  string payload_class = 3;
+  bool error = 4;
 }

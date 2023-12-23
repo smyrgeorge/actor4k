@@ -58,19 +58,15 @@ class Cluster(
         swim.spreadGossip(message).awaitFirstOrNull()
     }
 
-    suspend fun <T : Envelope> msg(shard: Shard.Key, message: Envelope): T {
-        val member = memberOf(shard)
-
-        val res = if (member.alias() == node.alias) {
+    suspend fun msg(message: Envelope): Envelope.Response {
+        val member = memberOf(message.shard)
+        return if (member.alias() == node.alias) {
             // Shortcut in case we need to send a message to self (same node).
             grpcService.request(message)
         } else {
             grpcClients[member.alias()]?.request(message)
                 ?: error("An error occurred. Could not find a gRPC client for member='${member.alias()}'.")
         }
-
-        @Suppress("UNCHECKED_CAST")
-        return res as? T ?: error("Could not cast to the requested type.")
     }
 
     fun memberOf(shard: Shard.Key): Member {

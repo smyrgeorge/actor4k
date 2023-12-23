@@ -15,14 +15,12 @@ class GrpcClient(host: String, port: Int) : Closeable {
 
     private val stub = NodeServiceGrpcKt.NodeServiceCoroutineStub(channel)
 
-    suspend fun request(m: Envelope): Envelope =
+    suspend fun request(m: Envelope): Envelope.Response =
         when (m) {
-            is Envelope.Ping -> stub.ping(m.toProto()).toEnvelope()
-            is Envelope.Ask -> stub.ask(m.toProto()).toEnvelope()
-            is Envelope.Tell -> stub.tell(m.toProto()).toEnvelope()
-            is Envelope.GetActorRef -> stub.getActorRef(m.toProto()).toEnvelope()
-            is Envelope.Pong -> error("Not a valid gRPC method found.")
-            is Envelope.ActorRef -> error("Not a valid gRPC method found.")
+            is Envelope.Ping -> stub.ping(m.toProto()).toResponse()
+            is Envelope.Ask -> stub.ask(m.toProto()).toResponse()
+            is Envelope.Tell -> stub.tell(m.toProto()).toResponse()
+            is Envelope.GetActorRef -> stub.getActor(m.toProto()).toResponse()
             is Envelope.Response -> error("Not a valid gRPC method found.")
         }
 

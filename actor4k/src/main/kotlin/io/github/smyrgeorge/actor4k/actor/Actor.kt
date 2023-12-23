@@ -121,20 +121,18 @@ abstract class Actor(
             override val shard: Shard.Key,
             override val name: String,
             override val key: Key,
-            val clazz: String,
-            val node: String
+            val clazz: String
         ) : Ref(shard, name, key) {
             override suspend fun tell(msg: Any) {
                 val payload: ByteArray = ActorSystem.cluster.serde.encode(msg)
-                val message = Envelope.Tell(shard, clazz, key, payload, msg::class.java.canonicalName)
-                ActorSystem.cluster.msg<Envelope.Response>(shard, message)
+                val message = Envelope.Tell(shard, clazz, key, payload, msg::class.java.name)
+                ActorSystem.cluster.msg(message).getOrThrow<String>()
             }
 
             override suspend fun <R> ask(msg: Any): R {
                 val payload: ByteArray = ActorSystem.cluster.serde.encode(msg)
-                val message = Envelope.Ask(shard, clazz, key, payload, msg::class.java.canonicalName)
-                val res = ActorSystem.cluster.msg<Envelope.Response>(shard, message)
-                return ActorSystem.cluster.serde.decode(res.payloadClass, res.payload)
+                val message = Envelope.Ask(shard, clazz, key, payload, msg::class.java.name)
+                return ActorSystem.cluster.msg(message).getOrThrow()
             }
         }
     }

@@ -4,12 +4,15 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
+import io.github.smyrgeorge.actor4k.cluster.Shard
+import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import java.util.*
 
 class Main
 
@@ -54,10 +57,11 @@ fun main(args: Array<String>) {
 
             while (true) {
                 delay(2_000)
-//                val shard = Shard.Key(UUID.randomUUID().toString())
-//                val ping = Envelope.Ping(id = UUID.randomUUID(), message = "Ping!")
-//                val pong = cluster.msg<Envelope.Pong>(shard, ping)
-//                log.info { "$ping :::: $pong" }
+                val shard = Shard.Key(UUID.randomUUID().toString())
+                val ping = Envelope.Ping(shard, UUID.randomUUID(), "Ping!")
+                val pong = cluster.msg(ping).getOrThrow<Envelope.Ping.Pong>()
+                log.info { "$ping :::: $pong" }
+                delay(2_000)
                 val res = ref.ask<Resp>(req)
                 log.info { res }
             }

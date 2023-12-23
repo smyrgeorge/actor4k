@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Shard
+import io.github.smyrgeorge.actor4k.cluster.ShardManager
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -10,47 +11,65 @@ import java.util.*
 
 class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
-    suspend fun request(m: Envelope): Envelope =
+    suspend fun request(m: Envelope): Envelope.Response =
         when (m) {
-            is Envelope.Ping -> ping(m.toProto()).toEnvelope()
-            is Envelope.Ask -> ask(m.toProto()).toEnvelope()
-            is Envelope.Tell -> tell(m.toProto()).toEnvelope()
-            is Envelope.GetActorRef -> getActorRef(m.toProto()).toEnvelope()
-            is Envelope.Pong -> error("Not a valid gRPC method found.")
-            is Envelope.ActorRef -> error("Not a valid gRPC method found.")
+            is Envelope.Ping -> ping(m.toProto()).toResponse()
+            is Envelope.Ask -> ask(m.toProto()).toResponse()
+            is Envelope.Tell -> tell(m.toProto()).toResponse()
+            is Envelope.GetActorRef -> getActor(m.toProto()).toResponse()
             is Envelope.Response -> error("Not a valid gRPC method found.")
         }
 
-    override suspend fun ping(request: Cluster.Ping): Cluster.Pong {
+    override suspend fun ping(request: Cluster.Ping): Cluster.Response {
         ActorSystem.cluster.stats.message()
-        return Envelope.Pong(UUID.fromString(request.id), "Pong!").toProto()
+
+        val shard = Shard.Key(request.shard)
+        ShardManager.checkShard(shard)?.let {
+            return Envelope.Response.error(shard, it).toProto()
+        }
+
+        val pong = Envelope.Ping.Pong(UUID.fromString(request.id), "Pong!")
+        return Envelope.Response.of(shard, pong).toProto()
     }
 
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
         ActorSystem.cluster.stats.message()
-        val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), Shard.Key(request.shard))
+
+        val shard = Shard.Key(request.shard)
+        ShardManager.checkShard(shard)?.let {
+            return Envelope.Response.error(shard, it).toProto()
+        }
+
+        val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
         val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
         val res = actor.ask<Any>(msg)
-        return Envelope.Response(ActorSystem.cluster.serde.encode(res), res::class.java.canonicalName).toProto()
+        return Envelope.Response.of(shard, res).toProto()
     }
 
     override suspend fun tell(request: Cluster.Tell): Cluster.Response {
         ActorSystem.cluster.stats.message()
-        val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), Shard.Key(request.shard))
+
+        val shard = Shard.Key(request.shard)
+        ShardManager.checkShard(shard)?.let {
+            return Envelope.Response.error(shard, it).toProto()
+        }
+
+        val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
         val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
         actor.tell(msg)
-        return Envelope.Response(ActorSystem.cluster.serde.encode("."), String::class.java.canonicalName).toProto()
+        return Envelope.Response.of(shard, ".").toProto()
     }
 
-    override suspend fun getActorRef(request: Cluster.GetActorRef): Cluster.ActorRef {
+    override suspend fun getActor(request: Cluster.GetActor): Cluster.Response {
         ActorSystem.cluster.stats.message()
-        val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), Shard.Key(request.shard))
-        return Envelope.ActorRef(
-            shard = Shard.Key(request.shard),
-            clazz = request.actorClazz,
-            name = actor.name,
-            key = actor.key,
-            node = ActorSystem.cluster.node.alias
-        ).toProto()
+
+        val shard = Shard.Key(request.shard)
+        ShardManager.checkShard(shard)?.let {
+            return Envelope.Response.error(shard, it).toProto()
+        }
+
+        val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
+        val res = Envelope.GetActorRef.Ref(shard, request.actorClazz, actor.name, actor.key)
+        return Envelope.Response.of(shard, res).toProto()
     }
 }
