@@ -2,7 +2,7 @@ version: '3'
 
 services:
   nginx:
-    build: ./docker/nginx
+    image: nginx:stable-alpine
     restart: unless-stopped
     ports:
       - "9000:80"
@@ -11,6 +11,8 @@ services:
     depends_on:
       - bank-1
       - bank-2
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
 
   bank-1:
     image: actor4k-bank
