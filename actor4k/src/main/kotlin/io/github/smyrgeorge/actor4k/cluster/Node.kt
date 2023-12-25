@@ -12,6 +12,7 @@ class Node(
     val grpcPort: Int,
     val seedMembers: List<Address>,
     val onGossip: (g: Message) -> Unit,
+    val onMessage: (g: Message) -> Unit,
     val onMembershipEvent: (e: MembershipEvent) -> Unit
 ) {
 
@@ -23,6 +24,7 @@ class Node(
         private var grpcPort: Int = 50051
         private var seedMembers: List<Address> = emptyList()
         private var onGossip: (m: Message) -> Unit = {}
+        private var onMessage: (m: Message) -> Unit = {}
         private var onMembershipEvent: (m: MembershipEvent) -> Unit = {}
 
         fun alias(v: String): Builder {
@@ -60,6 +62,11 @@ class Node(
             return this
         }
 
+        fun onMessage(f: (g: Message) -> Unit): Builder {
+            onMessage = f
+            return this
+        }
+
         fun onMembershipEvent(f: (e: MembershipEvent) -> Unit): Builder {
             onMembershipEvent = f
             return this
@@ -73,6 +80,7 @@ class Node(
             grpcPort = grpcPort,
             seedMembers = seedMembers,
             onGossip = onGossip,
+            onMessage = onMessage,
             onMembershipEvent = onMembershipEvent
         )
     }

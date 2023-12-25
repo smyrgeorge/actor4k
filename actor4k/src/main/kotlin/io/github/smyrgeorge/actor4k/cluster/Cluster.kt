@@ -52,7 +52,13 @@ class Cluster(
         log.info { stats }
     }
 
+    fun self(): Member = swim.member()
+
     fun members(): List<Member> = swim.members().toList()
+
+    suspend fun msg(member: Member, message: Message) {
+        swim.send(member, message).awaitFirstOrNull()
+    }
 
     suspend fun gossip(message: Message) {
         swim.spreadGossip(message).awaitFirstOrNull()
@@ -139,7 +145,7 @@ class Cluster(
                 .membership { it.namespace(node.namespace) }
                 .membership { it.seedMembers(node.seedMembers) }
                 .transportFactory { TcpTransportFactory() }
-                .handler { MessageHandler(node = node, stats = stats, ring = ring, grpcClients) }
+                .handler { MessageHandler(node, stats, ring, grpcClients) }
                 .startAwait()
 
             // Current cluster member.

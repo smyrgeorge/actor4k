@@ -19,39 +19,45 @@ class MessageHandler(
 ) : ScaleCubeClusterMessageHandler {
 
     override fun onGossip(g: Message) {
-        stats.gossip()
         node.onGossip(g)
+        stats.gossip()
+    }
+
+    override fun onMessage(m: Message) {
+        node.onMessage(m)
     }
 
     override fun onMembershipEvent(e: MembershipEvent) {
-        fun Member.toServerNode(): ServerNode =
-            ServerNode(alias(), address().host(), address().port())
-
-
-        when (e.type()) {
-            // TODO: Error handling. Operations should be atomic. What about retries (create grpc client)?
-            MembershipEvent.Type.ADDED -> {
-                // Add to hash-ring.
-                ring.add(e.member().toServerNode())
-                // Create the grpc client for the newly discovered node.
-                grpcClients[e.member().alias()] = GrpcClient(e.member().address().host(), node.grpcPort)
-            }
-
-            MembershipEvent.Type.LEAVING, MembershipEvent.Type.REMOVED -> {
-                // Remove from hash-ring.
-                ring.remove(e.member().toServerNode())
-
-                // Shutdown client.
-                grpcClients[e.member().alias()]?.close()
-
-                // Remove the client from clients-hashmap.
-                grpcClients.remove(e.member().alias())
-            }
-
-            MembershipEvent.Type.UPDATED -> Unit
-            else -> error("Sanity check failed :: MembershipEvent.type was null.")
-        }
-
         node.onMembershipEvent(e)
+        when (e.type()) {
+            MembershipEvent.Type.ADDED -> added(e.member())
+            MembershipEvent.Type.LEAVING, MembershipEvent.Type.REMOVED -> left(e.member())
+            MembershipEvent.Type.UPDATED -> Unit
+            else -> Unit
+        }
     }
+
+    private fun added(member: Member) {
+        // Add member to hash-ring.
+        ring.add(member.toServerNode())
+        // Create the gRPC client.
+        if (member.alias() != node.alias) {
+            grpcClients[member.alias()] = GrpcClient(member.address().host(), node.grpcPort)
+        }
+    }
+
+    private fun left(member: Member) {
+        // Remove from hash-ring.
+        ring.remove(member.toServerNode())
+
+        // Shutdown client.
+        grpcClients[member.alias()]?.close()
+
+        // Remove the client from clients-hashmap.
+        grpcClients.remove(member.alias())
+    }
+
+    private fun Member.toServerNode(): ServerNode =
+        ServerNode(alias(), address().host(), address().port())
+
 }
