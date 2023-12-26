@@ -4,7 +4,7 @@ A small actor system written in kotlin using Coroutines (kotlinx.coroutines).
 
 The main goal is to build a minimal actor system that can work in cluster mode.
 
-For this particular reason we make use of `scalecube-cluster` (implementation of the SWIM protocol).
+**NOTE:** Until it's a toy project and of course is not ready for production use.
 
 ## Work in progress
 
@@ -15,21 +15,32 @@ Check the `examples` for additional info.
 
 A lot of things need to be done, so sit tight…
 
-- [ ] Cluster/Sharding (in progress)
-  - [x] Implement `tell/ask` patterns across cluster nodes
-  - [x] Add support for cross-node actor reference
-  - [x] Introduce the concept of Shard.
-  - [ ] Shard rebalancing.
+- [ ] Cluster - Sharding (in progress)
+    - [ ] Use `raft` consensus algorithm for the cluster node membership (in progress).
+    - [x] Implement `tell/ask` patterns across cluster nodes
+    - [x] Add support for cross-node actor reference
+    - [x] Introduce the concept of Shard.
+    - [ ] Shard rebalancing.
 - [ ] Serialization (in progress)
-  - [x] Send messages across cluster using the gossip protocol
-  - [x] Use gRPC for the communication across cluster nodes
-  - [ ] Use protobuf for all messages (in progress)
+    - [x] Send messages across cluster using the gossip protocol
+    - [x] Use gRPC for the communication across cluster nodes
+    - [ ] Use protobuf for all messages (in progress)
 - [ ] Metrics (in progress)
 - [ ] Logging (in progress)
 - [ ] Java compatibility
 - [ ] Persistence
 
-## Run
+## Run the example.
+
+The included example tries to simulate a very simple bank system.
+
+It defines a `AccountActor` that can handle only two simple commands,
+`Req.GetAccount` and `Req.ApplyTx`.
+
+The client `examples-bank-client` generates traffic.
+At the end will check the available balance (should be zero).
+
+So, with this example we validate the cluster consistency.
 
 Run the following script (it will also build the project).
 
@@ -38,17 +49,19 @@ Run the following script (it will also build the project).
 ```
 
 The above script will do the following:
+
 - Build the project.
-- Build the docker image `actor4k:latest`.
-- Will run the `docker compose` (will start four custer nodes).
+- Build the docker image `actor4k-bank:latest`.
+- Run the `docker compose` that will start:
+    - 3 custer bank nodes
+    - a nginx acting as the loadbalancer
 
 If everything goes well, you should see something like the following (`mPS` ping messages per second):
-```text
-...
-node-1-1  | 55365 [DefaultDispatcher-worker-6] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=138385, mPS=4596)
-node-2-1  | 55669 [DefaultDispatcher-worker-2] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=142243, mPS=4706)
-node-4-1  | 55721 [DefaultDispatcher-worker-3] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=139882, mPS=4696)
-node-3-1  | 55882 [DefaultDispatcher-worker-5] INFO  io.github.smyrgeorge.actor4k.cluster.Cluster  - Stats(members=4, tG=0, gPs=0, tM=131900, mPS=4391)
+
+Then you can run the `bank-client` in order to generate some traffic:
+
+```shell
+java -jar examples-bank-client/build/libs/examples-bank-client-0.1.0.jar
 ```
 
 ### Cleanup
