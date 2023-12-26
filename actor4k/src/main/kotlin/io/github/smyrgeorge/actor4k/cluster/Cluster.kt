@@ -24,7 +24,6 @@ import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
-import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
@@ -163,22 +162,24 @@ class Cluster(
                 .setLocalEndpoint(endpoint)
                 .setInitialGroupMembers(node.raftEndpoints.map { ClusterRaftEndpoint(it.first) })
                 .setRaftNodeReportListener {
-                    println("REPORT: $it")
+                    println("XXXXXXX: $it")
                     when {
-                        it.reason == RaftNodeReport.RaftNodeReportReason.ROLE_CHANGE
-                                && it.role == RaftRole.LEADER -> {
-                            println("LEADER: ${it.endpoint.id}")
-                        }
-
+                        // TODO: CLUSTER LOOP.
                         it.reason == RaftNodeReport.RaftNodeReportReason.PERIODIC
                                 && it.role == RaftRole.LEARNER -> {
-                            val message = Message.builder().data(Learner(it.endpoint.id as String)).build()
+                            val address = ActorSystem.cluster.swim.member().address()
+                            val data = ClusterRaftStateMachine.NodeAdded(
+                                alias = it.endpoint.id as String,
+                                host = address.host(),
+                                port = address.port()
+                            )
+                            val message = Message.builder().data(data).build()
                             runBlocking { ActorSystem.cluster.gossip(message) }
                         }
                     }
                 }
                 .setTransport(ClusterRaftTransport(endpoint))
-                .setStateMachine(ClusterRaftStateMachine())
+                .setStateMachine(ClusterRaftStateMachine(node.namespace))
                 .build()
 
             raft.start()
@@ -195,6 +196,4 @@ class Cluster(
             return Cluster(node, stats, serde, raft, cluster, ring, grpc, grpcService, grpcClients)
         }
     }
-
-    data class Learner(val alias: String) : Serializable
 }

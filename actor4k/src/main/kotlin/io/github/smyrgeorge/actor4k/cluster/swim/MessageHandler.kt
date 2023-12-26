@@ -1,15 +1,14 @@
 package io.github.smyrgeorge.actor4k.cluster.swim
 
-import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.Stats
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.microraft.MembershipChangeMode
 import io.microraft.RaftRole
 import io.microraft.model.message.RaftMessage
-import io.microraft.report.RaftGroupMembers
 import io.scalecube.cluster.Member
 import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
@@ -28,16 +27,17 @@ class MessageHandler(
     override fun onGossip(g: Message) {
         node.onGossip(g)
         stats.gossip()
-        when (g.data<Any>()) {
-            is Cluster.Learner -> {
-                val data = g.data<Cluster.Learner>()
-                val role: RaftRole = ActorSystem.cluster.raft.report.join().result.role
-                if (role == RaftRole.LEADER) {
-                    val res: RaftGroupMembers = ActorSystem.cluster.raft.changeMembership(
+        when (val data = g.data<Any>()) {
+            is ClusterRaftStateMachine.NodeAdded -> {
+                val member = ActorSystem.cluster.raft
+                if (member.report.join().result.role == RaftRole.LEADER) {
+                    ActorSystem.cluster.raft.changeMembership(
                         /* endpoint = */ ClusterRaftEndpoint(data.alias),
                         /* mode = */ MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER,
-                        /* expectedGroupMembersCommitIndex = */ 0
+                        /* expectedGroupMembersCommitIndex = */ ActorSystem.cluster.raft.committedMembers.logIndex
                     ).join().result
+
+                    member.replicate<Unit>(data).join()
                 }
             }
         }
