@@ -1,8 +1,15 @@
 package io.github.smyrgeorge.actor4k.cluster.swim
 
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.Stats
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
+import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.microraft.MembershipChangeMode
+import io.microraft.RaftRole
+import io.microraft.model.message.RaftMessage
+import io.microraft.report.RaftGroupMembers
 import io.scalecube.cluster.Member
 import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
@@ -21,10 +28,26 @@ class MessageHandler(
     override fun onGossip(g: Message) {
         node.onGossip(g)
         stats.gossip()
+        when (g.data<Any>()) {
+            is Cluster.Learner -> {
+                val data = g.data<Cluster.Learner>()
+                val role: RaftRole = ActorSystem.cluster.raft.report.join().result.role
+                if (role == RaftRole.LEADER) {
+                    val res: RaftGroupMembers = ActorSystem.cluster.raft.changeMembership(
+                        /* endpoint = */ ClusterRaftEndpoint(data.alias),
+                        /* mode = */ MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER,
+                        /* expectedGroupMembersCommitIndex = */ 0
+                    ).join().result
+                }
+            }
+        }
     }
 
     override fun onMessage(m: Message) {
-        node.onMessage(m)
+        when (m.data<Any>()) {
+            is RaftMessage -> ActorSystem.cluster.raft.handle(m.data())
+            else -> node.onMessage(m)
+        }
     }
 
     override fun onMembershipEvent(e: MembershipEvent) {

@@ -5,6 +5,7 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
+import io.github.smyrgeorge.actor4k.util.addressOf
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -16,11 +17,13 @@ class Main
 fun main(args: Array<String>) {
     val log = KotlinLogging.logger {}
 
-    val alias = System.getenv("ACTOR_NODE_ID") ?: "node-1"
-    val isSeed = System.getenv("ACTOR_NODE_IS_SEED")?.toBoolean() ?: false
-    val seedPort = System.getenv("ACTOR_NODE_SEED_PORT")?.toInt() ?: 61100
-    val grpcPort = System.getenv("ACTOR_NODE_GRPC_PORT")?.toInt() ?: 50051
-    val seedMembers = System.getenv("ACTOR_SEED_MEMBERS")?.split(",")?.map { Address.from(it) } ?: emptyList()
+    val alias = System.getenv("ACTOR4K_NODE_ID") ?: "node-1"
+    val isSeed = System.getenv("ACTOR4K_NODE_IS_SEED")?.toBoolean() ?: true
+    val seedPort = System.getenv("ACTOR4K_NODE_SWIM_PORT")?.toInt() ?: 61100
+    val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 50051
+    val seedMembers: List<Pair<String, Address>> =
+        (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "bank-1::localhost:$seedPort")
+            .split(",").map { addressOf(it) }
 
     val node: Node = Node
         .Builder()
@@ -29,7 +32,7 @@ fun main(args: Array<String>) {
         .isSeed(isSeed)
         .seedPort(seedPort)
         .grpcPort(grpcPort)
-        .seedMembers(seedMembers)
+        .seedMembers(seedMembers.map { it.second })
         .onGossip {
             log.debug { "Received Gossip: $it" }
         }

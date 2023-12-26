@@ -15,7 +15,7 @@ data class Stats(
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             // Delay first calculation until the system warms up.
-            delay(5_000)
+            delay(15_000)
             while (true) calculate()
         }
     }

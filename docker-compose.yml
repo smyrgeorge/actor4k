@@ -18,10 +18,10 @@ services:
     image: actor4k-bank
     restart: unless-stopped
     environment:
-      ACTOR_NODE_ID: bank-1
-      ACTOR_NODE_IS_SEED: true
-      ACTOR_NODE_SEED_PORT: 61100
-      ACTOR_SEED_MEMBERS: bank-1:61100,bank-2:61100
+      ACTOR4K_NODE_ID: bank-1
+      ACTOR4K_NODE_IS_SEED: true
+      ACTOR4K_NODE_SWIM_PORT: 61100
+      ACTOR4K_SEED_MEMBERS: bank-1::bank-1:61100,bank-2::bank-2:61100
     ports:
       - "9001:9000"
     networks:
@@ -30,10 +30,10 @@ services:
     image: actor4k-bank
     restart: unless-stopped
     environment:
-      ACTOR_NODE_ID: bank-2
-      ACTOR_NODE_IS_SEED: true
-      ACTOR_NODE_SEED_PORT: 61100
-      ACTOR_SEED_MEMBERS: bank-1:61100,bank-2:61100
+      ACTOR4K_NODE_ID: bank-2
+      ACTOR4K_NODE_IS_SEED: true
+      ACTOR4K_NODE_SWIM_PORT: 61100
+      ACTOR4K_SEED_MEMBERS: bank-1::bank-1:61100,bank-2::bank-2:61100
     ports:
       - "9002:9000"
     networks:
@@ -42,12 +42,14 @@ services:
     image: actor4k-bank
     restart: unless-stopped
     environment:
-      ACTOR_NODE_ID: bank-3
-      ACTOR_SEED_MEMBERS: bank-1:61100,bank-2:61100
+      ACTOR4K_NODE_ID: bank-3
+      ACTOR4K_SEED_MEMBERS: bank-1::bank-1:61100,bank-2::bank-2:61100
     ports:
       - "9003:9000"
     networks:
       loadbalancing:
+#    profiles:
+#      - donotstart
 
 networks:
   loadbalancing:

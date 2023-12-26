@@ -17,6 +17,7 @@ A lot of things need to be done, so sit tight…
 
 - [ ] Cluster - Sharding (in progress)
     - [ ] Use `raft` consensus algorithm for the cluster node membership (in progress).
+    - [ ] Do not use SWIM, just use raft and gRPC.
     - [x] Implement `tell/ask` patterns across cluster nodes
     - [x] Add support for cross-node actor reference
     - [x] Introduce the concept of Shard.

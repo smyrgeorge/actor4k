@@ -11,6 +11,7 @@ class Node(
     val seedPort: Int,
     val grpcPort: Int,
     val seedMembers: List<Address>,
+    val raftEndpoints: List<Pair<String, Address>>,
     val onGossip: (g: Message) -> Unit,
     val onMessage: (g: Message) -> Unit,
     val onMembershipEvent: (e: MembershipEvent) -> Unit
@@ -23,6 +24,7 @@ class Node(
         private var seedPort: Int = 61100
         private var grpcPort: Int = 50051
         private var seedMembers: List<Address> = emptyList()
+        private var raftEndpoints: List<Pair<String, Address>> = emptyList()
         private var onGossip: (m: Message) -> Unit = {}
         private var onMessage: (m: Message) -> Unit = {}
         private var onMembershipEvent: (m: MembershipEvent) -> Unit = {}
@@ -57,6 +59,11 @@ class Node(
             return this
         }
 
+        fun raftEndpoints(v: List<Pair<String, Address>>): Builder {
+            raftEndpoints = v
+            return this
+        }
+
         fun onGossip(f: (g: Message) -> Unit): Builder {
             onGossip = f
             return this
@@ -79,6 +86,7 @@ class Node(
             seedPort = seedPort,
             grpcPort = grpcPort,
             seedMembers = seedMembers,
+            raftEndpoints = raftEndpoints,
             onGossip = onGossip,
             onMessage = onMessage,
             onMembershipEvent = onMembershipEvent

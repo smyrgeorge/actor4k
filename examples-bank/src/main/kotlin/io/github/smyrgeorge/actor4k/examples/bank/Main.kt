@@ -9,6 +9,7 @@ import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
+import io.github.smyrgeorge.actor4k.util.addressOf
 import io.scalecube.net.Address
 import kotlinx.coroutines.runBlocking
 import org.http4k.core.Method
@@ -48,12 +49,16 @@ data class AccountActor(val shard: Shard.Key, val key: Key) : Actor(shard, key) 
 fun main(args: Array<String>) {
     val log = KotlinLogging.logger {}
 
-    val alias = System.getenv("ACTOR_NODE_ID") ?: "node-1"
-    val httpPort = System.getenv("ACTOR_NODE_HTTP_PORT")?.toInt() ?: 9000
-    val isSeed = System.getenv("ACTOR_NODE_IS_SEED")?.toBoolean() ?: false
-    val seedPort = System.getenv("ACTOR_NODE_SEED_PORT")?.toInt() ?: 61100
-    val grpcPort = System.getenv("ACTOR_NODE_GRPC_PORT")?.toInt() ?: 50051
-    val seedMembers = System.getenv("ACTOR_SEED_MEMBERS")?.split(",")?.map { Address.from(it) } ?: emptyList()
+    val alias = System.getenv("ACTOR4K_NODE_ID") ?: "bank-1"
+    val httpPort = System.getenv("ACTOR4K_NODE_HTTP_PORT")?.toInt() ?: 9000
+    val isSeed = System.getenv("ACTOR4K_NODE_IS_SEED")?.toBoolean() ?: true
+    val seedPort = System.getenv("ACTOR4K_NODE_SWIM_PORT")?.toInt() ?: 61100
+    val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 50051
+    val raftEndpoints: List<Pair<String, Address>> =
+        (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "bank-1::localhost:$seedPort")
+            .split(",").map { addressOf(it) }
+
+    log.info { raftEndpoints }
 
     val node: Node = Node
         .Builder()
@@ -62,9 +67,10 @@ fun main(args: Array<String>) {
         .isSeed(isSeed)
         .seedPort(seedPort)
         .grpcPort(grpcPort)
-        .seedMembers(seedMembers)
+        .raftEndpoints(raftEndpoints)
+        .seedMembers(raftEndpoints.map { it.second })
         .onGossip {
-            log.debug { "Received Gossip: $it" }
+            log.info { "Received Gossip: $it" }
         }
         .onMembershipEvent {
             log.debug { "Received membership-event: $it" }

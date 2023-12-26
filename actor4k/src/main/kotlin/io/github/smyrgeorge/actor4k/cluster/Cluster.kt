@@ -5,9 +5,15 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftTransport
 import io.github.smyrgeorge.actor4k.cluster.swim.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.grpc.ServerBuilder
+import io.microraft.RaftNode
+import io.microraft.RaftRole
+import io.microraft.report.RaftNodeReport
 import io.scalecube.cluster.ClusterImpl
 import io.scalecube.cluster.Member
 import io.scalecube.cluster.transport.api.Message
@@ -18,6 +24,7 @@ import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
+import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
@@ -28,6 +35,7 @@ class Cluster(
     val node: Node,
     val stats: Stats,
     val serde: Serde,
+    val raft: RaftNode,
     private val swim: ScaleCubeCluster,
     private val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
@@ -148,6 +156,33 @@ class Cluster(
                 .handler { MessageHandler(node, stats, ring, grpcClients) }
                 .startAwait()
 
+            val endpoint = ClusterRaftEndpoint(node.alias)
+            val raft = RaftNode
+                .newBuilder()
+                .setGroupId(node.namespace)
+                .setLocalEndpoint(endpoint)
+                .setInitialGroupMembers(node.raftEndpoints.map { ClusterRaftEndpoint(it.first) })
+                .setRaftNodeReportListener {
+                    println("REPORT: $it")
+                    when {
+                        it.reason == RaftNodeReport.RaftNodeReportReason.ROLE_CHANGE
+                                && it.role == RaftRole.LEADER -> {
+                            println("LEADER: ${it.endpoint.id}")
+                        }
+
+                        it.reason == RaftNodeReport.RaftNodeReportReason.PERIODIC
+                                && it.role == RaftRole.LEARNER -> {
+                            val message = Message.builder().data(Learner(it.endpoint.id as String)).build()
+                            runBlocking { ActorSystem.cluster.gossip(message) }
+                        }
+                    }
+                }
+                .setTransport(ClusterRaftTransport(endpoint))
+                .setStateMachine(ClusterRaftStateMachine())
+                .build()
+
+            raft.start()
+
             // Current cluster member.
             val member = cluster.member()
 
@@ -157,7 +192,9 @@ class Cluster(
             // Append current node to clients HashMap.
             grpcClients[node.alias] = GrpcClient(member.address().host(), node.grpcPort)
 
-            return Cluster(node, stats, serde, cluster, ring, grpc, grpcService, grpcClients)
+            return Cluster(node, stats, serde, raft, cluster, ring, grpc, grpcService, grpcClients)
         }
     }
+
+    data class Learner(val alias: String) : Serializable
 }
