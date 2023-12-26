@@ -15,7 +15,7 @@ object ActorSystem {
     }
 
     data class Conf(
-        val clusterLogStats: Duration = Duration.ofSeconds(10),
+        val clusterLogStats: Duration = Duration.ofSeconds(5),
         val registryCleanup: Duration = Duration.ofSeconds(60),
         val actorExpiration: Duration = Duration.ofMinutes(15)
     )
