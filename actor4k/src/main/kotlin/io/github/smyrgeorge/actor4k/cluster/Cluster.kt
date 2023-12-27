@@ -16,6 +16,7 @@ import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.thread
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
 
@@ -37,7 +38,7 @@ class Cluster(
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             while (true) {
-                delay(ActorSystem.conf.clusterLogStats.toMillis())
+                delay(ActorSystem.Conf.clusterLogStats.toMillis())
                 stats()
             }
         }
@@ -99,6 +100,7 @@ class Cluster(
 
             // Register cluster to the ActorSystem.
             ActorSystem.register(cluster)
+
 
             return cluster
         }

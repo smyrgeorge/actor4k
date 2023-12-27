@@ -34,16 +34,5 @@ services:
       - "9002:9000"
     networks:
       loadbalancing:
-  bank-3:
-    image: actor4k-bank
-    restart: unless-stopped
-    environment:
-      ACTOR4K_NODE_ID: bank-3
-      ACTOR4K_INITIAL_GROUP_MEMBERS: bank-1::bank-1:61100,bank-2::bank-2:61100
-    ports:
-      - "9003:9000"
-    networks:
-      loadbalancing:
-
 networks:
   loadbalancing:

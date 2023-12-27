@@ -22,7 +22,9 @@ class ClusterRaftTransport(
         target as ClusterRaftEndpoint
 
         if (self == target) {
-            error("Sanity check failed :: ${self.id} cannot send $message to itself!")
+            return
+//            ActorSystem.cluster.raft.handle(message)
+//            error("Sanity check failed :: ${self.id} cannot send $message to itself!")
         }
 
         retryBlocking(times = 5) {
