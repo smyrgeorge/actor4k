@@ -9,17 +9,6 @@ sealed interface Envelope {
 
     val shard: Shard.Key
 
-    data class Ping(
-        override val shard: Shard.Key,
-        val id: UUID,
-        val message: String
-    ) : Envelope {
-        data class Pong(
-            val id: UUID,
-            val message: String
-        )
-    }
-
     @Suppress("ArrayInDataClass")
     data class Ask(
         override val shard: Shard.Key,

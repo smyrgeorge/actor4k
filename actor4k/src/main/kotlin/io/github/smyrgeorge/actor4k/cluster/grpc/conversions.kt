@@ -16,6 +16,15 @@ fun ClusterRaftMessage.RaftProtocol.toProto(): Cluster.RaftProtocol {
     }
 }
 
+fun ClusterRaftMessage.RaftFollowerReady.toProto(): Cluster.RaftFollowerReady {
+    val m = this
+    return raftFollowerReady {
+        alias = m.alias
+        host = m.host
+        port = m.port
+    }
+}
+
 fun ClusterRaftMessage.RaftNewLearner.toProto(): Cluster.RaftNewLearner {
     val m = this
     return raftNewLearner {
@@ -25,12 +34,10 @@ fun ClusterRaftMessage.RaftNewLearner.toProto(): Cluster.RaftNewLearner {
     }
 }
 
-fun Envelope.Ping.toProto(): Cluster.Ping {
+fun ClusterRaftMessage.RaftPing.toProto(): Cluster.RaftPing {
     val m = this
-    return ping {
-        shard = m.shard.value
+    return raftPing {
         id = m.id.toString()
-        message = m.message
     }
 }
 

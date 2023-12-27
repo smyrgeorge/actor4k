@@ -22,7 +22,7 @@ data class Stats(
 
     private suspend fun calculate() {
         // Set cluster members size.
-        members = ActorSystem.cluster.nodes().size
+        members = ActorSystem.cluster.ring.size()
 
         // Calculate messages per second.
         val oldMessages = tM

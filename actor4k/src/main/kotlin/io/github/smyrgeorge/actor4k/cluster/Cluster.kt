@@ -5,15 +5,11 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftMessage
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftTransport
+import io.github.smyrgeorge.actor4k.cluster.raft.*
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.github.smyrgeorge.actor4k.util.forEachParallel
 import io.grpc.ServerBuilder
 import io.microraft.RaftNode
-import io.microraft.RaftRole
-import io.microraft.report.RaftNodeReport
 import kotlinx.coroutines.*
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
@@ -28,7 +24,8 @@ class Cluster(
     val stats: Stats,
     val serde: Serde,
     val raft: RaftNode,
-    private val ring: ConsistentHash<ServerNode>,
+    val raftManager: ClusterRaftManager,
+    val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
     private val grpcService: GrpcService,
     private val grpcClients: ConcurrentHashMap<String, GrpcClient>
@@ -52,9 +49,15 @@ class Cluster(
     }
 
     suspend fun broadcast(message: ClusterRaftMessage): Unit =
-        grpcClients.filter { it.key != node.alias }.forEach { msg(it.key, message) }
+        grpcClients.filter { it.key != node.alias }.keys.forEachParallel {
+            try {
+                msg(it, message)
+            } catch (e: Exception) {
+                log.error(e) { "Could not broadcast message to $it: ${e.message}" }
+            }
+        }
 
-    private suspend fun msg(alias: String, message: ClusterRaftMessage) {
+    suspend fun msg(alias: String, message: ClusterRaftMessage) {
         grpcClientOf(alias).request(message)
     }
 
@@ -67,8 +70,6 @@ class Cluster(
             grpcClientOf(target.dc).request(message)
         }
     }
-
-    fun nodes(): Set<ServerNode> = ring.nodes
 
     fun nodeOf(shard: Shard.Key): ServerNode =
         ring.locate(shard.value).getOrNull()
@@ -133,33 +134,17 @@ class Cluster(
                 .setGroupId(node.namespace)
                 .setLocalEndpoint(endpoint)
                 .setInitialGroupMembers(node.initialGroupMembers.map {
-                    ClusterRaftEndpoint(
-                        alias = it.first,
-                        host = it.second.host(),
-                        port = it.second.port()
-                    )
-                }).setRaftNodeReportListener {
-                    println("XXXXXXX: $it")
-                    when {
-                        // TODO: CLUSTER LOOP.
-                        it.reason == RaftNodeReport.RaftNodeReportReason.PERIODIC
-                                && it.role == RaftRole.LEARNER -> {
-                            val message = ClusterRaftMessage.RaftNewLearner(
-                                alias = it.endpoint.id as String,
-                                host = ActorSystem.cluster.node.host,
-                                port = ActorSystem.cluster.node.grpcPort
-                            )
-                            runBlocking { ActorSystem.cluster.broadcast(message) }
-                        }
-                    }
-                }
+                    ClusterRaftEndpoint(it.first, it.second.host(), it.second.port())
+                })
                 .setTransport(ClusterRaftTransport(endpoint, grpcClients))
                 .setStateMachine(ClusterRaftStateMachine(ring))
                 .build()
 
             raft.start()
 
-            return Cluster(node, stats, serde, raft, ring, grpc, grpcService, grpcClients)
+            val raftManager = ClusterRaftManager(node)
+
+            return Cluster(node, stats, serde, raft, raftManager, ring, grpc, grpcService, grpcClients)
         }
     }
 }

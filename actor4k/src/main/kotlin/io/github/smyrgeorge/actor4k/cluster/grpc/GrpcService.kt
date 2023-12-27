@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Shard
 import io.github.smyrgeorge.actor4k.cluster.ShardManager
@@ -12,18 +13,23 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.toInstance
 import io.microraft.MembershipChangeMode
 import io.microraft.RaftRole
-import java.util.*
 
 class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
+    private val log = KotlinLogging.logger {}
+
     suspend fun request(m: Envelope): Envelope.Response =
         when (m) {
-            is Envelope.Ping -> ping(m.toProto()).toResponse()
             is Envelope.Ask -> ask(m.toProto()).toResponse()
             is Envelope.Tell -> tell(m.toProto()).toResponse()
             is Envelope.GetActor -> getActor(m.toProto()).toResponse()
             is Envelope.Response -> error("Not a valid gRPC method found.")
         }
+
+    override suspend fun raftPing(request: Cluster.RaftPing): Cluster.Response {
+        ActorSystem.cluster.stats.protocol()
+        return Envelope.Response.of(Shard.Key("."), ".").toProto()
+    }
 
     override suspend fun raftProtocol(request: Cluster.RaftProtocol): Cluster.Response {
         ActorSystem.cluster.stats.protocol()
@@ -31,32 +37,30 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         return Envelope.Response.of(Shard.Key("."), ".").toProto()
     }
 
-    override suspend fun raftNewLearner(request: Cluster.RaftNewLearner): Cluster.Response {
+    override suspend fun raftFollowerReady(request: Cluster.RaftFollowerReady): Cluster.Response {
+        ActorSystem.cluster.stats.protocol()
         val req = ClusterRaftStateMachine.NodeAdded(request.alias, request.host, request.port)
-
-        if (ActorSystem.cluster.raft.report.join().result.role == RaftRole.LEADER) {
-            ActorSystem.cluster.raft.changeMembership(
-                /* endpoint = */ ClusterRaftEndpoint(req.alias, req.host, req.port),
-                /* mode = */ MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER,
-                /* expectedGroupMembersCommitIndex = */ ActorSystem.cluster.raft.committedMembers.logIndex
-            ).join().result
-
-            ActorSystem.cluster.raft.replicate<Unit>(req).join()
-        }
-
+        ActorSystem.cluster.raft.replicate<Unit>(req).join()
         return Envelope.Response.of(Shard.Key("."), ".").toProto()
     }
 
-    override suspend fun ping(request: Cluster.Ping): Cluster.Response {
-        ActorSystem.cluster.stats.message()
+    override suspend fun raftNewLearner(request: Cluster.RaftNewLearner): Cluster.Response {
+        try {
+            if (ActorSystem.cluster.raft.report.join().result.role == RaftRole.LEADER) {
+                val req = ClusterRaftStateMachine.NodeAdded(request.alias, request.host, request.port)
+                ActorSystem.cluster.raft.changeMembership(
+                    /* endpoint = */ ClusterRaftEndpoint(req.alias, req.host, req.port),
+                    /* mode = */ MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER,
+                    /* expectedGroupMembersCommitIndex = */ ActorSystem.cluster.raft.committedMembers.logIndex
+                ).join().result
 
-        val shard = Shard.Key(request.shard)
-        ShardManager.checkShard(shard)?.let {
-            return Envelope.Response.error(shard, it).toProto()
+                ActorSystem.cluster.raft.replicate<Unit>(req).join()
+            }
+        } catch (e: Exception) {
+            log.error(e) { e.message }
         }
 
-        val pong = Envelope.Ping.Pong(UUID.fromString(request.id), "Pong!")
-        return Envelope.Response.of(shard, pong).toProto()
+        return Envelope.Response.of(Shard.Key("."), ".").toProto()
     }
 
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
