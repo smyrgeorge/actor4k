@@ -3,24 +3,16 @@ package io.github.smyrgeorge.actor4k.cluster.raft
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.microraft.statemachine.StateMachine
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
-import org.ishugaliy.allgood.consistent.hash.HashRing
-import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.io.Serializable
 import java.util.function.Consumer
 
 
-class ClusterRaftStateMachine(namespace: String) : StateMachine {
+class ClusterRaftStateMachine(
+    private val ring: ConsistentHash<ServerNode>,
+) : StateMachine {
 
     private val log = KotlinLogging.logger {}
-
-    // Build hash ring.
-    private val ring: ConsistentHash<ServerNode> = HashRing.newBuilder<ServerNode>()
-        // Hash ring name.
-        .name(namespace)
-        // Hash function to distribute partitions.
-        .hasher(DefaultHasher.METRO_HASH)
-        .build()
 
     override fun runOperation(commitIndex: Long, operation: Any) {
         log.info { "Received ($commitIndex): $operation" }
@@ -46,8 +38,5 @@ class ClusterRaftStateMachine(namespace: String) : StateMachine {
 
     data class NodeAdded(val alias: String, val host: String, val port: Int) : Operation {
         fun toServerNode(): ServerNode = ServerNode(alias, host, port)
-    }
-
-    companion object {
     }
 }

@@ -6,7 +6,7 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 object ShardManager {
 
     fun checkShard(shard: Shard.Key): Envelope.Response.Error? {
-        if (ActorSystem.cluster.memberOf(shard).alias() != ActorSystem.cluster.node.alias) {
+        if (ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.node.alias) {
             return Envelope.Response.Error(
                 code = Envelope.Response.Error.Code.ShardError,
                 message = "Message for requested shard='${shard.value}' is not supported for node='${ActorSystem.cluster.node.alias}'."

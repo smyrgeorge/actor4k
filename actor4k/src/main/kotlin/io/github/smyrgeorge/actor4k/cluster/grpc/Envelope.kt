@@ -38,7 +38,7 @@ sealed interface Envelope {
         val payloadClass: String
     ) : Envelope
 
-    data class GetActorRef(
+    data class GetActor(
         override val shard: Shard.Key,
         val actorClazz: String,
         val actorKey: Actor.Key

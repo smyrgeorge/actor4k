@@ -50,32 +50,23 @@ fun main(args: Array<String>) {
     val log = KotlinLogging.logger {}
 
     val alias = System.getenv("ACTOR4K_NODE_ID") ?: "bank-1"
+    val host = System.getenv("ACTOR4K_NODE_HOST") ?: alias
     val httpPort = System.getenv("ACTOR4K_NODE_HTTP_PORT")?.toInt() ?: 9000
-    val isSeed = System.getenv("ACTOR4K_NODE_IS_SEED")?.toBoolean() ?: true
-    val seedPort = System.getenv("ACTOR4K_NODE_SWIM_PORT")?.toInt() ?: 61100
-    val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 50051
-    val raftEndpoints: List<Pair<String, Address>> =
-        (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "bank-1::localhost:$seedPort")
+    val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 61100
+    val initialGroupMembers: List<Pair<String, Address>> =
+        (System.getenv("ACTOR4K_INITIAL_GROUP_MEMBERS") ?: "bank-1::localhost:$grpcPort")
             .split(",").map { addressOf(it) }
-
-    log.info { raftEndpoints }
 
     val node: Node = Node
         .Builder()
         .alias(alias)
+        .host(host)
         .namespace("actor4k")
-        .isSeed(isSeed)
-        .seedPort(seedPort)
         .grpcPort(grpcPort)
-        .raftEndpoints(raftEndpoints)
-        .seedMembers(raftEndpoints.map { it.second })
-        .onGossip {
-            log.info { "Received Gossip: $it" }
-        }
-        .onMembershipEvent {
-            log.debug { "Received membership-event: $it" }
-        }
+        .initialGroupMembers(initialGroupMembers)
         .build()
+
+    log.info { node }
 
     Cluster
         .Builder()

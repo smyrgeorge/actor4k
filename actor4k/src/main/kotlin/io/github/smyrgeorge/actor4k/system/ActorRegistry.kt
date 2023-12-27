@@ -45,12 +45,12 @@ object ActorRegistry {
         // Create Local/Remote actor.
         val ref: Actor.Ref =
             if (ActorSystem.clusterMode
-                && ActorSystem.cluster.memberOf(shard).alias() != ActorSystem.cluster.node.alias
+                && ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.node.alias
             ) {
                 // Case Remote.
                 // Forward the [Envelope.Spawn] message to the correct cluster node.
-                val msg = Envelope.GetActorRef(shard, actor.name, key)
-                ActorSystem.cluster.msg(msg).getOrThrow<Envelope.GetActorRef.Ref>().toRef(shard)
+                val msg = Envelope.GetActor(shard, actor.name, key)
+                ActorSystem.cluster.msg(msg).getOrThrow<Envelope.GetActor.Ref>().toRef(shard)
             } else {
                 // Case Local.
                 // Spawn the actor.
