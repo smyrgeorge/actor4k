@@ -25,6 +25,13 @@ fun ClusterRaftMessage.RaftFollowerReady.toProto(): Cluster.RaftFollowerReady {
     }
 }
 
+fun ClusterRaftMessage.RaftFollowerIsLeaving.toProto(): Cluster.RaftFollowerIsLeaving {
+    val m = this
+    return raftFollowerIsLeaving {
+        alias = m.alias
+    }
+}
+
 fun ClusterRaftMessage.RaftNewLearner.toProto(): Cluster.RaftNewLearner {
     val m = this
     return raftNewLearner {

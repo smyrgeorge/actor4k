@@ -41,6 +41,12 @@ object ActorSystem {
             log.info { "Closing ${ActorRegistry.count()} actors.." }
             ActorRegistry.stopAll()
 
+            if (clusterMode) {
+                log.info { "Informing cluster that we are about to leave.." }
+                cluster.shutdown()
+            }
+
+            // Wait for all actors to finish.
             while (ActorRegistry.count() > 0) {
                 delay(5_000)
             }

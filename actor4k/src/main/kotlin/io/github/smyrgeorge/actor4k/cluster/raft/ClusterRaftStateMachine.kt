@@ -19,6 +19,7 @@ class ClusterRaftStateMachine(
         when (val op = operation as Operation) {
             LeaderElected -> Unit
             is NodeAdded -> ring.add(op.toServerNode())
+            is NodeRemoved -> ring.nodes.firstOrNull { it.dc == op.alias }?.let { ring.remove(it) }
         }
         log.info { "Ring: $ring" }
     }
@@ -39,4 +40,6 @@ class ClusterRaftStateMachine(
     data class NodeAdded(val alias: String, val host: String, val port: Int) : Operation {
         fun toServerNode(): ServerNode = ServerNode(alias, host, port)
     }
+
+    data class NodeRemoved(val alias: String) : Operation
 }

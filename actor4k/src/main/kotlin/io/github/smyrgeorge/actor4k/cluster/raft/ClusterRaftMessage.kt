@@ -19,6 +19,10 @@ sealed interface ClusterRaftMessage {
         val port: Int
     ) : ClusterRaftMessage
 
+    data class RaftFollowerIsLeaving(
+        val alias: String
+    ) : ClusterRaftMessage
+
     data class RaftNewLearner(
         val alias: String,
         val host: String,

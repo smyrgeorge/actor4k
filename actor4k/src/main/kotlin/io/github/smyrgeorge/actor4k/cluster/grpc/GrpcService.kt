@@ -44,6 +44,25 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         return Envelope.Response.of(Shard.Key("."), ".").toProto()
     }
 
+    override suspend fun raftFollowerIsLeaving(request: Cluster.RaftFollowerIsLeaving): Cluster.Response {
+        ActorSystem.cluster.stats.protocol()
+        if (ActorSystem.cluster.raft.report.join().result.role == RaftRole.LEADER) {
+            val req = ClusterRaftStateMachine.NodeRemoved(request.alias)
+            val follower = ActorSystem.cluster.raft.committedMembers.members.firstOrNull { it.id == req.alias }
+            follower?.let {
+                it as ClusterRaftEndpoint
+                ActorSystem.cluster.raft.changeMembership(
+                    /* endpoint = */ ClusterRaftEndpoint(req.alias, it.host, it.port),
+                    /* mode = */ MembershipChangeMode.REMOVE_MEMBER,
+                    /* expectedGroupMembersCommitIndex = */ ActorSystem.cluster.raft.committedMembers.logIndex
+                ).join().result
+            }
+
+            ActorSystem.cluster.raft.replicate<Unit>(req).join()
+        }
+        return Envelope.Response.of(Shard.Key("."), ".").toProto()
+    }
+
     override suspend fun raftNewLearner(request: Cluster.RaftNewLearner): Cluster.Response {
         try {
             if (ActorSystem.cluster.raft.report.join().result.role == RaftRole.LEADER) {

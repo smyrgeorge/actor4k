@@ -29,6 +29,7 @@ class GrpcClient(host: String, port: Int) : Closeable {
             is ClusterRaftMessage.RaftPing -> stub.raftPing(m.toProto()).toResponse()
             is ClusterRaftMessage.RaftProtocol -> stub.raftProtocol(m.toProto()).toResponse()
             is ClusterRaftMessage.RaftFollowerReady -> stub.raftFollowerReady(m.toProto()).toResponse()
+            is ClusterRaftMessage.RaftFollowerIsLeaving -> stub.raftFollowerIsLeaving(m.toProto()).toResponse()
             is ClusterRaftMessage.RaftNewLearner -> stub.raftNewLearner(m.toProto()).toResponse()
         }
 

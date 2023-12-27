@@ -16,14 +16,12 @@ class ClusterRaftManager(private val node: Node) {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
 
-            // Initial delay (until warm up)
-            delay(30_000)
 
             while (true) {
-
+                delay(10_000)
                 try {
                     val self: RaftNode = ActorSystem.cluster.raft
-                    val report: RaftNodeReport = ActorSystem.cluster.raft.report.join().result
+                    val report: RaftNodeReport = self.report.join().result
                     log.info { "[${report.role}][${report.status}] committedMembers: ${report.committedMembers.members.size}" }
 
                     when {
@@ -48,8 +46,33 @@ class ClusterRaftManager(private val node: Node) {
                 } catch (e: Exception) {
                     log.warn(e) { e.message }
                 }
+            }
+        }
+    }
 
-                delay(10_000)
+    suspend fun shutdown() {
+        val self: RaftNode = ActorSystem.cluster.raft
+        val report: RaftNodeReport = self.report.join().result
+
+        when {
+            // Case for last node left in the cluster (do not inform anyone, just leave).
+            self.committedMembers.members.size == 1 -> return
+            // Case this node is a leader.
+            report.role == RaftRole.LEADER -> {
+                self.committedMembers.members
+                    .firstOrNull { it.id != ActorSystem.cluster.node.namespace }
+                    ?.let {
+                        // Promote follower to leader.
+                        self.transferLeadership(it).join().result
+                        // Now that node became follower can leave the cluster normally.
+                        val message = ClusterRaftMessage.RaftFollowerIsLeaving(ActorSystem.cluster.node.alias)
+                        ActorSystem.cluster.broadcast(message)
+                    }
+            }
+            // Case this node is follower.
+            report.role == RaftRole.FOLLOWER -> {
+                val message = ClusterRaftMessage.RaftFollowerIsLeaving(ActorSystem.cluster.node.alias)
+                ActorSystem.cluster.broadcast(message)
             }
         }
     }

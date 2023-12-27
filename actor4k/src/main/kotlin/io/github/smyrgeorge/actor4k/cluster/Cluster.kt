@@ -8,6 +8,7 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
 import io.github.smyrgeorge.actor4k.cluster.raft.*
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.forEachParallel
+import io.github.smyrgeorge.actor4k.util.retry
 import io.grpc.ServerBuilder
 import io.microraft.RaftNode
 import kotlinx.coroutines.*
@@ -16,7 +17,6 @@ import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.concurrent.thread
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
 
@@ -25,7 +25,7 @@ class Cluster(
     val stats: Stats,
     val serde: Serde,
     val raft: RaftNode,
-    val raftManager: ClusterRaftManager,
+    private val raftManager: ClusterRaftManager,
     val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
     private val grpcService: GrpcService,
@@ -44,6 +44,10 @@ class Cluster(
         }
     }
 
+    suspend fun shutdown() {
+        raftManager.shutdown()
+    }
+
     private fun stats() {
         // Log [Stats].
         log.info { stats }
@@ -52,7 +56,7 @@ class Cluster(
     suspend fun broadcast(message: ClusterRaftMessage): Unit =
         grpcClients.filter { it.key != node.alias }.keys.forEachParallel {
             try {
-                msg(it, message)
+                retry(times = 3) { msg(it, message) }
             } catch (e: Exception) {
                 log.error(e) { "Could not broadcast message to $it: ${e.message}" }
             }
