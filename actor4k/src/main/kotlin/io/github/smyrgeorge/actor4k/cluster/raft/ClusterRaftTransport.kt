@@ -7,6 +7,7 @@ import io.github.smyrgeorge.actor4k.util.retryBlocking
 import io.microraft.RaftEndpoint
 import io.microraft.model.message.RaftMessage
 import io.microraft.transport.Transport
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
 
@@ -20,14 +21,8 @@ class ClusterRaftTransport(
 
     override fun send(target: RaftEndpoint, message: RaftMessage) {
         target as ClusterRaftEndpoint
-
-        if (self == target) {
-            return
-//            ActorSystem.cluster.raft.handle(message)
-//            error("Sanity check failed :: ${self.id} cannot send $message to itself!")
-        }
-
-        retryBlocking(times = 5) {
+        if (self == target) return
+        retryBlocking(times = ActorSystem.Conf.clusterTransportRetries) {
             val msg = ClusterRaftMessage.RaftProtocol(message)
             grpcClients.getOrPut(target.alias) { GrpcClient(target.host, target.port) }.request(msg)
         }
@@ -36,10 +31,12 @@ class ClusterRaftTransport(
     override fun isReachable(endpoint: RaftEndpoint): Boolean {
         endpoint as ClusterRaftEndpoint
         return try {
-            runBlocking { ActorSystem.cluster.msg(endpoint.alias, ClusterRaftMessage.RaftPing()) }
+            runBlocking(Dispatchers.IO) {
+                ActorSystem.cluster.msg(endpoint.alias, ClusterRaftMessage.RaftPing())
+            }
             true
         } catch (e: Exception) {
-            log.error(e) { "Could not send ping message to ${endpoint.alias}: ${e.message}" }
+            log.warn { "Could not send ping message to ${endpoint.alias}: ${e.message}" }
             false
         }
     }

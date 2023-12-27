@@ -46,6 +46,7 @@ class Cluster(
 
     suspend fun shutdown() {
         raftManager.shutdown()
+        grpc.shutdown()
     }
 
     private fun stats() {
@@ -56,7 +57,7 @@ class Cluster(
     suspend fun broadcast(message: ClusterRaftMessage): Unit =
         grpcClients.filter { it.key != node.alias }.keys.forEachParallel {
             try {
-                retry(times = 3) { msg(it, message) }
+                retry(times = ActorSystem.Conf.clusterTransportRetries) { msg(it, message) }
             } catch (e: Exception) {
                 log.error(e) { "Could not broadcast message to $it: ${e.message}" }
             }
@@ -141,7 +142,7 @@ class Cluster(
                 .setLocalEndpoint(endpoint)
                 .setInitialGroupMembers(node.initialGroupMembers.map {
                     ClusterRaftEndpoint(it.first, it.second.host(), it.second.port())
-                })
+                }).setRaftNodeReportListener { println("XXX: $it") }
                 .setTransport(ClusterRaftTransport(endpoint, grpcClients))
                 .setStateMachine(ClusterRaftStateMachine(ring))
                 .build()

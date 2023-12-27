@@ -28,58 +28,66 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun raftPing(request: Cluster.RaftPing): Cluster.Response {
         ActorSystem.cluster.stats.protocol()
-        return Envelope.Response.of(Shard.Key("."), ".").toProto()
+        return dot()
     }
 
     override suspend fun raftProtocol(request: Cluster.RaftProtocol): Cluster.Response {
         ActorSystem.cluster.stats.protocol()
         ActorSystem.cluster.raft.handle(request.payload.toByteArray().toInstance())
-        return Envelope.Response.of(Shard.Key("."), ".").toProto()
+        return dot()
     }
 
     override suspend fun raftFollowerReady(request: Cluster.RaftFollowerReady): Cluster.Response {
         ActorSystem.cluster.stats.protocol()
         val req = ClusterRaftStateMachine.NodeAdded(request.alias, request.host, request.port)
         ActorSystem.cluster.raft.replicate<Unit>(req).join()
-        return Envelope.Response.of(Shard.Key("."), ".").toProto()
+        return dot()
     }
 
     override suspend fun raftFollowerIsLeaving(request: Cluster.RaftFollowerIsLeaving): Cluster.Response {
         ActorSystem.cluster.stats.protocol()
-        if (ActorSystem.cluster.raft.report.join().result.role == RaftRole.LEADER) {
+        val self = ActorSystem.cluster.raft
+        if (self.report.join().result.role == RaftRole.LEADER) {
             val req = ClusterRaftStateMachine.NodeRemoved(request.alias)
-            val follower = ActorSystem.cluster.raft.committedMembers.members.firstOrNull { it.id == req.alias }
-            follower?.let {
+            self.committedMembers.members.firstOrNull { it.id == req.alias }?.let {
                 it as ClusterRaftEndpoint
                 ActorSystem.cluster.raft.changeMembership(
-                    /* endpoint = */ ClusterRaftEndpoint(req.alias, it.host, it.port),
-                    /* mode = */ MembershipChangeMode.REMOVE_MEMBER,
-                    /* expectedGroupMembersCommitIndex = */ ActorSystem.cluster.raft.committedMembers.logIndex
+                    ClusterRaftEndpoint(req.alias, it.host, it.port),
+                    MembershipChangeMode.REMOVE_MEMBER,
+                    self.committedMembers.logIndex
                 ).join().result
             }
 
             ActorSystem.cluster.raft.replicate<Unit>(req).join()
         }
-        return Envelope.Response.of(Shard.Key("."), ".").toProto()
+        return dot()
     }
 
     override suspend fun raftNewLearner(request: Cluster.RaftNewLearner): Cluster.Response {
         try {
-            if (ActorSystem.cluster.raft.report.join().result.role == RaftRole.LEADER) {
+            val self = ActorSystem.cluster.raft
+            if (self.report.join().result.role == RaftRole.LEADER) {
                 val req = ClusterRaftStateMachine.NodeAdded(request.alias, request.host, request.port)
-                ActorSystem.cluster.raft.changeMembership(
-                    /* endpoint = */ ClusterRaftEndpoint(req.alias, req.host, req.port),
-                    /* mode = */ MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER,
-                    /* expectedGroupMembersCommitIndex = */ ActorSystem.cluster.raft.committedMembers.logIndex
+                val res = ActorSystem.cluster.raft.changeMembership(
+                    ClusterRaftEndpoint(req.alias, req.host, req.port),
+                    MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER,
+                    self.committedMembers.logIndex
                 ).join().result
 
-                ActorSystem.cluster.raft.replicate<Unit>(req).join()
+                ActorSystem.cluster.raft.takeSnapshot()
+
+                // TODO: Find a way to check this.
+                // Validated that node promoted as follower
+                // before we propagate the changes to the network.
+                if (res.members.any { it.id == req.alias }) {
+                    self.replicate<Unit>(req).join()
+                }
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
         }
 
-        return Envelope.Response.of(Shard.Key("."), ".").toProto()
+        return dot()
     }
 
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
@@ -122,4 +130,6 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         val res = Envelope.GetActor.Ref(shard, request.actorClazz, actor.name, actor.key)
         return Envelope.Response.of(shard, res).toProto()
     }
+
+    private fun dot(): Cluster.Response = Envelope.Response.of(Shard.Key("."), ".").toProto()
 }
