@@ -1,10 +1,8 @@
 # actor4k
 
-A small actor system written in kotlin using Coroutines (kotlinx.coroutines).
+I have developed a small actor system using Kotlin and Coroutines (kotlinx.coroutines).
 
-The main goal is to build a minimal actor system that can work in cluster mode.
-
-**NOTE:** Until it's a toy project and of course is not ready for production use.
+The primary objective is to create a minimal actor system capable of functioning in cluster mode.
 
 ## Work in progress
 
@@ -16,7 +14,8 @@ Check the `examples` for additional info.
 A lot of things need to be done, so sit tight…
 
 - [ ] Cluster - Sharding (in progress)
-    - [ ] Use `raft` consensus algorithm for the cluster node membership (in progress).
+    - [x] Use `raft` consensus algorithm for the cluster node membership (in progress).
+    - [x] Do not use SWIM, just use raft and gRPC.
     - [x] Implement `tell/ask` patterns across cluster nodes
     - [x] Add support for cross-node actor reference
     - [x] Introduce the concept of Shard.
@@ -32,9 +31,9 @@ A lot of things need to be done, so sit tight…
 
 ## Run the example.
 
-The included example tries to simulate a very simple bank system.
+The included example tries to simulate a very simple bank accounting system.
 
-It defines a `AccountActor` that can handle only two simple commands,
+It defines an `AccountActor` that can handle only two simple commands,
 `Req.GetAccount` and `Req.ApplyTx`.
 
 The client `examples-bank-client` generates traffic.
@@ -95,3 +94,5 @@ docker build . -t actor4k -f examples/src/main/docker/Dockerfile
 - https://www.pubnub.com/blog/consistent-hashing-implementation/
 - https://github.com/Jaskey/ConsistentHash
 - https://github.com/ishugaliy/allgood-consistent-hash
+- https://microraft.io/
+- https://raft.github.io/

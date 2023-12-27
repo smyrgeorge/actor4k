@@ -20,8 +20,8 @@ object ActorRegistry {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             while (true) {
-                delay(ActorSystem.conf.registryCleanup.toMillis())
-                cleanup()
+                delay(ActorSystem.Conf.registryCleanup.toMillis())
+                stopExpired()
             }
         }
     }
@@ -37,6 +37,9 @@ object ActorRegistry {
         key: Actor.Key,
         shard: Shard.Key = Shard.Key(key.value)
     ): Actor.Ref {
+        if (ActorSystem.status != ActorSystem.Status.READY)
+            error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
+
         val address = Actor.addressOf(actor, key)
 
         // Check if the actor already exists in the local storage.
@@ -45,12 +48,12 @@ object ActorRegistry {
         // Create Local/Remote actor.
         val ref: Actor.Ref =
             if (ActorSystem.clusterMode
-                && ActorSystem.cluster.memberOf(shard).alias() != ActorSystem.cluster.node.alias
+                && ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.node.alias
             ) {
                 // Case Remote.
                 // Forward the [Envelope.Spawn] message to the correct cluster node.
-                val msg = Envelope.GetActorRef(shard, actor.name, key)
-                ActorSystem.cluster.msg(msg).getOrThrow<Envelope.GetActorRef.Ref>().toRef(shard)
+                val msg = Envelope.GetActor(shard, actor.name, key)
+                ActorSystem.cluster.msg(msg).getOrThrow<Envelope.GetActor.Ref>().toRef(shard)
             } else {
                 // Case Local.
                 // Spawn the actor.
@@ -67,6 +70,9 @@ object ActorRegistry {
     }
 
     suspend fun get(clazz: String, key: Actor.Key, shard: Shard.Key): Actor.Ref {
+        if (ActorSystem.status != ActorSystem.Status.READY)
+            error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
+
         @Suppress("UNCHECKED_CAST")
         val actor = Class.forName(clazz) as? Class<Actor>
             ?: error("Could not find requested actor class='$clazz'.")
@@ -74,6 +80,9 @@ object ActorRegistry {
     }
 
     suspend fun get(ref: Actor.Ref.Local): Actor {
+        if (ActorSystem.status != ActorSystem.Status.READY)
+            error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
+
         val address = Actor.addressOf(ref.actor, ref.key)
         return registry[address] // If actor is not in the registry (passivated) spawn a new one.
             ?: get(ref.actor, ref.key).let { registry[address]!! }
@@ -87,13 +96,17 @@ object ActorRegistry {
         }
     }
 
-    private suspend fun cleanup() {
+    suspend fun stopAll(): Unit =
+        registry.values.forEachParallel { it.stop() }
+
+    private suspend fun stopExpired(): Unit =
         registry.values.forEachParallel {
             val df = Instant.now().epochSecond - it.stats().last.epochSecond
-            if (df > ActorSystem.conf.actorExpiration.seconds) {
+            if (df > ActorSystem.Conf.actorExpiration.seconds) {
                 log.debug { "Closing ${it.address()} (expired)." }
                 it.stop()
             }
         }
-    }
+
+    fun count(): Int = registry.count()
 }
