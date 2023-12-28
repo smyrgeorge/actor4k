@@ -62,6 +62,9 @@ dependencies {
     api("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0")
 
+    // https://github.com/EsotericSoftware/kryo
+    api("com.esotericsoftware:kryo:5.5.0")
+
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
     testApi("org.mockito.kotlin:mockito-kotlin:5.1.0")

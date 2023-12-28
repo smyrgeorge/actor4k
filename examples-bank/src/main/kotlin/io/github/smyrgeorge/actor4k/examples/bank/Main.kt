@@ -73,7 +73,7 @@ fun main(args: Array<String>) {
         .node(node)
         .start()
 
-    val om: ObjectMapper = Serde.Json.create()
+    val om: ObjectMapper = Serde.Jackson.create()
     val app: RoutingHttpHandler = routes(
         "/api/account/{accountNo}" bind Method.GET to {
             runBlocking {

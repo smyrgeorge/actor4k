@@ -29,7 +29,7 @@ fun main(args: Array<String>) {
 
     val log = KotlinLogging.logger {}
 
-    val om = Serde.Json.create()
+    val om = Serde.Jackson.create()
     val client = ApacheClient()
 
     val txValue = 10

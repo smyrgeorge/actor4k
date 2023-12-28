@@ -87,7 +87,7 @@ class Cluster(
     class Builder {
 
         private lateinit var node: Node
-        private var serde: Serde = Serde.Json()
+        private var serde: Serde = Serde.Jackson()
 
         fun node(n: Node): Builder {
             node = n
