@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
@@ -12,6 +13,8 @@ import io.github.smyrgeorge.actor4k.util.retry
 import io.grpc.ServerBuilder
 import io.microraft.RaftConfig
 import io.microraft.RaftNode
+import io.scalecube.cluster.ClusterImpl
+import io.scalecube.transport.netty.tcp.TcpTransportFactory
 import kotlinx.coroutines.*
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
@@ -20,20 +23,22 @@ import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
+import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
 class Cluster(
     val node: Node,
     val stats: Stats,
     val serde: Serde,
-    val raft: RaftNode,
-    private val raftManager: ClusterRaftManager,
+    val gossip: ScaleCubeCluster,
     val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
     private val grpcService: GrpcService,
-    val grpcClients: ConcurrentHashMap<String, GrpcClient>
+    private val grpcClients: ConcurrentHashMap<String, GrpcClient>
 ) {
-
     private val log = KotlinLogging.logger {}
+
+    lateinit var raft: RaftNode
+    lateinit var raftManager: ClusterRaftManager
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -87,6 +92,42 @@ class Cluster(
     private fun grpcClientOf(endpoint: ClusterRaftEndpoint): GrpcClient =
         grpcClients.getOrPut(endpoint.alias) { GrpcClient(endpoint.host, endpoint.port) }
 
+    fun start(): Cluster {
+        grpc.start()
+        (gossip as ClusterImpl).startAwait()
+        return this
+    }
+
+    fun startRaft(initialGroupMembers: List<ClusterRaftEndpoint>): Cluster {
+        log.info { "Starting raft, initialGroupMembers=$initialGroupMembers" }
+
+        val endpoint = ClusterRaftEndpoint(node.alias, node.host, node.grpcPort)
+        val config: RaftConfig = RaftConfig
+            .newBuilder()
+            .setLeaderElectionTimeoutMillis(10_000)
+            .setLeaderHeartbeatTimeoutSecs(10)
+            .setLeaderHeartbeatPeriodSecs(2)
+            .setCommitCountToTakeSnapshot(10)
+            .setAppendEntriesRequestBatchSize(1000)
+            .setTransferSnapshotsFromFollowersEnabled(true)
+            .build()
+        raft = RaftNode
+            .newBuilder()
+            .setConfig(config)
+            .setGroupId(node.namespace)
+            .setLocalEndpoint(endpoint)
+            .setInitialGroupMembers(initialGroupMembers)
+            .setTransport(ClusterRaftTransport(endpoint, grpcClients))
+            .setStateMachine(ClusterRaftStateMachine(ring))
+            .build()
+
+        raft.start()
+
+        raftManager = ClusterRaftManager()
+
+        return this
+    }
+
     class Builder {
 
         private lateinit var node: Node
@@ -102,20 +143,18 @@ class Cluster(
             return this
         }
 
-        fun start(): Cluster {
-            // Build [Cluster]
-            val cluster = build()
-
-            // Register cluster to the ActorSystem.
-            ActorSystem.register(cluster)
-
-
-            return cluster
-        }
-
-        private fun build(): Cluster {
+        fun build(): Cluster {
             // Initialize stats object here.
             val stats = Stats()
+
+            // Build cluster.
+            val gossip: ScaleCubeCluster = ClusterImpl()
+                .transport { it.port(node.gossipPort) }
+                .config { it.memberAlias(node.alias) }
+                .membership { it.namespace(node.namespace) }
+                .membership { it.seedMembers(node.seedMembers) }
+                .transportFactory { TcpTransportFactory() }
+                .handler { MessageHandler(node, stats) }
 
             // Build the [GrpcService].
             val grpcService = GrpcService()
@@ -125,7 +164,6 @@ class Cluster(
                 .forPort(node.grpcPort)
                 .addService(grpcService)
                 .build()
-                .start()
 
             // Build gRPC clients HashMap.
             val grpcClients = ConcurrentHashMap<String, GrpcClient>()
@@ -138,36 +176,13 @@ class Cluster(
                 .hasher(DefaultHasher.METRO_HASH)
                 .build()
 
-            val endpoint = ClusterRaftEndpoint(node.alias, node.host, node.grpcPort)
-            val config: RaftConfig = RaftConfig
-                .newBuilder()
-                .setLeaderElectionTimeoutMillis(10_000)
-                .setLeaderHeartbeatTimeoutSecs(10)
-                .setLeaderHeartbeatPeriodSecs(2)
-                .setCommitCountToTakeSnapshot(10)
-                .setAppendEntriesRequestBatchSize(1000)
-                .setTransferSnapshotsFromFollowersEnabled(true)
-                .build()
-            val raft = RaftNode
-                .newBuilder()
-                .setConfig(config)
-//                .setStore()
-//                .setRestoredState()
-                .setGroupId(node.namespace)
-                .setLocalEndpoint(endpoint)
-                .setInitialGroupMembers(node.initialGroupMembers.map {
-                    ClusterRaftEndpoint(it.first, it.second.host(), it.second.port())
-                })
-//                .setRaftNodeReportListener { println("REPORT: $it") }
-                .setTransport(ClusterRaftTransport(endpoint, grpcClients))
-                .setStateMachine(ClusterRaftStateMachine(ring))
-                .build()
+            // Built cluster
+            val cluster = Cluster(node, stats, serde, gossip, ring, grpc, grpcService, grpcClients)
 
-            raft.start()
+            // Register cluster to the ActorSystem.
+            ActorSystem.register(cluster)
 
-            val raftManager = ClusterRaftManager(node)
-
-            return Cluster(node, stats, serde, raft, raftManager, ring, grpc, grpcService, grpcClients)
+            return cluster
         }
     }
 }

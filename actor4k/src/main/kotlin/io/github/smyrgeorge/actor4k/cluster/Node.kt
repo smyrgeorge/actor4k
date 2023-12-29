@@ -7,15 +7,17 @@ data class Node(
     val host: String,
     val namespace: String,
     val grpcPort: Int,
-    val initialGroupMembers: List<Pair<String, Address>>
+    val gossipPort: Int,
+    val seedMembers: List<Address>
 ) {
 
     class Builder {
         private lateinit var alias: String
         private lateinit var host: String
         private lateinit var namespace: String
-        private var grpcPort: Int = 50051
-        private var initialGroupMembers: List<Pair<String, Address>> = emptyList()
+        private var grpcPort: Int = 61100
+        private var gossipPort: Int = 61000
+        private var seedMembers: List<Address> = emptyList()
 
         fun alias(v: String): Builder {
             alias = v
@@ -37,8 +39,13 @@ data class Node(
             return this
         }
 
-        fun initialGroupMembers(v: List<Pair<String, Address>>): Builder {
-            initialGroupMembers = v
+        fun gossipPort(v: Int): Builder {
+            gossipPort = v
+            return this
+        }
+
+        fun seedMembers(v: List<Address>): Builder {
+            seedMembers = v
             return this
         }
 
@@ -47,7 +54,8 @@ data class Node(
             host = host,
             namespace = namespace,
             grpcPort = grpcPort,
-            initialGroupMembers = initialGroupMembers
+            gossipPort = gossipPort,
+            seedMembers = seedMembers
         )
     }
 }

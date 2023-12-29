@@ -5,7 +5,7 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
-import io.github.smyrgeorge.actor4k.util.addressOf
+import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -19,20 +19,21 @@ fun main(args: Array<String>) {
     val alias = System.getenv("ACTOR4K_NODE_ID") ?: "node-1"
     val seedPort = System.getenv("ACTOR4K_NODE_SWIM_PORT")?.toInt() ?: 61100
     val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 50051
-    val initialGroupMembers = (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "bank-1::localhost:$seedPort")
-        .split(",").map { addressOf(it) }
+    val seedMembers = (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "localhost:$seedPort")
+        .split(",").map { Address.from(it) }
 
     val node: Node = Node
         .Builder()
         .alias(alias)
         .namespace("actor4k")
         .grpcPort(grpcPort)
-        .initialGroupMembers(initialGroupMembers)
+        .seedMembers(seedMembers)
         .build()
 
     val cluster: Cluster = Cluster
         .Builder()
         .node(node)
+        .build()
         .start()
 
     runBlocking {

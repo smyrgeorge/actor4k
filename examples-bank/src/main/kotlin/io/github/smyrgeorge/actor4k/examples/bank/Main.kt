@@ -11,7 +11,6 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
 import io.github.smyrgeorge.actor4k.proto.Cluster.RaftProtocol
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.addressOf
 import io.github.smyrgeorge.actor4k.util.toInstance
 import io.microraft.model.message.RaftMessage
 import io.scalecube.net.Address
@@ -57,9 +56,9 @@ fun main(args: Array<String>) {
     val host = System.getenv("ACTOR4K_NODE_HOST") ?: alias
     val httpPort = System.getenv("ACTOR4K_NODE_HTTP_PORT")?.toInt() ?: 9000
     val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 61100
-    val initialGroupMembers: List<Pair<String, Address>> =
-        (System.getenv("ACTOR4K_INITIAL_GROUP_MEMBERS") ?: "bank-1::localhost:$grpcPort")
-            .split(",").map { addressOf(it) }
+    val gossipPort = System.getenv("ACTOR4K_NODE_GOSSIP_PORT")?.toInt() ?: 61000
+    val seedMembers: List<Address> = (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "localhost:$grpcPort")
+        .split(",").map { Address.from(it) }
 
     val node: Node = Node
         .Builder()
@@ -67,7 +66,8 @@ fun main(args: Array<String>) {
         .host(host)
         .namespace("actor4k")
         .grpcPort(grpcPort)
-        .initialGroupMembers(initialGroupMembers)
+        .gossipPort(gossipPort)
+        .seedMembers(seedMembers)
         .build()
 
     log.info { node }
@@ -75,6 +75,7 @@ fun main(args: Array<String>) {
     Cluster
         .Builder()
         .node(node)
+        .build()
         .start()
 
     val om: ObjectMapper = Serde.Jackson.create()

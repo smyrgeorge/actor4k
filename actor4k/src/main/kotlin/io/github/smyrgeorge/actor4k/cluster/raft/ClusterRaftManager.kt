@@ -1,14 +1,13 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.microraft.RaftNode
 import io.microraft.RaftRole
 import io.microraft.report.RaftNodeReport
 import kotlinx.coroutines.*
 
-class ClusterRaftManager(private val node: Node) {
+class ClusterRaftManager {
 
     private val log = KotlinLogging.logger {}
 

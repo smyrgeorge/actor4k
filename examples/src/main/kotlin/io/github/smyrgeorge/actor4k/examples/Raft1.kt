@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit
 // https://microraft.io/docs/tutorial-building-an-atomic-register/#tutorial-building-an-atomic-register
 class Raft1
 
-val initialMembers = listOf(LocalRaftEndpoint("bank-1"), LocalRaftEndpoint("bank-2"), LocalRaftEndpoint("bank-3"))
-//val initialMembers = listOf(LocalRaftEndpoint("bank-1"))
+//val initialMembers = listOf(LocalRaftEndpoint("bank-1"), LocalRaftEndpoint("bank-2"), LocalRaftEndpoint("bank-3"))
+val initialMembers = listOf(LocalRaftEndpoint("bank-1"))
 val transports = mutableListOf<LocalTransport>()
 val raftNodes = mutableListOf<RaftNode>()
 
