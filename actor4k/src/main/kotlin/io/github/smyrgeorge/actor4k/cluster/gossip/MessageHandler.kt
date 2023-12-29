@@ -4,7 +4,11 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.Stats
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.microraft.MembershipChangeMode
+import io.microraft.RaftRole
+import io.microraft.model.message.RaftMessage
 import io.scalecube.cluster.Member
 import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
@@ -23,19 +27,21 @@ class MessageHandler(
 
     private var initialGroupMembers = emptyList<ClusterRaftEndpoint>()
 
-    private sealed interface Protocol : Serializable {
+    sealed interface Protocol : Serializable {
         data object ReqInitialGroupMembers : Protocol {
             private fun readResolve(): Any = ReqInitialGroupMembers
         }
 
         data class ResInitialGroupMembers(val members: List<ClusterRaftEndpoint>) : Protocol
+        data class RaftProtocol(val message: RaftMessage) : Protocol
+        data class RaftFollowerIsLeaving(val alias: String) : Protocol
     }
 
     @Suppress("unused")
     @OptIn(DelicateCoroutinesApi::class)
     private val job: Job = GlobalScope.launch(Dispatchers.IO) {
         delay(5_000) // Initial delay
-        val rounds = 3
+        val rounds = 5
         var i = 0
         while (i < rounds) {
             log.info { "Waiting for other nodes to appear... [${i + 1}/$rounds]" }
@@ -80,8 +86,8 @@ class MessageHandler(
 
     override fun onGossip(g: Message) {
         try {
-            log.info { "Received gossip: $g" }
-            when (g.data<Protocol>()) {
+            log.debug { "Received gossip: $g" }
+            when (val d = g.data<Protocol>()) {
                 Protocol.ReqInitialGroupMembers -> {
                     val members: List<ClusterRaftEndpoint> = initialGroupMembers.ifEmpty {
                         log.info { "Raft is not started will send the members found from the gossip protocol." }
@@ -97,6 +103,29 @@ class MessageHandler(
                 }
 
                 is Protocol.ResInitialGroupMembers -> Unit
+                is Protocol.RaftProtocol -> Unit
+                is Protocol.RaftFollowerIsLeaving -> {
+                    val self = ActorSystem.cluster.raft
+                    if (self.report.join().result.role == RaftRole.LEADER) {
+                        val req = ClusterRaftStateMachine.NodeRemoved(d.alias)
+                        try {
+                            self.committedMembers.members.firstOrNull { it.id == req.alias }?.let {
+                                // If the node is part of the initial members do not remove from raft state.
+                                if (self.initialMembers.members.none { im -> im.id == req.alias }) {
+                                    it as ClusterRaftEndpoint
+                                    self.changeMembership(
+                                        ClusterRaftEndpoint(req.alias, it.host, it.port),
+                                        MembershipChangeMode.REMOVE_MEMBER,
+                                        self.committedMembers.logIndex
+                                    ).join().result
+                                }
+                            }
+                        } catch (e: Exception) {
+                            log.warn { e.message }
+                        }
+                        ActorSystem.cluster.raft.replicate<Unit>(req).join()
+                    }
+                }
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -105,13 +134,20 @@ class MessageHandler(
 
     override fun onMessage(m: Message) {
         try {
-            log.info { "Received message: $m" }
+            log.debug { "Received message: $m" }
             when (val d = m.data<Protocol>()) {
                 is Protocol.ResInitialGroupMembers -> {
-                    initialGroupMembers = d.members
+                    initialGroupMembers.ifEmpty {
+                        initialGroupMembers = d.members
+                    }
+                }
+
+                is Protocol.RaftProtocol -> {
+                    ActorSystem.cluster.raft.handle(d.message)
                 }
 
                 Protocol.ReqInitialGroupMembers -> Unit
+                is Protocol.RaftFollowerIsLeaving -> Unit
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -134,8 +170,5 @@ class MessageHandler(
 
     private fun left(member: Member) {
     }
-
-//    private fun Member.toServerNode(): ServerNode =
-//        ServerNode(alias(), address().host(), address().port())
 
 }

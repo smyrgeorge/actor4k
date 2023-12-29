@@ -10,7 +10,6 @@ import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.toInstance
 import io.microraft.MembershipChangeMode
 import io.microraft.RaftRole
 
@@ -34,11 +33,11 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
     override suspend fun raftProtocol(request: Cluster.RaftProtocol): Cluster.Response {
         ActorSystem.cluster.stats.protocol()
 
-        try {
-            ActorSystem.cluster.raft.handle(request.payload.toByteArray().toInstance())
-        } catch (e: Exception) {
-            log.error { e.message }
-        }
+//        try {
+//            ActorSystem.cluster.raft.handle(request.payload.toByteArray().toInstance())
+//        } catch (e: Exception) {
+//            log.error { e.message }
+//        }
 
         return dot()
     }
@@ -58,24 +57,24 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun raftFollowerIsLeaving(request: Cluster.RaftFollowerIsLeaving): Cluster.Response {
         ActorSystem.cluster.stats.protocol()
-        try {
 
-            val self = ActorSystem.cluster.raft
-            if (self.report.join().result.role == RaftRole.LEADER) {
-                val req = ClusterRaftStateMachine.NodeRemoved(request.alias)
-                self.committedMembers.members.firstOrNull { it.id == req.alias }?.let {
-                    it as ClusterRaftEndpoint
-                    self.changeMembership(
-                        ClusterRaftEndpoint(req.alias, it.host, it.port),
-                        MembershipChangeMode.REMOVE_MEMBER,
-                        self.committedMembers.logIndex
-                    ).join().result
-                }
-                ActorSystem.cluster.raft.replicate<Unit>(req).join()
-            }
-        } catch (e: Exception) {
-            log.error { e.message }
-        }
+//        try {
+//            val self = ActorSystem.cluster.raft
+//            if (self.report.join().result.role == RaftRole.LEADER) {
+//                val req = ClusterRaftStateMachine.NodeRemoved(request.alias)
+//                self.committedMembers.members.firstOrNull { it.id == req.alias }?.let {
+//                    it as ClusterRaftEndpoint
+//                    self.changeMembership(
+//                        ClusterRaftEndpoint(req.alias, it.host, it.port),
+//                        MembershipChangeMode.REMOVE_MEMBER,
+//                        self.committedMembers.logIndex
+//                    ).join().result
+//                }
+//                ActorSystem.cluster.raft.replicate<Unit>(req).join()
+//            }
+//        } catch (e: Exception) {
+//            log.error { e.message }
+//        }
 
         return dot()
     }

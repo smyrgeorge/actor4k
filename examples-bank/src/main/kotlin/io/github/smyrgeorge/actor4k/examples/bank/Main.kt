@@ -8,11 +8,7 @@ import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
-import io.github.smyrgeorge.actor4k.proto.Cluster.RaftProtocol
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
-import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.toInstance
-import io.microraft.model.message.RaftMessage
 import io.scalecube.net.Address
 import kotlinx.coroutines.runBlocking
 import org.http4k.core.Method
@@ -80,23 +76,6 @@ fun main(args: Array<String>) {
 
     val om: ObjectMapper = Serde.Jackson.create()
     val app: RoutingHttpHandler = routes(
-        "/api/raft/ping" bind Method.GET to {
-            ActorSystem.cluster.stats.protocol()
-            Response(Status.OK)
-        },
-        "/api/raft/protocol" bind Method.POST to {
-            ActorSystem.cluster.stats.protocol()
-            runBlocking {
-                try {
-                    val body: RaftProtocol = RaftProtocol.parseFrom(it.body.payload)
-                    val req: RaftMessage = body.payload.toByteArray().toInstance()
-                    ActorSystem.cluster.raft.handle(req)
-                } catch (e: Exception) {
-                    log.error(e) { e.message }
-                }
-                Response(Status.OK)
-            }
-        },
         "/api/account/{accountNo}" bind Method.GET to {
             runBlocking {
                 val accountNo = it.path("accountNo") ?: error("Missing accountNo from path.")

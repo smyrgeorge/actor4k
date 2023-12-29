@@ -6,10 +6,11 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
-import io.github.smyrgeorge.actor4k.cluster.raft.*
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftManager
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftTransport
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.forEachParallel
-import io.github.smyrgeorge.actor4k.util.retry
 import io.grpc.ServerBuilder
 import io.microraft.RaftConfig
 import io.microraft.RaftNode
@@ -38,7 +39,7 @@ class Cluster(
     private val log = KotlinLogging.logger {}
 
     lateinit var raft: RaftNode
-    lateinit var raftManager: ClusterRaftManager
+    private lateinit var raftManager: ClusterRaftManager
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -52,25 +53,16 @@ class Cluster(
 
     suspend fun shutdown() {
 //        raftManager.shutdown()
+//        raft.terminate().join()
+        // TODO: wait for confirmation
 //        grpc.shutdown()
+//        grpcClients.values.forEach { it.close() }
     }
 
     private fun stats() {
         // Log [Stats].
         log.info { stats }
     }
-
-    suspend fun broadcast(message: ClusterRaftMessage): Unit =
-        raft.committedMembers.members.filter { it.id != node.alias }.forEachParallel {
-            try {
-                it as ClusterRaftEndpoint
-                retry(times = ActorSystem.Conf.clusterBroadcastRetries) {
-                    grpcClientOf(it).request(message)
-                }
-            } catch (e: Exception) {
-                log.error(e) { "Could not broadcast message to $it: ${e.message}" }
-            }
-        }
 
     suspend fun msg(message: Envelope): Envelope.Response {
         val target = nodeOf(message.shard)
@@ -107,7 +99,7 @@ class Cluster(
             .setLeaderElectionTimeoutMillis(10_000)
             .setLeaderHeartbeatTimeoutSecs(10)
             .setLeaderHeartbeatPeriodSecs(2)
-            .setCommitCountToTakeSnapshot(10)
+            .setCommitCountToTakeSnapshot(5)
             .setAppendEntriesRequestBatchSize(1000)
             .setTransferSnapshotsFromFollowersEnabled(true)
             .build()
@@ -117,7 +109,7 @@ class Cluster(
             .setGroupId(node.namespace)
             .setLocalEndpoint(endpoint)
             .setInitialGroupMembers(initialGroupMembers)
-            .setTransport(ClusterRaftTransport(endpoint, grpcClients))
+            .setTransport(ClusterRaftTransport(endpoint))
             .setStateMachine(ClusterRaftStateMachine(ring))
             .build()
 

@@ -68,11 +68,6 @@ dependencies {
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
     testApi("org.mockito.kotlin:mockito-kotlin:5.1.0")
-
-    // https://github.com/http4k/http4k
-    implementation(platform("org.http4k:http4k-bom:5.11.1.0"))
-    implementation("org.http4k:http4k-core")
-    implementation("org.http4k:http4k-client-apache")
 }
 
 java {

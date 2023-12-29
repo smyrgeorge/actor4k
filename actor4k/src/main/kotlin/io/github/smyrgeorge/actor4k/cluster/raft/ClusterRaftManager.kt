@@ -1,11 +1,14 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.microraft.RaftNode
 import io.microraft.RaftRole
 import io.microraft.report.RaftNodeReport
+import io.scalecube.cluster.transport.api.Message
 import kotlinx.coroutines.*
+import kotlinx.coroutines.reactive.awaitFirstOrNull
 
 class ClusterRaftManager {
 
@@ -52,7 +55,22 @@ class ClusterRaftManager {
     }
 
     suspend fun shutdown() {
-        val self: RaftNode = ActorSystem.cluster.raft
+        // TODO: wait for acceptance from the leader.
+        suspend fun informLeaving() {
+            log.info { "Informing the others that we are about to leave." }
+            val alias = ActorSystem.cluster.node.alias
+            val data = MessageHandler.Protocol.RaftFollowerIsLeaving(alias)
+            val message = Message.builder().data(data).build()
+            ActorSystem.cluster.gossip.spreadGossip(message).awaitFirstOrNull()
+        }
+
+        val self: RaftNode = try {
+            ActorSystem.cluster.raft
+        } catch (e: UninitializedPropertyAccessException) {
+            // We never joined the cluster, so we don't have to inform anybody.
+            return
+        }
+
         val report: RaftNodeReport = self.report.join().result
 
         when {
@@ -60,20 +78,16 @@ class ClusterRaftManager {
             self.committedMembers.members.size == 1 -> return
             // Case this node is a leader.
             report.role == RaftRole.LEADER -> {
-                self.committedMembers.members
-                    .firstOrNull { it.id != ActorSystem.cluster.node.namespace }
-                    ?.let {
-                        // Promote follower to leader.
-                        self.transferLeadership(it).join().result
-                        // Now that node became follower can leave the cluster normally.
-                        val message = ClusterRaftMessage.RaftFollowerIsLeaving(ActorSystem.cluster.node.alias)
-                        ActorSystem.cluster.broadcast(message)
-                    }
+                val follower = self.committedMembers.members.first { it.id != ActorSystem.cluster.node.alias }
+                // Promote follower to leader.
+                log.info { "Transferring leadership to ${follower.id}." }
+                self.transferLeadership(follower).join().result
+                // Now that node became follower, we can leave the cluster normally.
+                informLeaving()
             }
-            // Case this node is follower.
+            // Case this node is follower/learner.
             report.role == RaftRole.FOLLOWER -> {
-                val message = ClusterRaftMessage.RaftFollowerIsLeaving(ActorSystem.cluster.node.alias)
-                ActorSystem.cluster.broadcast(message)
+                informLeaving()
             }
         }
     }

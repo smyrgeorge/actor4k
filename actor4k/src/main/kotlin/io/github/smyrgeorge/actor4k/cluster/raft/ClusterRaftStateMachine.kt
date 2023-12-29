@@ -15,18 +15,18 @@ class ClusterRaftStateMachine(
     private val log = KotlinLogging.logger {}
 
     override fun runOperation(commitIndex: Long, operation: Any) {
-        log.info { "Received ($commitIndex): $operation" }
+        log.debug { "Received ($commitIndex): $operation" }
         when (val op = operation as Operation) {
             Periodic -> Unit
             LeaderElected -> Unit
             is NodeAdded -> ring.add(op.toServerNode())
             is NodeRemoved -> ring.nodes.firstOrNull { it.dc == op.alias }?.let { ring.remove(it) }
         }
-        log.info { "New state ($commitIndex): $ring" }
+        log.debug { "New state ($commitIndex): $ring" }
     }
 
     override fun takeSnapshot(commitIndex: Long, snapshotChunkConsumer: Consumer<Any>) {
-        log.info { "TAKING SNAPSHOT $commitIndex" }
+        log.debug { "TAKING SNAPSHOT $commitIndex" }
         val snapshot = Snapshot(commitIndex, ring.nodes.map { it.toEndpoint() })
         snapshotChunkConsumer.accept(snapshot)
     }
