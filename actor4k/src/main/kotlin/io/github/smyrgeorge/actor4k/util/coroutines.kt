@@ -5,6 +5,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
+suspend fun <T> io(f: suspend () -> T): T =
+    withContext(Dispatchers.IO) { f() }
+
 suspend fun <T> retry(
     times: Int = Int.MAX_VALUE,
     initialDelay: Long = 100, // 0.1 second

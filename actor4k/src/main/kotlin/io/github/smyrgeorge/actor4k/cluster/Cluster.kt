@@ -10,6 +10,7 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.forEachParallel
 import io.github.smyrgeorge.actor4k.util.retry
 import io.grpc.ServerBuilder
+import io.microraft.RaftConfig
 import io.microraft.RaftNode
 import kotlinx.coroutines.*
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
@@ -29,7 +30,7 @@ class Cluster(
     val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
     private val grpcService: GrpcService,
-    private val grpcClients: ConcurrentHashMap<String, GrpcClient>
+    val grpcClients: ConcurrentHashMap<String, GrpcClient>
 ) {
 
     private val log = KotlinLogging.logger {}
@@ -39,14 +40,14 @@ class Cluster(
         GlobalScope.launch(Dispatchers.IO) {
             while (true) {
                 delay(ActorSystem.Conf.clusterLogStats.toMillis())
-                stats()
+//                stats()
             }
         }
     }
 
     suspend fun shutdown() {
-        raftManager.shutdown()
-        grpc.shutdown()
+//        raftManager.shutdown()
+//        grpc.shutdown()
     }
 
     private fun stats() {
@@ -55,17 +56,16 @@ class Cluster(
     }
 
     suspend fun broadcast(message: ClusterRaftMessage): Unit =
-        grpcClients.filter { it.key != node.alias }.keys.forEachParallel {
+        raft.committedMembers.members.filter { it.id != node.alias }.forEachParallel {
             try {
-                retry(times = ActorSystem.Conf.clusterTransportRetries) { msg(it, message) }
+                it as ClusterRaftEndpoint
+                retry(times = ActorSystem.Conf.clusterBroadcastRetries) {
+                    grpcClientOf(it).request(message)
+                }
             } catch (e: Exception) {
                 log.error(e) { "Could not broadcast message to $it: ${e.message}" }
             }
         }
-
-    suspend fun msg(alias: String, message: ClusterRaftMessage) {
-        grpcClientOf(alias).request(message)
-    }
 
     suspend fun msg(message: Envelope): Envelope.Response {
         val target = nodeOf(message.shard)
@@ -83,6 +83,9 @@ class Cluster(
 
     private fun grpcClientOf(alias: String): GrpcClient =
         grpcClients[alias] ?: error("Could not find a gRPC client for member='$alias'.")
+
+    private fun grpcClientOf(endpoint: ClusterRaftEndpoint): GrpcClient =
+        grpcClients.getOrPut(endpoint.alias) { GrpcClient(endpoint.host, endpoint.port) }
 
     class Builder {
 
@@ -136,13 +139,26 @@ class Cluster(
                 .build()
 
             val endpoint = ClusterRaftEndpoint(node.alias, node.host, node.grpcPort)
+            val config: RaftConfig = RaftConfig
+                .newBuilder()
+                .setLeaderElectionTimeoutMillis(10_000)
+                .setLeaderHeartbeatTimeoutSecs(10)
+                .setLeaderHeartbeatPeriodSecs(2)
+                .setCommitCountToTakeSnapshot(10)
+                .setAppendEntriesRequestBatchSize(1000)
+                .setTransferSnapshotsFromFollowersEnabled(true)
+                .build()
             val raft = RaftNode
                 .newBuilder()
+                .setConfig(config)
+//                .setStore()
+//                .setRestoredState()
                 .setGroupId(node.namespace)
                 .setLocalEndpoint(endpoint)
                 .setInitialGroupMembers(node.initialGroupMembers.map {
                     ClusterRaftEndpoint(it.first, it.second.host(), it.second.port())
-                }).setRaftNodeReportListener { println("XXX: $it") }
+                })
+//                .setRaftNodeReportListener { println("REPORT: $it") }
                 .setTransport(ClusterRaftTransport(endpoint, grpcClients))
                 .setStateMachine(ClusterRaftStateMachine(ring))
                 .build()

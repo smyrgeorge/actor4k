@@ -17,18 +17,36 @@ class ClusterRaftStateMachine(
     override fun runOperation(commitIndex: Long, operation: Any) {
         log.info { "Received ($commitIndex): $operation" }
         when (val op = operation as Operation) {
+            Periodic -> Unit
             LeaderElected -> Unit
             is NodeAdded -> ring.add(op.toServerNode())
             is NodeRemoved -> ring.nodes.firstOrNull { it.dc == op.alias }?.let { ring.remove(it) }
         }
-        log.info { "Ring: $ring" }
+        log.info { "New state ($commitIndex): $ring" }
     }
 
-    override fun takeSnapshot(commitIndex: Long, snapshotChunkConsumer: Consumer<Any>) =
-        error("[takeSnapshot] is not implemented.")
+    override fun takeSnapshot(commitIndex: Long, snapshotChunkConsumer: Consumer<Any>) {
+        log.info { "TAKING SNAPSHOT $commitIndex" }
+        val snapshot = Snapshot(commitIndex, ring.nodes.map { it.toEndpoint() })
+        snapshotChunkConsumer.accept(snapshot)
+    }
 
-    override fun installSnapshot(commitIndex: Long, snapshotChunks: MutableList<Any>) =
-        error("[installSnapshot] is not implemented.")
+    override fun installSnapshot(commitIndex: Long, snapshotChunks: List<Any>) {
+        log.info { "INSTALLING SNAPSHOT $commitIndex, $snapshotChunks" }
+        if (snapshotChunks.isEmpty()) return
+
+        // Empty hash-ring.
+        ring.nodes.forEach { ring.remove(it) }
+
+        @Suppress("UNCHECKED_CAST")
+        snapshotChunks as List<Snapshot>
+
+        snapshotChunks
+            // Find latest.
+            .maxBy { it.commitIndex }
+            .nodes
+            .forEach { ring.add(it.toServerNode()) }
+    }
 
     override fun getNewTermOperation() = LeaderElected
 
@@ -37,9 +55,21 @@ class ClusterRaftStateMachine(
         private fun readResolve(): Any = LeaderElected
     }
 
+    data object Periodic : Operation {
+        private fun readResolve(): Any = Periodic
+    }
+
     data class NodeAdded(val alias: String, val host: String, val port: Int) : Operation {
         fun toServerNode(): ServerNode = ServerNode(alias, host, port)
     }
 
     data class NodeRemoved(val alias: String) : Operation
+
+    private fun ServerNode.toEndpoint() = ClusterRaftEndpoint(dc, ip, port)
+    private fun ClusterRaftEndpoint.toServerNode() = ServerNode(alias, host, port)
+
+    private data class Snapshot(
+        val commitIndex: Long,
+        val nodes: List<ClusterRaftEndpoint>
+    ) : Serializable
 }

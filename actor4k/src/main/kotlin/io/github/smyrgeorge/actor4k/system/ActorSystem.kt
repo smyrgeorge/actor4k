@@ -23,7 +23,8 @@ object ActorSystem {
 
     @Suppress("ConstPropertyName")
     object Conf {
-        const val clusterTransportRetries: Int = 3
+        const val clusterTransportRetries: Int = 1
+        const val clusterBroadcastRetries: Int = 2
         val clusterLogStats: Duration = Duration.ofSeconds(5)
         val registryCleanup: Duration = Duration.ofSeconds(60)
         val actorExpiration: Duration = Duration.ofMinutes(15)
