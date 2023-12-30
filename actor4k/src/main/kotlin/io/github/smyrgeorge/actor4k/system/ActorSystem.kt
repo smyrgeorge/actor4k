@@ -7,8 +7,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.time.Duration
 import kotlin.concurrent.thread
+import kotlin.system.exitProcess
 
 object ActorSystem {
+
     private val log = KotlinLogging.logger {}
 
     var status: Status = Status.READY
@@ -21,10 +23,7 @@ object ActorSystem {
         return this
     }
 
-    @Suppress("ConstPropertyName")
     object Conf {
-        const val clusterTransportRetries: Int = 1
-        const val clusterBroadcastRetries: Int = 2
         val clusterLogStats: Duration = Duration.ofSeconds(5)
         val registryCleanup: Duration = Duration.ofSeconds(60)
         val actorExpiration: Duration = Duration.ofMinutes(15)
@@ -35,10 +34,16 @@ object ActorSystem {
         SHUTTING_DOWN
     }
 
-    @Suppress("unused")
-    private val shutdown = Runtime.getRuntime().addShutdownHook(thread(start = false) {
-        runBlocking(Dispatchers.IO) {
-            log.info { "Received shutdown signal.." }
+    object Shutdown {
+        init {
+            // Add shutdown hook.
+            Runtime.getRuntime().addShutdownHook(
+                thread(start = false) { runBlocking(Dispatchers.IO) { shutdown(Trigger.EXTERNAL) } }
+            )
+        }
+
+        suspend fun shutdown(triggeredBy: Trigger) {
+            log.info { "Received shutdown signal by $triggeredBy.." }
             status = Status.SHUTTING_DOWN
 
             log.info { "Closing ${ActorRegistry.count()} actors.." }
@@ -51,8 +56,21 @@ object ActorSystem {
 
             // Wait for all actors to finish.
             while (ActorRegistry.count() > 0) {
+                log.info { "Waiting ${ActorRegistry.count()} actors to finish." }
                 delay(5_000)
             }
+
+            when (triggeredBy) {
+                Trigger.SELF -> exitProcess(0)
+                Trigger.SELF_ERROR -> exitProcess(1)
+                Trigger.EXTERNAL -> Unit
+            }
         }
-    })
+
+        enum class Trigger {
+            SELF,
+            SELF_ERROR,
+            EXTERNAL
+        }
+    }
 }

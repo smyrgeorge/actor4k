@@ -5,8 +5,8 @@ import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.microraft.MembershipChangeMode
 import io.microraft.RaftNode
+import io.microraft.RaftNodeStatus
 import io.microraft.RaftRole
-import io.microraft.report.RaftNodeReport
 import io.scalecube.cluster.Member
 import io.scalecube.net.Address
 import kotlinx.coroutines.*
@@ -24,15 +24,15 @@ class ClusterRaftMemberManager(
             while (true) {
                 delay(5_000)
                 try {
+                    // We make changes every round.
                     val self: RaftNode = ActorSystem.cluster.raft
-                    val report: RaftNodeReport = self.report.join().result
 
-                    // TODO: Think again about this action in the future.
-                    if (report.role == RaftRole.LEADER) {
-                        self.replicate<Unit>(ClusterRaftStateMachine.Periodic)
+                    if (self.status == RaftNodeStatus.TERMINATED) {
+                        log.info { "${node.alias} (self) is in TERMINATED state but still UP, will shutdown." }
+                        ActorSystem.Shutdown.shutdown(ActorSystem.Shutdown.Trigger.SELF_ERROR)
+                        continue
                     }
 
-                    // We make changes every round.
                     var member = leaderNotInTheRing()
                     if (member != null) {
                         val (m, a) = member

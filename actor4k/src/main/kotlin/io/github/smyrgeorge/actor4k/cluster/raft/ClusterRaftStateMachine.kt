@@ -17,14 +17,18 @@ class ClusterRaftStateMachine(
     override fun runOperation(commitIndex: Long, operation: Any) {
         log.debug { "Received ($commitIndex): $operation" }
         when (val op = operation as Operation) {
-            Periodic -> Unit
             LeaderElected -> Unit
             is NodeAdded -> ring.add(op.toServerNode())
             is NodeRemoved -> ring.nodes.firstOrNull { it.dc == op.alias }?.let { ring.remove(it) }
         }
 
-        if (operation !is Periodic) {
-            log.info { "New state ($commitIndex): ${ring.nodes.joinToString { it.dc }} (${ring.nodes.size})" }
+        log.info {
+            buildString {
+                append("\n")
+                append("New cluster state (commitIndex: $commitIndex):")
+                append("\n    Number of nodes: ${ring.nodes.size}")
+                append("\n    Nodes:  ${ring.nodes.joinToString { it.dc }}")
+            }
         }
     }
 
@@ -56,10 +60,6 @@ class ClusterRaftStateMachine(
     sealed interface Operation : Serializable
     data object LeaderElected : Operation {
         private fun readResolve(): Any = LeaderElected
-    }
-
-    data object Periodic : Operation {
-        private fun readResolve(): Any = Periodic
     }
 
     data class NodeAdded(val alias: String, val host: String, val port: Int) : Operation {

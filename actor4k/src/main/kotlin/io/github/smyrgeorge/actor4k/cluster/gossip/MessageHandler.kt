@@ -73,6 +73,20 @@ class MessageHandler(
             exitProcess(1)
         }
 
+        var allConnected = false
+        for (i in 1..rounds) {
+            log.info { "Waiting connection with all initial group members... [$i/$rounds]" }
+            allConnected = initialGroupMembers
+                .all { m -> ActorSystem.cluster.gossip.members().any { m.alias == it.alias() } }
+            if (allConnected) break
+            delay(delayPerRound)
+        }
+
+        if (!allConnected) {
+            log.warn { "Could not establish connection with some of the initial group nodes." }
+            exitProcess(1)
+        }
+
         ActorSystem.cluster.startRaft(initialGroupMembers)
     }
 
