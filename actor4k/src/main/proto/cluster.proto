@@ -2,38 +2,9 @@ syntax = "proto3";
 package io.github.smyrgeorge.actor4k.proto;
 
 service NodeService {
-  rpc raftPing(RaftPing) returns (Response) {}
-  rpc raftProtocol(RaftProtocol) returns (Response) {}
-  rpc raftFollowerReady(RaftFollowerReady) returns (Response) {}
-  rpc raftFollowerIsLeaving(RaftFollowerIsLeaving) returns (Response) {}
-  rpc raftNewLearner(RaftNewLearner) returns (Response) {}
   rpc ask(Ask) returns (Response) {}
   rpc tell(Tell) returns (Response) {}
   rpc getActor(GetActor) returns (Response) {}
-}
-
-message RaftPing {
-  string id = 1;
-}
-
-message RaftProtocol {
-  bytes payload = 1;
-}
-
-message RaftFollowerReady {
-  string alias = 1;
-  string host = 2;
-  int32 port = 3;
-}
-
-message RaftFollowerIsLeaving {
-  string alias = 1;
-}
-
-message RaftNewLearner {
-  string alias = 1;
-  string host = 2;
-  int32 port = 3;
 }
 
 message Ask {

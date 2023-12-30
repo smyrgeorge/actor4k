@@ -7,7 +7,7 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftManager
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftMemberManager
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftTransport
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -34,12 +34,12 @@ class Cluster(
     val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
     private val grpcService: GrpcService,
-    private val grpcClients: ConcurrentHashMap<String, GrpcClient>
+    private val grpcClients: ConcurrentHashMap<String, GrpcClient> = ConcurrentHashMap()
 ) {
     private val log = KotlinLogging.logger {}
 
     lateinit var raft: RaftNode
-    private lateinit var raftManager: ClusterRaftManager
+    private lateinit var raftManager: ClusterRaftMemberManager
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -81,9 +81,6 @@ class Cluster(
     private fun grpcClientOf(alias: String): GrpcClient =
         grpcClients[alias] ?: error("Could not find a gRPC client for member='$alias'.")
 
-    private fun grpcClientOf(endpoint: ClusterRaftEndpoint): GrpcClient =
-        grpcClients.getOrPut(endpoint.alias) { GrpcClient(endpoint.host, endpoint.port) }
-
     fun start(): Cluster {
         grpc.start()
         (gossip as ClusterImpl).startAwait()
@@ -110,12 +107,13 @@ class Cluster(
             .setLocalEndpoint(endpoint)
             .setInitialGroupMembers(initialGroupMembers)
             .setTransport(ClusterRaftTransport(endpoint))
+//            .setRaftNodeReportListener { println("REPORT: $it") }
             .setStateMachine(ClusterRaftStateMachine(ring))
             .build()
 
         raft.start()
 
-        raftManager = ClusterRaftManager()
+        raftManager = ClusterRaftMemberManager(node)
 
         return this
     }
@@ -157,9 +155,6 @@ class Cluster(
                 .addService(grpcService)
                 .build()
 
-            // Build gRPC clients HashMap.
-            val grpcClients = ConcurrentHashMap<String, GrpcClient>()
-
             // Build hash ring.
             val ring: ConsistentHash<ServerNode> = HashRing.newBuilder<ServerNode>()
                 // Hash ring name.
@@ -169,7 +164,7 @@ class Cluster(
                 .build()
 
             // Built cluster
-            val cluster = Cluster(node, stats, serde, gossip, ring, grpc, grpcService, grpcClients)
+            val cluster = Cluster(node, stats, serde, gossip, ring, grpc, grpcService)
 
             // Register cluster to the ActorSystem.
             ActorSystem.register(cluster)

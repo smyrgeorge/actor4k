@@ -53,7 +53,7 @@ services:
     restart: unless-stopped
     environment:
       ACTOR4K_NODE_ID: bank-4
-      ACTOR4K_SEED_MEMBERS: bank-1::bank-1:61100,bank-2::bank-2:61100
+      ACTOR4K_SEED_MEMBERS: bank-1::bank-1:61100,bank-2::bank-2:61100,bank-3:61000,bank-4:61000
     ports:
       - "9004:9000"
     networks:

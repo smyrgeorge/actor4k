@@ -22,7 +22,7 @@ class ClusterRaftStateMachine(
             is NodeAdded -> ring.add(op.toServerNode())
             is NodeRemoved -> ring.nodes.firstOrNull { it.dc == op.alias }?.let { ring.remove(it) }
         }
-        log.debug { "New state ($commitIndex): $ring" }
+        log.info { "New state ($commitIndex): ${ring.nodes.joinToString { it.dc }} (${ring.nodes.size})" }
     }
 
     override fun takeSnapshot(commitIndex: Long, snapshotChunkConsumer: Consumer<Any>) {
