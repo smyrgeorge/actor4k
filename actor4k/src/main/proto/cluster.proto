@@ -34,4 +34,9 @@ message Response {
   bytes payload = 2;
   string payload_class = 3;
   bool error = 4;
+
+  message Error {
+    string code = 1;
+    string message = 2;
+  }
 }

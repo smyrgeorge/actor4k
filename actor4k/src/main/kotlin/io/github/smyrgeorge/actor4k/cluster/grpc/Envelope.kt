@@ -2,8 +2,8 @@ package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Shard
+import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import java.util.*
 
 sealed interface Envelope {
 
@@ -54,20 +54,23 @@ sealed interface Envelope {
             val message: String
         ) {
             enum class Code {
-                ShardError
+                ShardError,
+                Unknown
             }
+
+            fun ex(): Nothing = throw ClusterError(code, message)
+            data class ClusterError(val code: Code, override val message: String) : RuntimeException(message)
         }
 
-        fun <T> getOrThrow(): T = if (error) {
-            val e = ActorSystem.cluster.serde.decode(Error::class.java, payload)
-            throw ClusterError(e.code, e.message)
-        } else ActorSystem.cluster.serde.decode(payloadClass, payload)
+        fun <T> getOrThrow(): T =
+            if (error) Cluster.Response.Error.parseFrom(payload).toError().ex()
+            else ActorSystem.cluster.serde.decode(payloadClass, payload)
 
         companion object {
-            fun error(shard: Shard.Key, payload: Error) =
-                Response(shard, ActorSystem.cluster.serde.encode(payload), payload::class.java.name, true)
+            fun error(shard: Shard.Key, error: Error): Response =
+                Response(shard, error.toProto().toByteArray(), error::class.java.name, true)
 
-            fun of(shard: Shard.Key, payload: Any): Response =
+            fun ok(shard: Shard.Key, payload: Any): Response =
                 Response(shard, ActorSystem.cluster.serde.encode(payload), payload::class.java.name, false)
         }
     }
