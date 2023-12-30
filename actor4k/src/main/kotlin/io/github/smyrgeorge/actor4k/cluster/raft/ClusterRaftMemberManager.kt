@@ -22,7 +22,7 @@ class ClusterRaftMemberManager(
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             while (true) {
-                delay(10_000)
+                delay(5_000)
                 try {
                     val self: RaftNode = ActorSystem.cluster.raft
                     val report: RaftNodeReport = self.report.join().result
