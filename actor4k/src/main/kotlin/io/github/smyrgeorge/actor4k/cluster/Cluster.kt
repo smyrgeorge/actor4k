@@ -53,10 +53,10 @@ class Cluster(
 
     suspend fun shutdown() {
 //        raftManager.shutdown()
-//        raft.terminate().join()
-        // TODO: wait for confirmation
-//        grpc.shutdown()
-//        grpcClients.values.forEach { it.close() }
+//        raft.terminate()
+        grpc.shutdown()
+        grpcClients.values.forEach { it.close() }
+        gossip.shutdown()
     }
 
     private fun stats() {

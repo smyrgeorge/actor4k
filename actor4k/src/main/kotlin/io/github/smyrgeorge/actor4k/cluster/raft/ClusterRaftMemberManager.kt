@@ -6,7 +6,6 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.microraft.MembershipChangeMode
 import io.microraft.RaftNode
 import io.microraft.RaftNodeStatus
-import io.microraft.RaftRole
 import io.scalecube.cluster.Member
 import io.scalecube.net.Address
 import kotlinx.coroutines.*
@@ -27,6 +26,13 @@ class ClusterRaftMemberManager(
                     // We make changes every round.
                     val self: RaftNode = ActorSystem.cluster.raft
 
+                    // Send an empty message every period.
+                    // It seems to help with the stability of the network.
+                    // TODO: check it again in the future.
+                    if (self.isLeader()) {
+                        self.replicate<Unit>(ClusterRaftStateMachine.Periodic)
+                    }
+
                     if (self.status == RaftNodeStatus.TERMINATED) {
                         log.info { "${node.alias} (self) is in TERMINATED state but still UP, will shutdown." }
                         ActorSystem.Shutdown.shutdown(ActorSystem.Shutdown.Trigger.SELF_ERROR)
@@ -38,7 +44,7 @@ class ClusterRaftMemberManager(
                         val (m, a) = member
                         log.info { "${m.alias()} (leader) will be added to the hash-ring." }
                         val req = ClusterRaftStateMachine.NodeAdded(m.alias(), a.host(), a.port())
-                        self.replicate<Unit>(req).join()
+                        self.replicate<Unit>(req)
                         continue
                     }
 
@@ -46,7 +52,7 @@ class ClusterRaftMemberManager(
                     if (serverNode != null) {
                         log.info { "$serverNode (follower) will be removed from the hash-ring." }
                         val req = ClusterRaftStateMachine.NodeRemoved(serverNode.dc)
-                        self.replicate<Unit>(req).join()
+                        self.replicate<Unit>(req)
                         continue
                     }
 
@@ -55,7 +61,7 @@ class ClusterRaftMemberManager(
                         log.info { "$endpoint (follower) will be removed." }
                         val mode = MembershipChangeMode.REMOVE_MEMBER
                         val logIndex = self.committedMembers.logIndex
-                        self.changeMembership(endpoint, mode, logIndex).join()
+                        self.changeMembership(endpoint, mode, logIndex)
                         continue
                     }
 
@@ -64,7 +70,7 @@ class ClusterRaftMemberManager(
                         val (m, a) = member
                         log.info { "${m.alias()} (follower) will be added to the hash-ring." }
                         val req = ClusterRaftStateMachine.NodeAdded(m.alias(), a.host(), a.port())
-                        self.replicate<Unit>(req).join()
+                        self.replicate<Unit>(req)
                         continue
                     }
 
@@ -76,7 +82,7 @@ class ClusterRaftMemberManager(
                         val endpoint = ClusterRaftEndpoint(m.alias(), a.host(), a.port())
                         val mode = MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER
                         val logIndex = self.committedMembers.logIndex
-                        self.changeMembership(endpoint, mode, logIndex).join()
+                        self.changeMembership(endpoint, mode, logIndex)
                         continue
                     }
 
@@ -89,7 +95,7 @@ class ClusterRaftMemberManager(
 
     private fun leaderNotInTheRing(): Pair<Member, Address>? {
         val self: RaftNode = ActorSystem.cluster.raft
-        if (self.report.join().result.role != RaftRole.LEADER) return null
+        if (!self.isLeader()) return null
 
         val ring = ActorSystem.cluster.ring
         val members = ActorSystem.cluster.gossip.members()
@@ -104,7 +110,7 @@ class ClusterRaftMemberManager(
 
     private fun anyOfflineCommittedInTheRing(): ServerNode? {
         val self: RaftNode = ActorSystem.cluster.raft
-        if (self.report.join().result.role != RaftRole.LEADER) return null
+        if (!self.isLeader()) return null
 
         val ring = ActorSystem.cluster.ring
         val members = ActorSystem.cluster.gossip.members()
@@ -117,7 +123,7 @@ class ClusterRaftMemberManager(
 
     private fun anyOfflineCommittedNotInTheRing(): ClusterRaftEndpoint? {
         val self: RaftNode = ActorSystem.cluster.raft
-        if (self.report.join().result.role != RaftRole.LEADER) return null
+        if (!self.isLeader()) return null
 
         val ring = ActorSystem.cluster.ring
         val members = ActorSystem.cluster.gossip.members()
@@ -130,7 +136,7 @@ class ClusterRaftMemberManager(
 
     private fun anyOnlineCommittedNotInTheRing(): Pair<Member, Address>? {
         val self: RaftNode = ActorSystem.cluster.raft
-        if (self.report.join().result.role != RaftRole.LEADER) return null
+        if (!self.isLeader()) return null
 
         val ring = ActorSystem.cluster.ring
         val members = ActorSystem.cluster.gossip.members()
@@ -143,7 +149,7 @@ class ClusterRaftMemberManager(
 
     private fun anyOnlineUncommitted(): Pair<Member, Address>? {
         val self: RaftNode = ActorSystem.cluster.raft
-        if (self.report.join().result.role != RaftRole.LEADER) return null
+        if (!self.isLeader()) return null
 
         val members = ActorSystem.cluster.gossip.members()
 
@@ -151,4 +157,7 @@ class ClusterRaftMemberManager(
             self.committedMembers.members.none { m.alias() == it.id }
         }?.let { it to it.address() }
     }
+
+    private fun RaftNode.isLeader(): Boolean =
+        term.leaderEndpoint?.id == node.alias
 }

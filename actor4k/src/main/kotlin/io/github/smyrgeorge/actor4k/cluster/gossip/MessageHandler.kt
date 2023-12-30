@@ -40,14 +40,14 @@ class MessageHandler(
     private val job: Job = GlobalScope.launch(Dispatchers.IO) {
         for (i in 1..rounds) {
             log.info { "Waiting for other nodes to appear... [$i/$rounds]" }
+            delay(delayPerRound)
             val nodes = ActorSystem.cluster.gossip.members()
             // If ore than one node found continue.
             if (nodes.size > 1) break
-            delay(delayPerRound)
         }
 
         val nodes = ActorSystem.cluster.gossip.members()
-        log.info { "We are a group of ${nodes.size} nodes." }
+        log.info { "We are a group of ${nodes.size} nodes (at least)." }
 
         val initialGroupMembers = if (nodes.isEmpty()) {
             log.error { "Sanity check failed :: No nodes found, but I was there..." }
@@ -61,9 +61,9 @@ class MessageHandler(
             val msg = Message.builder().data(Protocol.ReqInitialGroupMembers).sender(self).build()
             for (i in 1..rounds) {
                 log.info { "Waiting for response... [$i/$rounds]" }
+                delay(delayPerRound)
                 ActorSystem.cluster.gossip.spreadGossip(msg).awaitFirstOrNull()
                 if (initialGroupMembers.isNotEmpty()) break
-                delay(delayPerRound)
             }
             initialGroupMembers
         }
@@ -76,10 +76,10 @@ class MessageHandler(
         var allConnected = false
         for (i in 1..rounds) {
             log.info { "Waiting connection with all initial group members... [$i/$rounds]" }
+            delay(delayPerRound)
             allConnected = initialGroupMembers
                 .all { m -> ActorSystem.cluster.gossip.members().any { m.alias == it.alias() } }
             if (allConnected) break
-            delay(delayPerRound)
         }
 
         if (!allConnected) {
@@ -146,8 +146,9 @@ class MessageHandler(
         @Suppress("WHEN_ENUM_CAN_BE_NULL_IN_JAVA")
         when (e.type()) {
             MembershipEvent.Type.ADDED -> log.info { "New node found: ${e.member().alias()}" }
+            MembershipEvent.Type.LEAVING -> log.info { "Node is leaving ${e.member().alias()}" }
             MembershipEvent.Type.REMOVED -> log.info { "Node removed: ${e.member().alias()}" }
-            MembershipEvent.Type.LEAVING, MembershipEvent.Type.UPDATED -> Unit
+            MembershipEvent.Type.UPDATED -> log.info { "Node updated: ${e.member().alias()}" }
         }
     }
 }

@@ -34,13 +34,12 @@ object ActorSystem {
         SHUTTING_DOWN
     }
 
+    @Suppress("unused")
+    private val hook = Runtime.getRuntime().addShutdownHook(
+        thread(start = false) { runBlocking(Dispatchers.IO) { Shutdown.shutdown(Shutdown.Trigger.EXTERNAL) } }
+    )
+
     object Shutdown {
-        init {
-            // Add shutdown hook.
-            Runtime.getRuntime().addShutdownHook(
-                thread(start = false) { runBlocking(Dispatchers.IO) { shutdown(Trigger.EXTERNAL) } }
-            )
-        }
 
         suspend fun shutdown(triggeredBy: Trigger) {
             log.info { "Received shutdown signal by $triggeredBy.." }
