@@ -5,6 +5,8 @@ import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.Stats
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.github.smyrgeorge.actor4k.util.retryBlocking
+import io.github.smyrgeorge.actor4k.util.toInstance
 import io.microraft.model.message.RaftMessage
 import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
@@ -145,9 +147,25 @@ class MessageHandler(
     override fun onMembershipEvent(e: MembershipEvent) {
         @Suppress("WHEN_ENUM_CAN_BE_NULL_IN_JAVA")
         when (e.type()) {
-            MembershipEvent.Type.ADDED -> log.info { "New node found: ${e.member().alias()}" }
+            MembershipEvent.Type.ADDED -> {
+                val m = e.member()
+                log.info { "New node found: $m" }
+
+                val metadata = ByteArray(e.newMetadata().remaining())
+                    .also { e.newMetadata().get(it) }.toInstance<Metadata>()
+
+                retryBlocking(times = 3) {
+                    ActorSystem.cluster.registerGrpcClientFor(m.alias(), m.address().host(), metadata.grpcPort)
+                }
+            }
+
+            MembershipEvent.Type.REMOVED -> {
+                log.info { "Node removed: ${e.member().alias()}" }
+                ActorSystem.cluster.unregisterGrpcClient(e.member().alias())
+
+            }
+
             MembershipEvent.Type.LEAVING -> log.info { "Node is leaving ${e.member().alias()}" }
-            MembershipEvent.Type.REMOVED -> log.info { "Node removed: ${e.member().alias()}" }
             MembershipEvent.Type.UPDATED -> log.info { "Node updated: ${e.member().alias()}" }
         }
     }

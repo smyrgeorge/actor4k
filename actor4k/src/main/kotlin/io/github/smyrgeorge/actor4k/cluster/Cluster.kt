@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.cluster.gossip.Metadata
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
@@ -33,20 +34,20 @@ class Cluster(
     val gossip: ScaleCubeCluster,
     val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
-    private val grpcService: GrpcService,
-    private val grpcClients: ConcurrentHashMap<String, GrpcClient> = ConcurrentHashMap()
+    private val grpcService: GrpcService
 ) {
     private val log = KotlinLogging.logger {}
 
     lateinit var raft: RaftNode
     private lateinit var raftManager: ClusterRaftMemberManager
+    private val grpcClients: ConcurrentHashMap<String, GrpcClient> = ConcurrentHashMap()
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             while (true) {
                 delay(ActorSystem.Conf.clusterLogStats.toMillis())
-//                stats()
+                stats()
             }
         }
     }
@@ -80,6 +81,14 @@ class Cluster(
 
     private fun grpcClientOf(alias: String): GrpcClient =
         grpcClients[alias] ?: error("Could not find a gRPC client for member='$alias'.")
+
+    fun registerGrpcClientFor(alias: String, host: String, port: Int) {
+        grpcClients.getOrPut(alias) { GrpcClient(host, port) }
+    }
+
+    fun unregisterGrpcClient(alias: String) {
+        grpcClients.remove(alias)
+    }
 
     fun start(): Cluster {
         grpc.start()
@@ -141,6 +150,7 @@ class Cluster(
             val gossip: ScaleCubeCluster = ClusterImpl()
                 .transport { it.port(node.gossipPort) }
                 .config { it.memberAlias(node.alias) }
+                .config { it.metadata(Metadata(node.grpcPort)) }
                 .membership { it.namespace(node.namespace) }
                 .membership { it.seedMembers(node.seedMembers) }
                 .transportFactory { TcpTransportFactory() }

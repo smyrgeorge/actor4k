@@ -45,6 +45,7 @@ interface Serde {
         }
     }
 
+
     class Kryo : Serde {
         private val kryo = KryoSerializer().apply {
             isRegistrationRequired = false
@@ -55,6 +56,7 @@ interface Serde {
             kryo.writeObject(output, value)
             output.toBytes()
         }
+
         override fun <T> decode(clazz: Class<T>, bytes: ByteArray): T =
             kryo.readObject(Input(bytes), clazz)
     }

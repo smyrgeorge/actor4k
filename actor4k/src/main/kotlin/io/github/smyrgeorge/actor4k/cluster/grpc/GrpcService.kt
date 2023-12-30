@@ -21,6 +21,8 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
             is Envelope.Response -> error("Not a valid gRPC method found.")
         }
 
+    // TODO: error handling.
+
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
         ActorSystem.cluster.stats.message()
 
@@ -61,6 +63,4 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         val res = Envelope.GetActor.Ref(shard, request.actorClazz, actor.name, actor.key)
         return Envelope.Response.of(shard, res).toProto()
     }
-
-    private fun dot(): Cluster.Response = Envelope.Response.of(Shard.Key("."), ".").toProto()
 }
