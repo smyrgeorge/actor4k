@@ -2,9 +2,10 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm")
     `maven-publish`
     `java-library`
+    kotlin("jvm")
+    kotlin("plugin.serialization")
     // https://plugins.gradle.org/plugin/com.google.protobuf
     id("com.google.protobuf") version "0.9.4"
 }
@@ -53,6 +54,8 @@ dependencies {
     api("io.grpc:grpc-protobuf:$grpcVersion")
     api("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
     api("com.google.protobuf:protobuf-kotlin:$protobufVersion")
+    // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf
+    api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.2")
 
     //https://github.com/MicroRaft/MicroRaft
     api("io.microraft:microraft:0.6")
@@ -61,9 +64,6 @@ dependencies {
     api("com.fasterxml.jackson.core:jackson-core:2.16.0")
     api("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0")
-
-    // https://github.com/EsotericSoftware/kryo
-    api("com.esotericsoftware:kryo:5.5.0")
 
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin

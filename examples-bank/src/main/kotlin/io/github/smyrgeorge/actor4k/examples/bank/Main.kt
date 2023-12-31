@@ -11,6 +11,7 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
 import org.http4k.core.Method
 import org.http4k.core.Response
 import org.http4k.core.Status
@@ -23,11 +24,19 @@ import org.http4k.server.asServer
 
 class Main
 
-sealed class Req(open val accountNo: String) {
-    data class GetAccount(override val accountNo: String) : Req(accountNo)
-    data class ApplyTx(override val accountNo: String, val value: Int) : Req(accountNo)
+sealed interface Req {
+
+    val accountNo: String
+
+    @Serializable
+    data class GetAccount(override val accountNo: String) : Req
+
+    @Serializable
+    data class ApplyTx(override val accountNo: String, val value: Int) : Req
 }
 
+
+@Serializable
 data class Account(val accountNo: String, var balance: Int)
 
 data class AccountActor(val shard: Shard.Key, val key: Key) : Actor(shard, key) {

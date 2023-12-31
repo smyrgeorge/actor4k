@@ -130,7 +130,7 @@ class Cluster(
     class Builder {
 
         private lateinit var node: Node
-        private var serde: Serde = Serde.Jackson()
+        private var serde: Serde = Serde.KotlinxProtobuf()
 
         fun node(n: Node): Builder {
             node = n

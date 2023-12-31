@@ -6,6 +6,7 @@ plugins {
     java
     application
     kotlin("jvm")
+    kotlin("plugin.serialization")
     // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
@@ -28,6 +29,9 @@ dependencies {
 
     // Resolves: Address types of NameResolver 'unix' for 'node-2:50051' not supported by transport
     api("io.grpc:grpc-all:$grpcVersion")
+
+    // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.2")
 
     // https://github.com/http4k/http4k
     implementation(platform("org.http4k:http4k-bom:5.11.1.0"))

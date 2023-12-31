@@ -16,10 +16,7 @@ import kotlin.random.Random
 
 class Main
 
-sealed class Req(open val accountNo: String) {
-    data class ApplyTx(override val accountNo: String, val value: Int) : Req(accountNo)
-}
-
+data class ApplyTx(val accountNo: String, val value: Int)
 data class Account(val accountNo: String, var balance: Int)
 
 fun main(args: Array<String>) {
@@ -63,7 +60,7 @@ fun main(args: Array<String>) {
                     val sign = if (it % 2 == 0) 1 else -1
                     val accountId = Random.nextInt(1, noOfAccounts)
                     val accountNo = "ACC-$accountId"
-                    val body = om.writeValueAsString(Req.ApplyTx(accountNo, sign * txValue))
+                    val body = om.writeValueAsString(ApplyTx(accountNo, sign * txValue))
                     val req = Request(Method.POST, "http://localhost:9000/api/account/ACC-$accountId").body(body)
                     val res = client(req)
                     om.readValue<Account>(res.body.stream)

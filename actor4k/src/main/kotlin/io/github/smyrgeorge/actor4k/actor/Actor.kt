@@ -9,6 +9,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
+import kotlinx.serialization.Serializable
 import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -134,19 +135,20 @@ abstract class Actor(
             val clazz: String
         ) : Ref(shard, name, key) {
             override suspend fun tell(msg: Any) {
-                val payload: ByteArray = ActorSystem.cluster.serde.encode(msg)
+                val payload: ByteArray = ActorSystem.cluster.serde.encode(msg::class.java, msg)
                 val message = Envelope.Tell(shard, clazz, key, payload, msg::class.java.name)
                 ActorSystem.cluster.msg(message).getOrThrow<String>()
             }
 
             override suspend fun <R> ask(msg: Any): R {
-                val payload: ByteArray = ActorSystem.cluster.serde.encode(msg)
+                val payload: ByteArray = ActorSystem.cluster.serde.encode(msg::class.java, msg)
                 val message = Envelope.Ask(shard, clazz, key, payload, msg::class.java.name)
                 return ActorSystem.cluster.msg(message).getOrThrow()
             }
         }
     }
 
+    @Serializable
     data class Key(val value: String)
 
     data class Stats(var last: Instant = Instant.now())

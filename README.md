@@ -1,6 +1,6 @@
 # actor4k
 
-I have developed a small actor system using Kotlin and Coroutines (kotlinx.coroutines).
+It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.coroutines).
 
 The primary objective is to create a minimal actor system capable of functioning in cluster mode.
 
@@ -13,17 +13,16 @@ Check the `examples` for additional info.
 
 A lot of things need to be done, so sit tight…
 
-- [ ] Cluster - Sharding (in progress)
+- [ ] Cluster/Sharding (in progress)
     - [x] Use `raft` consensus algorithm for the cluster node membership (in progress).
-    - [x] Do not use SWIM, just use raft and gRPC.
     - [x] Implement `tell/ask` patterns across cluster nodes
     - [x] Add support for cross-node actor reference
     - [x] Introduce the concept of Shard.
-    - [ ] Shard rebalancing.
+    - [ ] Shard management and rebalancing.
 - [ ] Serialization (in progress)
     - [x] Send messages across cluster using the gossip protocol
-    - [x] Use gRPC for the communication across cluster nodes
-    - [ ] Use protobuf for all messages (in progress)
+    - [x] Use gRPC for communication across cluster nodes
+    - [x] Use protobuf for actor messages (using kotlinx protobuf)
 - [ ] Metrics (in progress)
 - [ ] Logging (in progress)
 - [ ] Java compatibility
@@ -31,15 +30,15 @@ A lot of things need to be done, so sit tight…
 
 ## Run the example.
 
-The included example tries to simulate a very simple bank accounting system.
+The included example tries to simulate a basic bank accounting system.
 
 It defines an `AccountActor` that can handle only two simple commands,
 `Req.GetAccount` and `Req.ApplyTx`.
 
 The client `examples-bank-client` generates traffic.
-At the end will check the available balance (should be zero).
+In the end will check the available balance (should be zero).
 
-So, with this example we validate the cluster consistency.
+So, with this example, we validate the cluster consistency.
 
 Run the following script (it will also build the project).
 
@@ -54,8 +53,6 @@ The above script will do the following:
 - Run the `docker compose` that will start:
     - 3 custer bank nodes
     - a nginx acting as the loadbalancer
-
-If everything goes well, you should see something like the following (`mPS` ping messages per second):
 
 Then you can run the `bank-client` in order to generate some traffic:
 
@@ -81,7 +78,7 @@ java -jar examples-bank-client/build/libs/examples-bank-client-0.1.0.jar
 docker build . -t actor4k -f examples/src/main/docker/Dockerfile
 ```
 
-## References
+## Links and References
 
 - https://kotlinlang.org/docs/coroutines-guide.html
 - https://doc.akka.io/docs/akka/current/general/actor-systems.html
@@ -94,5 +91,5 @@ docker build . -t actor4k -f examples/src/main/docker/Dockerfile
 - https://www.pubnub.com/blog/consistent-hashing-implementation/
 - https://github.com/Jaskey/ConsistentHash
 - https://github.com/ishugaliy/allgood-consistent-hash
-- https://microraft.io/
-- https://raft.github.io/
+- https://microraft.io
+- https://raft.github.io

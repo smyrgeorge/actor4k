@@ -11,4 +11,6 @@ plugins {
     // https://docs.gradle.org/current/userguide/plugins.html#sec:subprojects_plugins_dsl
     // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.jvm
     kotlin("jvm") version "1.9.0" apply false
+    // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
+    kotlin("plugin.serialization") version "1.9.0" apply false
 }
