@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 object ActorRegistry {
+
     private val log = KotlinLogging.logger {}
 
     // Only stores [Actor.Ref.Local].
@@ -83,9 +84,8 @@ object ActorRegistry {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
 
-        val address = Actor.addressOf(ref.actor, ref.key)
-        return registry[address] // If actor is not in the registry (passivated) spawn a new one.
-            ?: get(ref.actor, ref.key).let { registry[address]!! }
+        return registry[ref.address] // If the actor is not in the registry (passivated) spawn a new one.
+            ?: get(ref.actor, ref.key).let { registry[ref.address]!! }
     }
 
     fun <A : Actor> unregister(actor: Class<A>, key: Actor.Key) {

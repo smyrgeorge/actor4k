@@ -1,8 +1,8 @@
 package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.gossip.Metadata
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
+import io.github.smyrgeorge.actor4k.cluster.gossip.Metadata
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
@@ -12,7 +12,7 @@ import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftMemberManager
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftTransport
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.grpc.ServerBuilder
+import io.grpc.netty.NettyServerBuilder
 import io.microraft.RaftConfig
 import io.microraft.RaftNode
 import io.scalecube.cluster.ClusterImpl
@@ -160,7 +160,7 @@ class Cluster(
             val grpcService = GrpcService()
 
             // Build the gRPC server.
-            val grpc: GrpcServer = ServerBuilder
+            val grpc: GrpcServer = NettyServerBuilder
                 .forPort(node.grpcPort)
                 .addService(grpcService)
                 .build()

@@ -89,7 +89,7 @@ fun main(args: Array<String>) {
             runBlocking {
                 val accountNo = it.path("accountNo") ?: error("Missing accountNo from path.")
                 val req = Req.GetAccount(accountNo)
-                val ref = ActorRegistry.get(AccountActor::class.java, Actor.Key(accountNo))
+                val ref = ActorRegistry.get(AccountActor::class, Actor.Key(accountNo))
                 val res = ref.ask<Account>(req)
                 Response(Status.OK).body(om.writeValueAsString(res))
             }
@@ -98,7 +98,7 @@ fun main(args: Array<String>) {
             runBlocking {
                 val accountNo = it.path("accountNo") ?: error("Missing accountNo from path.")
                 val req = om.readValue<Req.ApplyTx>(it.body.stream)
-                val ref = ActorRegistry.get(AccountActor::class.java, Actor.Key(accountNo))
+                val ref = ActorRegistry.get(AccountActor::class, Actor.Key(accountNo))
                 val res = ref.ask<Account>(req)
                 Response(Status.OK).body(om.writeValueAsString(res))
             }

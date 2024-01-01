@@ -38,6 +38,10 @@ abstract class Actor(
         }
 
     init {
+        // TODO: add initialization hooks.
+        status = Status.READY
+
+        //  TODO: Block consumer until actor is initialized.
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             mail.consumeEach {
@@ -50,8 +54,6 @@ abstract class Actor(
                 }
             }
         }
-
-        status = Status.READY
     }
 
     data class Message(
@@ -107,7 +109,8 @@ abstract class Actor(
     sealed class Ref(
         open val shard: Shard.Key,
         open val name: String,
-        open val key: Key
+        open val key: Key,
+        open val address: String
     ) {
         abstract suspend fun tell(msg: Any)
         abstract suspend fun <R> ask(msg: Any): R
@@ -116,8 +119,9 @@ abstract class Actor(
             override val shard: Shard.Key,
             override val name: String,
             override val key: Key,
-            val actor: Class<out Actor>
-        ) : Ref(shard, name, key) {
+            val actor: Class<out Actor>,
+            override val address: String = addressOf(name, key)
+        ) : Ref(shard, name, key, address) {
             override suspend fun tell(msg: Any): Unit =
                 ActorRegistry.get(this).tell(msg)
 
@@ -132,8 +136,9 @@ abstract class Actor(
             override val shard: Shard.Key,
             override val name: String,
             override val key: Key,
-            val clazz: String
-        ) : Ref(shard, name, key) {
+            private val clazz: String,
+            override val address: String = addressOf(name, key)
+        ) : Ref(shard, name, key, address) {
             override suspend fun tell(msg: Any) {
                 val payload: ByteArray = ActorSystem.cluster.serde.encode(msg::class.java, msg)
                 val message = Envelope.Tell(shard, clazz, key, payload, msg::class.java.name)
