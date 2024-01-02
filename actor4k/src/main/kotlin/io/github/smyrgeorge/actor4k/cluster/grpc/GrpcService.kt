@@ -2,8 +2,8 @@ package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.cluster.Shard
-import io.github.smyrgeorge.actor4k.cluster.ShardManager
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
+import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -26,7 +26,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         ActorSystem.cluster.stats.message()
 
         val shard = Shard.Key(request.shard)
-        ShardManager.checkShard(shard)?.let {
+        ShardManager.canHandle(shard)?.let {
             return Envelope.Response.error(shard, it).toProto()
         }
 
@@ -45,7 +45,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         ActorSystem.cluster.stats.message()
 
         val shard = Shard.Key(request.shard)
-        ShardManager.checkShard(shard)?.let {
+        ShardManager.canHandle(shard)?.let {
             return Envelope.Response.error(shard, it).toProto()
         }
 
@@ -64,7 +64,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         ActorSystem.cluster.stats.message()
 
         val shard = Shard.Key(request.shard)
-        ShardManager.checkShard(shard)?.let {
+        ShardManager.canHandle(shard)?.let {
             return Envelope.Response.error(shard, it).toProto()
         }
 

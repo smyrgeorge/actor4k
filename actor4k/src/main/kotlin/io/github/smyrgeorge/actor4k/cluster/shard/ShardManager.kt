@@ -1,11 +1,11 @@
-package io.github.smyrgeorge.actor4k.cluster
+package io.github.smyrgeorge.actor4k.cluster.shard
 
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 
 object ShardManager {
 
-    fun checkShard(shard: Shard.Key): Envelope.Response.Error? {
+    fun canHandle(shard: Shard.Key): Envelope.Response.Error? {
         if (ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.node.alias) {
             return Envelope.Response.Error(
                 code = Envelope.Response.Error.Code.ShardError,

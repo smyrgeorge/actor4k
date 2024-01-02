@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.cluster.Shard
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import kotlinx.coroutines.runBlocking
 

@@ -2,7 +2,7 @@ package io.github.smyrgeorge.actor4k.system
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.cluster.Shard
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.util.forEachParallel
 import kotlinx.coroutines.*

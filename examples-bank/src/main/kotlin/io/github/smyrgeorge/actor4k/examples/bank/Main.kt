@@ -6,7 +6,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
-import io.github.smyrgeorge.actor4k.cluster.Shard
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address

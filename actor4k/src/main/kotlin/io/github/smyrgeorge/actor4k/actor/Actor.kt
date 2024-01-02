@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.Shard
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem

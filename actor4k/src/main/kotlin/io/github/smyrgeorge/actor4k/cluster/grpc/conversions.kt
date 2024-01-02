@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import com.google.protobuf.ByteString
-import io.github.smyrgeorge.actor4k.cluster.Shard
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.proto.*
 
 fun Cluster.Response.toResponse() =

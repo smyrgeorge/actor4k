@@ -11,6 +11,7 @@ import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftMemberManager
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftTransport
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.grpc.netty.NettyServerBuilder
 import io.microraft.RaftConfig

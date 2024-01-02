@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.cluster
+package io.github.smyrgeorge.actor4k.cluster.shard
 
 import kotlinx.serialization.Serializable
 
