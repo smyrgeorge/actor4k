@@ -4,27 +4,36 @@ It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.corou
 
 The primary objective is to create a minimal actor system capable of functioning in cluster mode.
 
+# Key concepts
+
+- Using the `SWIM` gossip protocol for node/network discovery.
+- Using the `raft` consensus algorithm for:
+    - `leader election`
+    - `cluster state` across the nodes of the network
+    - `gRPC` in order to send messages from one node to another.
+
 ## Work in progress
 
 The project is in a very early stage.
 Check the `examples` for additional info.
 
-## Todo
+## Progress of the project
 
 A lot of things need to be done, so sit tight…
 
 - [ ] Cluster/Sharding (in progress)
-    - [x] Use `raft` consensus algorithm for the cluster node membership (in progress).
+    - [x] Use `raft` consensus algorithm for the cluster node membership (control the state of the cluster).
     - [x] Implement `tell/ask` patterns across cluster nodes
     - [x] Add support for cross-node actor reference
     - [x] Introduce the concept of Shard.
-    - [ ] Shard management and rebalancing.
+    - [ ] Shard management and rebalancing (in progress).
 - [ ] Serialization (in progress)
-    - [x] Send messages across cluster using the gossip protocol
-    - [x] Use gRPC for communication across cluster nodes
-    - [x] Use protobuf for actor messages (using kotlinx protobuf)
+    - [x] Send protocol messages using the gossip protocol
+    - [x] Use gRPC for sending messages from an actor to another actor (in the case of different nodes)
+    - [x] Use protobuf for actor messages (kotlinx protobuf)
 - [ ] Metrics (in progress)
 - [ ] Logging (in progress)
+- [ ] Documentation
 - [ ] Java compatibility
 - [ ] Persistence
 
