@@ -46,9 +46,21 @@ class ClusterRaftMemberManager(
                     if (member != null) {
                         val (m, a) = member
                         log.info { "${m.alias()} (leader) will be added to the hash-ring." }
-                        val req = ClusterRaftStateMachine.NodeAdded(m.alias(), a.host(), a.port())
+                        val req = ClusterRaftStateMachine.NodeIsJoining(m.alias(), a.host(), a.port())
                         self.replicate<Unit>(req)
                         continue
+                    }
+
+                    val nodeReadyToJoin = getPendingNodesSize() == 0 && getHasJoiningNode()
+                    if (nodeReadyToJoin) {
+                        val req = ClusterRaftStateMachine.NodeJoined
+                        self.replicate<Unit>(req)
+                    }
+
+                    val nodeReadyToLeave = getPendingNodesSize() == 0 && getHasLeavingNode()
+                    if (nodeReadyToLeave) {
+                        val req = ClusterRaftStateMachine.NodeLeft
+                        self.replicate<Unit>(req)
                     }
 
                     if (getStatus() != ClusterRaftStateMachine.Status.OK) continue
@@ -56,7 +68,7 @@ class ClusterRaftMemberManager(
                     val serverNode = anyOfflineCommittedInTheRing()
                     if (serverNode != null) {
                         log.info { "$serverNode (follower) will be removed from the hash-ring." }
-                        val req = ClusterRaftStateMachine.NodeRemoved(serverNode.dc)
+                        val req = ClusterRaftStateMachine.NodeIsLeaving(serverNode.dc)
                         val res = self.replicate<ServerNode>(req).join().result
 
                         try {
@@ -81,7 +93,7 @@ class ClusterRaftMemberManager(
                     if (member != null) {
                         val (m, a) = member
                         log.info { "${m.alias()} (follower) will be added to the hash-ring." }
-                        val req = ClusterRaftStateMachine.NodeAdded(m.alias(), a.host(), a.port())
+                        val req = ClusterRaftStateMachine.NodeIsJoining(m.alias(), a.host(), a.port())
                         val res = self.replicate<ServerNode>(req).join().result
 
                         try {
@@ -115,12 +127,10 @@ class ClusterRaftMemberManager(
     private fun leaderNotInTheRing(): Pair<Member, Address>? {
         val ring = ActorSystem.cluster.ring
         val members = ActorSystem.cluster.gossip.members()
-
         if (ring.nodes.none { it.dc == node.alias }) {
             val member = members.first { it.alias() == node.alias }
             return member to member.address()
         }
-
         return null
     }
 
@@ -128,7 +138,6 @@ class ClusterRaftMemberManager(
         val self: RaftNode = ActorSystem.cluster.raft
         val ring = ActorSystem.cluster.ring
         val members = ActorSystem.cluster.gossip.members()
-
         return ring.nodes.find { m ->
             members.none { m.dc == it.alias() }
                     && self.committedMembers.members.any { m.dc == it.id }
@@ -139,7 +148,6 @@ class ClusterRaftMemberManager(
         val self: RaftNode = ActorSystem.cluster.raft
         val ring = ActorSystem.cluster.ring
         val members = ActorSystem.cluster.gossip.members()
-
         return self.committedMembers.members.find { m ->
             members.none { m.id == it.alias() }
                     && ring.nodes.none { m.id == it.dc }
@@ -150,7 +158,6 @@ class ClusterRaftMemberManager(
         val self: RaftNode = ActorSystem.cluster.raft
         val ring = ActorSystem.cluster.ring
         val members = ActorSystem.cluster.gossip.members()
-
         return members.find { m ->
             self.committedMembers.members.any { m.alias() == it.id }
                     && ring.nodes.none { m.alias() == it.dc }
@@ -160,7 +167,6 @@ class ClusterRaftMemberManager(
     private fun anyOnlineUncommitted(): Pair<Member, Address>? {
         val self: RaftNode = ActorSystem.cluster.raft
         val members = ActorSystem.cluster.gossip.members()
-
         return members.find { m ->
             self.committedMembers.members.none { m.alias() == it.id }
         }?.let { it to it.address() }
@@ -170,6 +176,36 @@ class ClusterRaftMemberManager(
         val self: RaftNode = ActorSystem.cluster.raft
         return self.query<ClusterRaftStateMachine.Status>(
             /* operation = */ ClusterRaftStateMachine.GetStatus,
+            /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
+            /* minCommitIndex = */ Optional.empty(),
+            /* timeout = */ Optional.empty()
+        ).join().result
+    }
+
+    private fun getPendingNodesSize(): Int {
+        val self: RaftNode = ActorSystem.cluster.raft
+        return self.query<Int>(
+            /* operation = */ ClusterRaftStateMachine.PendingNodesSize,
+            /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
+            /* minCommitIndex = */ Optional.empty(),
+            /* timeout = */ Optional.empty()
+        ).join().result
+    }
+
+    private fun getHasJoiningNode(): Boolean {
+        val self: RaftNode = ActorSystem.cluster.raft
+        return self.query<Boolean>(
+            /* operation = */ ClusterRaftStateMachine.HasJoiningNode,
+            /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
+            /* minCommitIndex = */ Optional.empty(),
+            /* timeout = */ Optional.empty()
+        ).join().result
+    }
+
+    private fun getHasLeavingNode(): Boolean {
+        val self: RaftNode = ActorSystem.cluster.raft
+        return self.query<Boolean>(
+            /* operation = */ ClusterRaftStateMachine.HasLeavingNode,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
             /* minCommitIndex = */ Optional.empty(),
             /* timeout = */ Optional.empty()
