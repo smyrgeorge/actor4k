@@ -17,6 +17,7 @@ import io.grpc.netty.NettyServerBuilder
 import io.microraft.RaftConfig
 import io.microraft.RaftNode
 import io.scalecube.cluster.ClusterImpl
+import io.scalecube.net.Address
 import io.scalecube.transport.netty.tcp.TcpTransportFactory
 import kotlinx.coroutines.*
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
@@ -29,7 +30,7 @@ import io.grpc.Server as GrpcServer
 import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
 class Cluster(
-    val node: Node,
+    val conf: Conf,
     val stats: Stats,
     val serde: Serde,
     val gossip: ScaleCubeCluster,
@@ -68,7 +69,7 @@ class Cluster(
 
     suspend fun msg(message: Envelope): Envelope.Response {
         val target = nodeOf(message.shard)
-        return if (target.dc == node.alias) {
+        return if (target.dc == conf.alias) {
             // Shortcut in case we need to send a message to self (same node).
             grpcService.request(message)
         } else {
@@ -98,7 +99,7 @@ class Cluster(
     fun startRaft(initialGroupMembers: List<Endpoint>): Cluster {
         log.info { "Starting raft, initialGroupMembers=$initialGroupMembers" }
 
-        val endpoint = Endpoint(node.alias, node.host, node.grpcPort)
+        val endpoint = Endpoint(conf.alias, conf.host, conf.grpcPort)
         val config: RaftConfig = RaftConfig
             .newBuilder()
             .setLeaderElectionTimeoutMillis(10_000)
@@ -111,7 +112,7 @@ class Cluster(
         raft = RaftNode
             .newBuilder()
             .setConfig(config)
-            .setGroupId(node.namespace)
+            .setGroupId(conf.namespace)
             .setLocalEndpoint(endpoint)
             .setInitialGroupMembers(initialGroupMembers)
             .setTransport(Transport(endpoint))
@@ -120,18 +121,18 @@ class Cluster(
 
         raft.start()
 
-        raftManager = MemberManager(node)
+        raftManager = MemberManager(conf)
 
         return this
     }
 
     class Builder {
 
-        private lateinit var node: Node
+        private lateinit var conf: Conf
         private var serde: Serde = Serde.KotlinxProtobuf()
 
-        fun node(n: Node): Builder {
-            node = n
+        fun conf(c: Conf): Builder {
+            conf = c
             return this
         }
 
@@ -146,33 +147,91 @@ class Cluster(
 
             // Build cluster.
             val gossip: ScaleCubeCluster = ClusterImpl()
-                .transport { it.port(node.gossipPort) }
-                .config { it.memberAlias(node.alias) }
-                .config { it.metadata(Metadata(node.grpcPort)) }
-                .membership { it.namespace(node.namespace) }
-                .membership { it.seedMembers(node.seedMembers) }
+                .transport { it.port(conf.gossipPort) }
+                .config { it.memberAlias(conf.alias) }
+                .config { it.metadata(Metadata(conf.grpcPort)) }
+                .membership { it.namespace(conf.namespace) }
+                .membership { it.seedMembers(conf.seedMembers) }
                 .transportFactory { TcpTransportFactory() }
-                .handler { MessageHandler(node, stats) }
+                .handler { MessageHandler(conf, stats) }
 
             // Build the [GrpcService].
             val grpcService = GrpcService()
 
             // Build the gRPC server.
             val grpc: GrpcServer = NettyServerBuilder
-                .forPort(node.grpcPort)
+                .forPort(conf.grpcPort)
                 .addService(grpcService)
                 .build()
 
             // Build hash ring.
-            val ring: ConsistentHash<ServerNode> = hashRingOf(node.namespace)
+            val ring: ConsistentHash<ServerNode> = hashRingOf(conf.namespace)
 
             // Built cluster
-            val cluster = Cluster(node, stats, serde, gossip, ring, grpc, grpcService)
+            val cluster = Cluster(conf, stats, serde, gossip, ring, grpc, grpcService)
 
             // Register cluster to the ActorSystem.
             ActorSystem.register(cluster)
 
             return cluster
+        }
+    }
+
+    data class Conf(
+        val alias: String,
+        val host: String,
+        val namespace: String,
+        val grpcPort: Int,
+        val gossipPort: Int,
+        val seedMembers: List<Address>
+    ) {
+
+        class Builder {
+            private lateinit var alias: String
+            private lateinit var host: String
+            private lateinit var namespace: String
+            private var grpcPort: Int = 61100
+            private var gossipPort: Int = 61000
+            private var seedMembers: List<Address> = emptyList()
+
+            fun alias(v: String): Builder {
+                alias = v
+                return this
+            }
+
+            fun host(v: String): Builder {
+                host = v
+                return this
+            }
+
+            fun namespace(v: String): Builder {
+                namespace = v
+                return this
+            }
+
+            fun grpcPort(v: Int): Builder {
+                grpcPort = v
+                return this
+            }
+
+            fun gossipPort(v: Int): Builder {
+                gossipPort = v
+                return this
+            }
+
+            fun seedMembers(v: List<Address>): Builder {
+                seedMembers = v
+                return this
+            }
+
+            fun build(): Conf = Conf(
+                alias = alias,
+                host = host,
+                namespace = namespace,
+                grpcPort = grpcPort,
+                gossipPort = gossipPort,
+                seedMembers = seedMembers
+            )
         }
     }
 

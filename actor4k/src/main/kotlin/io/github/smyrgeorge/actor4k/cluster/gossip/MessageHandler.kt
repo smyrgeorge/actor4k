@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.gossip
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.Node
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Stats
 import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
@@ -18,7 +18,7 @@ import kotlin.system.exitProcess
 import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHandler
 
 class MessageHandler(
-    private val node: Node,
+    private val conf: Cluster.Conf,
     private val stats: Stats
 ) : ScaleCubeClusterMessageHandler {
 
@@ -45,9 +45,9 @@ class MessageHandler(
         val initialGroupMembers = if (nodes.isEmpty()) {
             log.error { "Sanity check failed :: No nodes found, but I was there..." }
             exitProcess(1)
-        } else if (nodes.size == 1 && nodes.first().alias() == node.alias) {
+        } else if (nodes.size == 1 && nodes.first().alias() == conf.alias) {
             log.info { "Found ${nodes.size} node (myself). It's going to be a lonely day..." }
-            listOf(Endpoint(node.alias, node.host, node.grpcPort))
+            listOf(Endpoint(conf.alias, conf.host, conf.grpcPort))
         } else {
             log.info { "Requesting initial group members form the network." }
             val self = ActorSystem.cluster.gossip.member().address()
@@ -95,7 +95,7 @@ class MessageHandler(
                         log.info { "Raft is not started will send the members found from the gossip protocol." }
                         ActorSystem.cluster.gossip.members().map {
                             val host = it.address().host()
-                            val port = ActorSystem.cluster.node.grpcPort
+                            val port = ActorSystem.cluster.conf.grpcPort
                             Endpoint(it.alias(), host, port)
                         }
                     }

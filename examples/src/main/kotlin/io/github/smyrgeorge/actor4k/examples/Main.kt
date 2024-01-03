@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.examples
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
-import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +21,7 @@ fun main(args: Array<String>) {
     val seedMembers = (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "localhost:$seedPort")
         .split(",").map { Address.from(it) }
 
-    val node: Node = Node
+    val conf = Cluster.Conf
         .Builder()
         .alias(alias)
         .namespace("actor4k")
@@ -30,9 +29,9 @@ fun main(args: Array<String>) {
         .seedMembers(seedMembers)
         .build()
 
-    val cluster: Cluster = Cluster
+    Cluster
         .Builder()
-        .node(node)
+        .conf(conf)
         .build()
         .start()
 

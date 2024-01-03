@@ -28,10 +28,10 @@ object ShardManager {
             )
         }
 
-        if (ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.node.alias) {
+        if (ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.conf.alias) {
             return Envelope.Response.Error(
                 code = Envelope.Response.Error.Code.SHARD_ACCESS_ERROR,
-                message = "Message for requested shard='${shard.value}' is not supported for node='${ActorSystem.cluster.node.alias}'."
+                message = "Message for requested shard='${shard.value}' is not supported for node='${ActorSystem.cluster.conf.alias}'."
             )
         }
 
@@ -65,7 +65,7 @@ object ShardManager {
                 // Locked shards are empty at the level.
                 val self = ActorSystem.cluster
                 self.raft.term.leaderEndpoint?.let {
-                    val data = MessageHandler.Protocol.Targeted.ShardedActorsFinished(self.node.alias)
+                    val data = MessageHandler.Protocol.Targeted.ShardedActorsFinished(self.conf.alias)
                     val message = Message.builder().data(data).build()
                     val member = self.gossip.members().first { m -> m.alias() == it.id }
                     runBlocking { self.gossip.send(member, message).awaitFirstOrNull() }
@@ -84,9 +84,9 @@ object ShardManager {
 
         // Update the state.
         if (locked > 0) {
-            self.raft.replicate<Unit>(StateMachine.Operation.ShardsLocked(self.node.alias))
+            self.raft.replicate<Unit>(StateMachine.Operation.ShardsLocked(self.conf.alias))
         } else {
-            self.raft.replicate<Unit>(StateMachine.Operation.ShardedActorsFinished(self.node.alias))
+            self.raft.replicate<Unit>(StateMachine.Operation.ShardedActorsFinished(self.conf.alias))
         }
 
         // Send the lock message to the other nodes.
@@ -103,9 +103,9 @@ object ShardManager {
 
         // Update the state.
         if (locked > 0) {
-            self.raft.replicate<Unit>(StateMachine.Operation.ShardsLocked(self.node.alias))
+            self.raft.replicate<Unit>(StateMachine.Operation.ShardsLocked(self.conf.alias))
         } else {
-            self.raft.replicate<Unit>(StateMachine.Operation.ShardedActorsFinished(self.node.alias))
+            self.raft.replicate<Unit>(StateMachine.Operation.ShardedActorsFinished(self.conf.alias))
         }
 
         // Send the lock message to the other nodes.
@@ -118,7 +118,7 @@ object ShardManager {
         val self = ActorSystem.cluster
 
         // Only respond if this node is part of the network.
-        if (self.ring.nodes.none { it.dc == self.node.alias }) return
+        if (self.ring.nodes.none { it.dc == self.conf.alias }) return
 
         // Lock the shards.
         val node = ServerNode(data.alias, data.host, data.port)
@@ -131,7 +131,7 @@ object ShardManager {
         val self = ActorSystem.cluster
 
         // Only respond if this node is part of the network.
-        if (self.ring.nodes.none { it.dc == self.node.alias }) return
+        if (self.ring.nodes.none { it.dc == self.conf.alias }) return
 
         // Lock the shards.
         val node = ServerNode(data.alias, data.host, data.port)
@@ -149,7 +149,7 @@ object ShardManager {
     }
 
     private fun getMigrationShardsForJoiningNode(node: ServerNode): Set<Shard.Key> {
-        val self = ActorSystem.cluster.node
+        val self = ActorSystem.cluster.conf
         val ring = Cluster.hashRingOf(self.namespace).apply {
             // Add existing nodes.
             addAll(ActorSystem.cluster.ring.nodes)
@@ -170,7 +170,7 @@ object ShardManager {
     }
 
     private fun getMigrationShardsForLeavingNode(node: ServerNode): Set<Shard.Key> {
-        val self = ActorSystem.cluster.node
+        val self = ActorSystem.cluster.conf
         val ring = Cluster.hashRingOf(self.namespace).apply {
             // Add existing nodes.
             addAll(ActorSystem.cluster.ring.nodes)
@@ -185,9 +185,9 @@ object ShardManager {
     private fun informLeaderForTheLockedShards(sender: Address, locked: Int) {
         val self = ActorSystem.cluster
         val message = if (locked > 0) {
-            Message.builder().data(MessageHandler.Protocol.Targeted.ShardsLocked(self.node.alias)).build()
+            Message.builder().data(MessageHandler.Protocol.Targeted.ShardsLocked(self.conf.alias)).build()
         } else {
-            Message.builder().data(MessageHandler.Protocol.Targeted.ShardedActorsFinished(self.node.alias)).build()
+            Message.builder().data(MessageHandler.Protocol.Targeted.ShardedActorsFinished(self.conf.alias)).build()
         }
         retryBlocking { self.gossip.send(sender, message).awaitFirstOrNull() }
     }

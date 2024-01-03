@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
-import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
 import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -65,7 +64,7 @@ fun main(args: Array<String>) {
     val seedMembers: List<Address> = (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "localhost:$grpcPort")
         .split(",").map { Address.from(it) }
 
-    val node: Node = Node
+    val conf = Cluster.Conf
         .Builder()
         .alias(alias)
         .host(host)
@@ -75,11 +74,11 @@ fun main(args: Array<String>) {
         .seedMembers(seedMembers)
         .build()
 
-    log.info { node }
+    log.info { conf }
 
     Cluster
         .Builder()
-        .node(node)
+        .conf(conf)
         .build()
         .start()
 

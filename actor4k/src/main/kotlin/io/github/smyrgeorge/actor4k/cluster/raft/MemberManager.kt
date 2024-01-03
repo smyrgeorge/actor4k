@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.Node
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -15,7 +15,7 @@ import kotlinx.coroutines.*
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.util.*
 
-class MemberManager(private val node: Node) {
+class MemberManager(private val conf: Cluster.Conf) {
 
     private val log = KotlinLogging.logger {}
 
@@ -55,7 +55,7 @@ class MemberManager(private val node: Node) {
                 val self: RaftNode = ActorSystem.cluster.raft
 
                 if (self.status == RaftNodeStatus.TERMINATED) {
-                    log.info { "${node.alias} (self) is in TERMINATED state but still UP, will shutdown." }
+                    log.info { "${conf.alias} (self) is in TERMINATED state but still UP, will shutdown." }
                     ActorSystem.Shutdown.shutdown(ActorSystem.Shutdown.Trigger.SELF_ERROR)
                     continue
                 }
@@ -147,8 +147,8 @@ class MemberManager(private val node: Node) {
     private fun leaderNotInTheRing(): Pair<Member, Address>? {
         val ring = ActorSystem.cluster.ring
         val members = ActorSystem.cluster.gossip.members()
-        if (ring.nodes.none { it.dc == node.alias }) {
-            val member = members.first { it.alias() == node.alias }
+        if (ring.nodes.none { it.dc == conf.alias }) {
+            val member = members.first { it.alias() == conf.alias }
             return member to member.address()
         }
         return null
@@ -233,5 +233,5 @@ class MemberManager(private val node: Node) {
     }
 
     private fun RaftNode.isLeader(): Boolean =
-        term.leaderEndpoint?.id == node.alias
+        term.leaderEndpoint?.id == conf.alias
 }

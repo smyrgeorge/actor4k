@@ -16,7 +16,7 @@ object ActorRegistry {
     private val log = KotlinLogging.logger {}
 
     // Only stores [Actor.Ref.Local].
-    val registry = ConcurrentHashMap<String, Actor>(/* initialCapacity = */ 1024)
+    private val registry = ConcurrentHashMap<String, Actor>(/* initialCapacity = */ 1024)
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -50,7 +50,7 @@ object ActorRegistry {
         // Create Local/Remote actor.
         val ref: Actor.Ref =
             if (ActorSystem.clusterMode
-                && ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.node.alias
+                && ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.conf.alias
             ) {
                 // Case Remote.
                 // Forward the [Envelope.Spawn] message to the correct cluster node.
