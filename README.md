@@ -6,11 +6,11 @@ The primary objective is to create a minimal actor system capable of functioning
 
 # Key concepts
 
-- Using the `SWIM` gossip protocol for node/network discovery.
+- Using the `SWIM` gossip protocol for node/network discovery and low level communication.
 - Using the `raft` consensus algorithm for:
-    - `leader election`
+    - `leader election`: the leader is responsible to manage the cluster state (add/remove nodes)
     - `cluster state` across the nodes of the network
-    - `gRPC` in order to send messages from one node to another.
+- Using `gRPC` for the necessary communications from one node to another.
 
 ## Work in progress
 
@@ -25,14 +25,18 @@ A lot of things need to be done, so sit tight…
     - [x] Use `raft` consensus algorithm for the cluster node membership (control the state of the cluster).
     - [x] Implement `tell/ask` patterns across cluster nodes
     - [x] Add support for cross-node actor reference
-    - [x] Introduce the concept of Shard.
-    - [ ] Shard management and rebalancing (in progress).
+    - [x] Introduce the concept of Shard
+    - [ ] Shard management and rebalancing (in progress)
+    - [ ] Graceful shutdown
+    - [ ] Error handling
 - [ ] Serialization (in progress)
     - [x] Send protocol messages using the gossip protocol
     - [x] Use gRPC for sending messages from an actor to another actor (in the case of different nodes)
     - [x] Use protobuf for actor messages (kotlinx protobuf)
-- [ ] Metrics (in progress)
 - [ ] Logging (in progress)
+    - [ ] Configure log4j/slf4j
+- [ ] Testing
+- [ ] Metrics (in progress)
 - [ ] Documentation
 - [ ] Java compatibility
 - [ ] Persistence

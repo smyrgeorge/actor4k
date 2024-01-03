@@ -31,10 +31,11 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.7.3")
 
     // Logging
-    api("org.slf4j:slf4j-api:2.0.9")
-    api("org.slf4j:slf4j-reload4j:2.0.9")
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    api("org.slf4j:slf4j-api:2.0.10")
+    api("org.slf4j:slf4j-reload4j:2.0.10")
     // https://github.com/oshai/kotlin-logging
-    api("io.github.oshai:kotlin-logging-jvm:5.1.0")
+    api("io.github.oshai:kotlin-logging-jvm:6.0.1")
 
     // Arrow
     // https://github.com/arrow-kt/arrow
@@ -67,7 +68,7 @@ dependencies {
 
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
-    testApi("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    testApi("org.mockito.kotlin:mockito-kotlin:5.2.1")
 }
 
 java {

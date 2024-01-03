@@ -7,7 +7,6 @@ import java.io.Serializable
 import java.util.function.Consumer
 import io.microraft.statemachine.StateMachine as RaftStateMachine
 
-
 class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMachine {
 
     private var status = Status.OK
@@ -86,16 +85,11 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
             Operation.GetStatus -> result = status
             Operation.HasJoiningNode -> result = joiningNode != null
             Operation.HasLeavingNode -> result = leavingNode != null
-            is Operation.PendingNodesSize -> result = waitingShardedActorsToFinishFrom.size
+            Operation.PendingNodesSize -> result = waitingShardedActorsToFinishFrom.size
         }
 
-        // Do not log [Periodic] state updates.
-        if (operation is Operation.Periodic
-            || operation is Operation.GetStatus
-            || operation is Operation.HasJoiningNode
-            || operation is Operation.HasLeavingNode
-            || operation is Operation.PendingNodesSize
-        ) return result
+        // We do not log all the operations to the state.
+        if (operation.doNotLog) return result
 
         log.info {
             buildString {
@@ -110,7 +104,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
                     append("\n        Leaving node: $leavingNode")
                 }
                 if (status == Status.A_NODE_IS_JOINING || status == Status.A_NODE_IS_LEAVING) {
-                    append("\n        Waiting shard lock from: $waitingShardLockFrom")
+                    append("\n        Waiting shard locks from: $waitingShardLockFrom")
                     append("\n        Waiting sharded actors to finish from: $waitingShardedActorsToFinishFrom")
                 }
             }
@@ -152,43 +146,62 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
     override fun getNewTermOperation() = Operation.LeaderElected
 
     sealed interface Operation : Serializable {
+        val doNotLog: Boolean
+
         data object Periodic : Operation {
+            override val doNotLog: Boolean = true
             private fun readResolve(): Any = Periodic
         }
 
         data object LeaderElected : Operation {
+            override val doNotLog: Boolean = false
             private fun readResolve(): Any = LeaderElected
         }
 
         data class NodeIsJoining(val alias: String, val host: String, val port: Int) : Operation {
+            override val doNotLog: Boolean = false
             fun toServerNode(): ServerNode = ServerNode(alias, host, port)
         }
 
         data object NodeJoined : Operation {
+            override val doNotLog: Boolean = false
             private fun readResolve(): Any = NodeJoined
         }
 
-        data class NodeIsLeaving(val alias: String) : Operation
+        data class NodeIsLeaving(val alias: String) : Operation {
+            override val doNotLog: Boolean = false
+        }
+
         data object NodeLeft : Operation {
+            override val doNotLog: Boolean = false
             private fun readResolve(): Any = NodeLeft
         }
 
-        data class ShardsLocked(val alias: String) : Operation
-        data class ShardedActorsFinished(val alias: String) : Operation
+        data class ShardsLocked(val alias: String) : Operation {
+            override val doNotLog: Boolean = false
+        }
+
+        data class ShardedActorsFinished(val alias: String) : Operation {
+            override val doNotLog: Boolean = false
+        }
 
         data object GetStatus : Operation {
+            override val doNotLog: Boolean = true
             private fun readResolve(): Any = GetStatus
         }
 
         data object PendingNodesSize : Operation {
+            override val doNotLog: Boolean = true
             private fun readResolve(): Any = PendingNodesSize
         }
 
         data object HasJoiningNode : Operation {
+            override val doNotLog: Boolean = true
             private fun readResolve(): Any = HasJoiningNode
         }
 
         data object HasLeavingNode : Operation {
+            override val doNotLog: Boolean = true
             private fun readResolve(): Any = HasLeavingNode
         }
     }

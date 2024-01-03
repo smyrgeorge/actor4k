@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.cluster.raft
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Node
+import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.microraft.MembershipChangeMode
@@ -19,103 +20,126 @@ class MemberManager(private val node: Node) {
     private val log = KotlinLogging.logger {}
 
     init {
+        // Start the main loop.
         @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
-            while (true) {
-                delay(ActorSystem.Conf.memberManagerRoundDelay)
-                try {
-                    // We make changes every round.
-                    val self: RaftNode = ActorSystem.cluster.raft
+        GlobalScope.launch(Dispatchers.IO) { loop() }
+    }
 
-                    if (self.status == RaftNodeStatus.TERMINATED) {
-                        log.info { "${node.alias} (self) is in TERMINATED state but still UP, will shutdown." }
-                        ActorSystem.Shutdown.shutdown(ActorSystem.Shutdown.Trigger.SELF_ERROR)
-                        continue
-                    }
+    fun handle(m: MessageHandler.Protocol.Targeted) {
+        when (m) {
+            is MessageHandler.Protocol.Targeted.ShardsLocked -> shardsLocked(m)
+            is MessageHandler.Protocol.Targeted.ShardedActorsFinished -> shardedActorsFinished(m)
+            // The following message types are not supposed to be handled here.
+            is MessageHandler.Protocol.Targeted.RaftProtocol -> Unit
+            is MessageHandler.Protocol.Targeted.ResInitialGroupMembers -> Unit
+        }
+    }
 
-                    // Only leader is allowed to trigger the following actions.
-                    if (!self.isLeader()) continue
+    private fun shardsLocked(m: MessageHandler.Protocol.Targeted.ShardsLocked) {
+        log.info { m }
+        val req = StateMachine.Operation.ShardsLocked(m.alias)
+        ActorSystem.cluster.raft.replicate<Unit>(req)
+    }
 
-                    // Send an empty message every period.
-                    // It seems to help with the stability of the network.
-                    self.replicate<Unit>(StateMachine.Operation.Periodic)
+    private fun shardedActorsFinished(m: MessageHandler.Protocol.Targeted.ShardedActorsFinished) {
+        log.info { m }
+        val req = StateMachine.Operation.ShardedActorsFinished(m.alias)
+        ActorSystem.cluster.raft.replicate<Unit>(req)
+    }
 
-                    var member = leaderNotInTheRing()
-                    if (member != null) {
-                        val (m, a) = member
-                        log.info { "${m.alias()} (leader) will be added to the hash-ring." }
-                        val req = StateMachine.Operation.NodeIsJoining(m.alias(), a.host(), a.port())
-                        self.replicate<Unit>(req)
-                        continue
-                    }
+    private suspend fun loop() {
+        while (true) {
+            delay(ActorSystem.Conf.memberManagerRoundDelay)
+            try {
+                // We make changes every round.
+                val self: RaftNode = ActorSystem.cluster.raft
 
-                    val nodeReadyToJoin = getPendingNodesSize() == 0 && getHasJoiningNode()
-                    if (nodeReadyToJoin) {
-                        self.replicate<Unit>(StateMachine.Operation.NodeJoined)
-                        continue
-                    }
-
-                    val nodeReadyToLeave = getPendingNodesSize() == 0 && getHasLeavingNode()
-                    if (nodeReadyToLeave) {
-                        self.replicate<Unit>(StateMachine.Operation.NodeLeft)
-                        continue
-                    }
-
-                    if (getStatus() != StateMachine.Status.OK) continue
-
-                    val serverNode = anyOfflineCommittedInTheRing()
-                    if (serverNode != null) {
-                        log.info { "$serverNode (follower) will be removed from the hash-ring." }
-                        val req = StateMachine.Operation.NodeIsLeaving(serverNode.dc)
-                        val res = self.replicate<ServerNode>(req).join().result
-                        try {
-                            ShardManager.requestLockShardsForLeavingNode(res)
-                        } catch (e: Exception) {
-                            log.error(e) { "Could not request shard locking. Reason: ${e.message}" }
-                        }
-
-                        continue
-                    }
-
-                    val endpoint = anyOfflineCommittedNotInTheRing()
-                    if (endpoint != null) {
-                        log.info { "$endpoint (follower) will be removed." }
-                        val mode = MembershipChangeMode.REMOVE_MEMBER
-                        val logIndex = self.committedMembers.logIndex
-                        self.changeMembership(endpoint, mode, logIndex)
-                        continue
-                    }
-
-                    member = anyOnlineCommittedNotInTheRing()
-                    if (member != null) {
-                        val (m, a) = member
-                        log.info { "${m.alias()} (follower) will be added to the hash-ring." }
-                        val req = StateMachine.Operation.NodeIsJoining(m.alias(), a.host(), a.port())
-                        val res = self.replicate<ServerNode>(req).join().result
-                        try {
-                            ShardManager.requestLockShardsForJoiningNode(res)
-                        } catch (e: Exception) {
-                            log.error(e) { "Could not request shard locking. Reason: ${e.message}" }
-                        }
-
-                        continue
-                    }
-
-                    member = anyOnlineUncommitted()
-                    if (member != null) {
-                        val (m, a) = member
-                        log.info { "${m.alias()} (learner) will be promoted to follower." }
-                        @Suppress("NAME_SHADOWING")
-                        val endpoint = Endpoint(m.alias(), a.host(), a.port())
-                        val mode = MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER
-                        val logIndex = self.committedMembers.logIndex
-                        self.changeMembership(endpoint, mode, logIndex)
-                        continue
-                    }
-
-                } catch (e: Exception) {
-                    log.warn { e.message }
+                if (self.status == RaftNodeStatus.TERMINATED) {
+                    log.info { "${node.alias} (self) is in TERMINATED state but still UP, will shutdown." }
+                    ActorSystem.Shutdown.shutdown(ActorSystem.Shutdown.Trigger.SELF_ERROR)
+                    continue
                 }
+
+                // Only leader is allowed to trigger the following actions.
+                if (!self.isLeader()) continue
+
+                // Send an empty message every period.
+                // It seems to help with the stability of the network.
+                self.replicate<Unit>(StateMachine.Operation.Periodic)
+
+                var member = leaderNotInTheRing()
+                if (member != null) {
+                    val (m, a) = member
+                    log.info { "${m.alias()} (leader) will be added to the hash-ring." }
+                    val req = StateMachine.Operation.NodeIsJoining(m.alias(), a.host(), a.port())
+                    self.replicate<Unit>(req)
+                    continue
+                }
+
+                val nodeReadyToJoin = getPendingNodesSize() == 0 && getHasJoiningNode()
+                if (nodeReadyToJoin) {
+                    self.replicate<Unit>(StateMachine.Operation.NodeJoined)
+                    continue
+                }
+
+                val nodeReadyToLeave = getPendingNodesSize() == 0 && getHasLeavingNode()
+                if (nodeReadyToLeave) {
+                    self.replicate<Unit>(StateMachine.Operation.NodeLeft)
+                    continue
+                }
+
+                if (getStatus() != StateMachine.Status.OK) continue
+
+                val serverNode = anyOfflineCommittedInTheRing()
+                if (serverNode != null) {
+                    log.info { "$serverNode (follower) will start leave flow." }
+                    val req = StateMachine.Operation.NodeIsLeaving(serverNode.dc)
+                    val res = self.replicate<ServerNode>(req).join().result
+                    try {
+                        ShardManager.requestLockShardsForLeavingNode(res)
+                    } catch (e: Exception) {
+                        log.error(e) { "Could not request shard locking. Reason: ${e.message}" }
+                    }
+                    continue
+                }
+
+                val endpoint = anyOfflineCommittedNotInTheRing()
+                if (endpoint != null) {
+                    log.info { "$endpoint (follower) will be removed." }
+                    val mode = MembershipChangeMode.REMOVE_MEMBER
+                    val logIndex = self.committedMembers.logIndex
+                    self.changeMembership(endpoint, mode, logIndex)
+                    continue
+                }
+
+                member = anyOnlineCommittedNotInTheRing()
+                if (member != null) {
+                    val (m, a) = member
+                    log.info { "${m.alias()} (follower) will start join flow." }
+                    val req = StateMachine.Operation.NodeIsJoining(m.alias(), a.host(), a.port())
+                    val res = self.replicate<ServerNode>(req).join().result
+                    try {
+                        ShardManager.requestLockShardsForJoiningNode(res)
+                    } catch (e: Exception) {
+                        log.error(e) { "Could not request shard locking. Reason: ${e.message}" }
+                    }
+                    continue
+                }
+
+                member = anyOnlineUncommitted()
+                if (member != null) {
+                    val (m, a) = member
+                    log.info { "${m.alias()} (learner) will be promoted to follower." }
+                    @Suppress("NAME_SHADOWING")
+                    val endpoint = Endpoint(m.alias(), a.host(), a.port())
+                    val mode = MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER
+                    val logIndex = self.committedMembers.logIndex
+                    self.changeMembership(endpoint, mode, logIndex)
+                    continue
+                }
+
+            } catch (e: Exception) {
+                log.error { e.message }
             }
         }
     }

@@ -56,8 +56,8 @@ sealed interface Envelope {
             val message: String
         ) {
             enum class Code {
-                ShardError,
-                Unknown
+                SHARD_ACCESS_ERROR,
+                UNKNOWN
             }
 
             fun ex(): Nothing = throw ClusterError(code, message)

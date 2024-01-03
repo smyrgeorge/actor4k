@@ -40,7 +40,7 @@ class Cluster(
     private val log = KotlinLogging.logger {}
 
     lateinit var raft: RaftNode
-    private lateinit var raftManager: MemberManager
+    lateinit var raftManager: MemberManager
     private val grpcClients: ConcurrentHashMap<String, GrpcClient> = ConcurrentHashMap()
 
     init {
@@ -72,16 +72,14 @@ class Cluster(
             // Shortcut in case we need to send a message to self (same node).
             grpcService.request(message)
         } else {
-            grpcClientOf(target.dc).request(message)
+            grpcClients[target.dc]?.request(message)
+                ?: error("Could not find a gRPC client for member='${target.dc}'.")
         }
     }
 
     fun nodeOf(shard: Shard.Key): ServerNode =
         ring.locate(shard.value).getOrNull()
             ?: error("Could not find node for shard='$shard', ring.size='${ring.size()}'.")
-
-    private fun grpcClientOf(alias: String): GrpcClient =
-        grpcClients[alias] ?: error("Could not find a gRPC client for member='$alias'.")
 
     fun registerGrpcClientFor(alias: String, host: String, port: Int) {
         grpcClients.getOrPut(alias) { GrpcClient(host, port) }
@@ -117,7 +115,6 @@ class Cluster(
             .setLocalEndpoint(endpoint)
             .setInitialGroupMembers(initialGroupMembers)
             .setTransport(Transport(endpoint))
-//            .setRaftNodeReportListener { println("REPORT: $it") }
             .setStateMachine(StateMachine(ring))
             .build()
 

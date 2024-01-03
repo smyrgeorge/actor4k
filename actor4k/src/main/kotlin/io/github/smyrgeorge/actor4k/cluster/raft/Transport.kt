@@ -21,6 +21,7 @@ class Transport(private val self: Endpoint) : RaftTransport {
         target as Endpoint
 
         if (self.alias == target.alias) {
+            log.warn { "Received message from myself (I wasn't expecting this)." }
             ActorSystem.cluster.raft.handle(message)
             return
         }

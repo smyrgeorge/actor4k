@@ -9,7 +9,7 @@ suspend fun <T> io(f: suspend () -> T): T =
     withContext(Dispatchers.IO) { f() }
 
 suspend fun <T> retry(
-    times: Int = Int.MAX_VALUE,
+    times: Int = 5,
     initialDelay: Long = 100, // 0.1 second
     maxDelay: Long = 1000,    // 1 second
     factor: Double = 2.0,
@@ -32,7 +32,7 @@ suspend fun <T> retry(
 }
 
 fun <T> retryBlocking(
-    times: Int = Int.MAX_VALUE,
+    times: Int = 5,
     initialDelay: Long = 100, // 0.1 second
     maxDelay: Long = 1000,    // 1 second
     factor: Double = 2.0,

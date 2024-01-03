@@ -4,7 +4,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.Stats
 import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
-import io.github.smyrgeorge.actor4k.cluster.raft.StateMachine
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.retryBlocking
@@ -14,7 +13,6 @@ import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactive.awaitFirstOrNull
-import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.io.Serializable
 import kotlin.system.exitProcess
 import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHandler
@@ -26,8 +24,8 @@ class MessageHandler(
 
     private val log = KotlinLogging.logger {}
 
-    private val rounds = 10
-    private val delayPerRound: Long = 5_000
+    private val rounds = ActorSystem.Conf.initializationRounds
+    private val delayPerRound = ActorSystem.Conf.initializationDelayPerRound
     private var initialGroupMembers = emptyList<Endpoint>()
 
     @Suppress("unused")
@@ -88,8 +86,9 @@ class MessageHandler(
 
 
     override fun onGossip(g: Message) {
+        stats.protocol()
         try {
-            log.info { "Received gossip: $g" }
+            log.debug { "Received gossip: $g" }
             when (val d = g.data<Protocol.Gossip>()) {
                 Protocol.Gossip.ReqInitialGroupMembers -> {
                     val members: List<Endpoint> = initialGroupMembers.ifEmpty {
@@ -105,47 +104,8 @@ class MessageHandler(
                     runBlocking { ActorSystem.cluster.gossip.send(g.sender(), msg).awaitFirstOrNull() }
                 }
 
-                is Protocol.Gossip.LockShardsForJoiningNode -> {
-                    val self = ActorSystem.cluster
-
-                    // Only respond if this node is part of the network.
-                    if (self.ring.nodes.none { it.dc == node.alias }) return
-
-                    // Lock the shards.
-                    val node = ServerNode(d.alias, d.host, d.port)
-                    val locked = ShardManager.lockShardsForJoiningNode(node)
-
-                    // Prepare and send the response to the sender.
-                    val sender = g.sender()
-                    val message = if (locked > 0) {
-                        Message.builder().data(Protocol.Targeted.ShardsLocked(self.node.alias)).build()
-                    } else {
-                        Message.builder().data(Protocol.Targeted.ShardedActorsFinished(self.node.alias)).build()
-                    }
-
-                    retryBlocking { self.gossip.send(sender, message).awaitFirstOrNull() }
-                }
-
-                is Protocol.Gossip.LockShardsForLeavingNode -> {
-                    val self = ActorSystem.cluster
-
-                    // Only respond if this node is part of the network.
-                    if (self.ring.nodes.none { it.dc == node.alias }) return
-
-                    // Lock the shards.
-                    val node = ServerNode(d.alias, d.host, d.port)
-                    val locked = ShardManager.lockShardsForLeavingNode(node)
-
-                    // Prepare and send the response to the sender.
-                    val sender = g.sender()
-                    val message = if (locked > 0) {
-                        Message.builder().data(Protocol.Targeted.ShardsLocked(self.node.alias)).build()
-                    } else {
-                        Message.builder().data(Protocol.Targeted.ShardedActorsFinished(self.node.alias)).build()
-                    }
-
-                    retryBlocking { self.gossip.send(sender, message).awaitFirstOrNull() }
-                }
+                is Protocol.Gossip.LockShardsForJoiningNode -> ShardManager.lockShardsForJoiningNode(g.sender(), d)
+                is Protocol.Gossip.LockShardsForLeavingNode -> ShardManager.lockShardsForLeavingNode(g.sender(), d)
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -153,6 +113,7 @@ class MessageHandler(
     }
 
     override fun onMessage(m: Message) {
+        stats.protocol()
         try {
             log.debug { "Received message: $m" }
             when (val d = m.data<Protocol.Targeted>()) {
@@ -168,18 +129,8 @@ class MessageHandler(
                     }
                 }
 
-                is Protocol.Targeted.ShardsLocked -> {
-                    log.info { m }
-                    val req = StateMachine.Operation.ShardsLocked(d.alias)
-                    ActorSystem.cluster.raft.replicate<Unit>(req)
-                }
-
-                is Protocol.Targeted.ShardedActorsFinished -> {
-                    log.info { m }
-                    val req = StateMachine.Operation.ShardedActorsFinished(d.alias)
-                    ActorSystem.cluster.raft.replicate<Unit>(req)
-                }
-
+                is Protocol.Targeted.ShardsLocked -> ActorSystem.cluster.raftManager.handle(d)
+                is Protocol.Targeted.ShardedActorsFinished -> ActorSystem.cluster.raftManager.handle(d)
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -192,10 +143,11 @@ class MessageHandler(
                 val m = e.member()
                 log.info { "New node found: $m" }
 
-                val metadata =
-                    ByteArray(e.newMetadata().remaining()).also { e.newMetadata().get(it) }.toInstance<Metadata>()
+                val metadata = ByteArray(e.newMetadata().remaining())
+                    .also { e.newMetadata().get(it) }
+                    .toInstance<Metadata>()
 
-                retryBlocking(times = 3) {
+                retryBlocking {
                     ActorSystem.cluster.registerGrpcClientFor(m.alias(), m.address().host(), metadata.grpcPort)
                 }
             }
@@ -203,7 +155,6 @@ class MessageHandler(
             MembershipEvent.Type.REMOVED -> {
                 log.info { "Node removed: ${e.member().alias()}" }
                 ActorSystem.cluster.unregisterGrpcClient(e.member().alias())
-
             }
 
             MembershipEvent.Type.LEAVING -> log.info { "Node is leaving ${e.member().alias()}" }

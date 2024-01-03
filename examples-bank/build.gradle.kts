@@ -34,7 +34,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.2")
 
     // https://github.com/http4k/http4k
-    implementation(platform("org.http4k:http4k-bom:5.11.1.0"))
+    implementation(platform("org.http4k:http4k-bom:5.12.0.0"))
     implementation("org.http4k:http4k-core")
     implementation("org.http4k:http4k-server-netty")
 }

@@ -30,7 +30,7 @@ dependencies {
     api("io.grpc:grpc-all:$grpcVersion")
 
     // https://github.com/http4k/http4k
-    implementation(platform("org.http4k:http4k-bom:5.11.1.0"))
+    implementation(platform("org.http4k:http4k-bom:5.12.0.0"))
     implementation("org.http4k:http4k-core")
     implementation("org.http4k:http4k-client-apache")
 }
