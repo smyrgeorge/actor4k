@@ -51,14 +51,14 @@ class MemberManager(private val node: Node) {
 
                     val nodeReadyToJoin = getPendingNodesSize() == 0 && getHasJoiningNode()
                     if (nodeReadyToJoin) {
-                        val req = StateMachine.Operation.NodeJoined
-                        self.replicate<Unit>(req)
+                        self.replicate<Unit>(StateMachine.Operation.NodeJoined)
+                        continue
                     }
 
                     val nodeReadyToLeave = getPendingNodesSize() == 0 && getHasLeavingNode()
                     if (nodeReadyToLeave) {
-                        val req = StateMachine.Operation.NodeLeft
-                        self.replicate<Unit>(req)
+                        self.replicate<Unit>(StateMachine.Operation.NodeLeft)
+                        continue
                     }
 
                     if (getStatus() != StateMachine.Status.OK) continue
@@ -68,7 +68,6 @@ class MemberManager(private val node: Node) {
                         log.info { "$serverNode (follower) will be removed from the hash-ring." }
                         val req = StateMachine.Operation.NodeIsLeaving(serverNode.dc)
                         val res = self.replicate<ServerNode>(req).join().result
-
                         try {
                             ShardManager.requestLockShardsForLeavingNode(res)
                         } catch (e: Exception) {
@@ -93,7 +92,6 @@ class MemberManager(private val node: Node) {
                         log.info { "${m.alias()} (follower) will be added to the hash-ring." }
                         val req = StateMachine.Operation.NodeIsJoining(m.alias(), a.host(), a.port())
                         val res = self.replicate<ServerNode>(req).join().result
-
                         try {
                             ShardManager.requestLockShardsForJoiningNode(res)
                         } catch (e: Exception) {
