@@ -19,7 +19,7 @@ object ShardManager {
 
     private val lockedShards: MutableSet<Shard.Key> = mutableSetOf()
 
-    fun isAvailable(shard: Shard.Key): Envelope.Response.Error? {
+    fun isLocked(shard: Shard.Key): Envelope.Response.Error? {
         if (lockedShards.contains(shard)) {
             return Envelope.Response.Error(
                 code = Envelope.Response.Error.Code.ShardError,

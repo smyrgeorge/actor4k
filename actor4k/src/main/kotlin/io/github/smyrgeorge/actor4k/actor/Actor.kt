@@ -3,6 +3,7 @@ package io.github.smyrgeorge.actor4k.actor
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.shard.Shard
+import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
@@ -119,11 +120,17 @@ abstract class Actor(open val shard: Shard.Key, open val key: Key) {
             val actor: Class<out Actor>,
             override val address: String = addressOf(name, key)
         ) : Ref(shard, name, key, address) {
-            override suspend fun tell(msg: Any): Unit =
+            override suspend fun tell(msg: Any) {
+                // Check if the requested shard is locked.
+                if (ActorSystem.clusterMode) ShardManager.isLocked(shard)?.ex()
                 ActorRegistry.get(this).tell(msg)
+            }
 
-            override suspend fun <R> ask(msg: Any): R =
-                ActorRegistry.get(this).ask(msg)
+            override suspend fun <R> ask(msg: Any): R {
+                // Check if the requested shard is locked.
+                if (ActorSystem.clusterMode) ShardManager.isLocked(shard)?.ex()
+                return ActorRegistry.get(this).ask(msg)
+            }
 
             suspend fun status(): Status = ActorRegistry.get(this).status
             suspend fun stop(cause: Throwable? = null) = ActorRegistry.get(this).stop(cause)

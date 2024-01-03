@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.cluster.grpc
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.shard.Shard
-import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -24,12 +23,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
         ActorSystem.cluster.stats.message()
-
         val shard = Shard.Key(request.shard)
-        ShardManager.isAvailable(shard)?.let {
-            return Envelope.Response.error(shard, it).toProto()
-        }
-
         return try {
             val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
@@ -43,12 +37,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun tell(request: Cluster.Tell): Cluster.Response {
         ActorSystem.cluster.stats.message()
-
         val shard = Shard.Key(request.shard)
-        ShardManager.isAvailable(shard)?.let {
-            return Envelope.Response.error(shard, it).toProto()
-        }
-
         return try {
             val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
@@ -62,12 +51,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun getActor(request: Cluster.GetActor): Cluster.Response {
         ActorSystem.cluster.stats.message()
-
         val shard = Shard.Key(request.shard)
-        ShardManager.isAvailable(shard)?.let {
-            return Envelope.Response.error(shard, it).toProto()
-        }
-
         return try {
             val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
             val res = Envelope.GetActor.Ref(shard, request.actorClazz, actor.name, actor.key)
