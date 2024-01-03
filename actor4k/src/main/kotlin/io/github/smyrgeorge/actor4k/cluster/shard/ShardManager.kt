@@ -4,7 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
+import io.github.smyrgeorge.actor4k.cluster.raft.StateMachine
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.scalecube.cluster.transport.api.Message
 import kotlinx.coroutines.reactive.awaitFirstOrNull
@@ -16,7 +16,6 @@ object ShardManager {
 
     private val log = KotlinLogging.logger {}
     private val shards = ConcurrentHashMap<Shard.Key, Int>()
-
     private val lockedShards: MutableSet<Shard.Key> = mutableSetOf()
 
     fun isLocked(shard: Shard.Key): Envelope.Response.Error? {
@@ -64,7 +63,7 @@ object ShardManager {
                 if (lockedShards.isEmpty()) {
                     val self = ActorSystem.cluster
                     self.raft.term.leaderEndpoint?.let {
-                        val data = MessageHandler.Protocol.ShardedActorsFinished(self.node.alias)
+                        val data = MessageHandler.Protocol.Targeted.ShardedActorsFinished(self.node.alias)
                         val message = Message.builder().data(data).build()
                         val member = self.gossip.members().first { m -> m.alias() == it.id }
                         runBlocking { self.gossip.send(member, message).awaitFirstOrNull() }
@@ -85,13 +84,13 @@ object ShardManager {
 
         // Update the state.
         if (locked > 0) {
-            self.raft.replicate<Unit>(ClusterRaftStateMachine.ShardsLocked(self.node.alias))
+            self.raft.replicate<Unit>(StateMachine.Operation.ShardsLocked(self.node.alias))
         } else {
-            self.raft.replicate<Unit>(ClusterRaftStateMachine.ShardedActorsFinished(self.node.alias))
+            self.raft.replicate<Unit>(StateMachine.Operation.ShardedActorsFinished(self.node.alias))
         }
 
         // Send the lock message to the other nodes.
-        val data = MessageHandler.Protocol.LockShardsForJoiningNode(node.dc, node.ip, node.port)
+        val data = MessageHandler.Protocol.Gossip.LockShardsForJoiningNode(node.dc, node.ip, node.port)
         val message = Message.builder().sender(self.gossip.member().address()).data(data).build()
         runBlocking { ActorSystem.cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
     }
@@ -104,13 +103,13 @@ object ShardManager {
 
         // Update the state.
         if (locked > 0) {
-            self.raft.replicate<Unit>(ClusterRaftStateMachine.ShardsLocked(self.node.alias))
+            self.raft.replicate<Unit>(StateMachine.Operation.ShardsLocked(self.node.alias))
         } else {
-            self.raft.replicate<Unit>(ClusterRaftStateMachine.ShardedActorsFinished(self.node.alias))
+            self.raft.replicate<Unit>(StateMachine.Operation.ShardedActorsFinished(self.node.alias))
         }
 
         // Send the lock message to the other nodes.
-        val data = MessageHandler.Protocol.LockShardsForLeavingNode(node.dc, node.ip, node.port)
+        val data = MessageHandler.Protocol.Gossip.LockShardsForLeavingNode(node.dc, node.ip, node.port)
         val message = Message.builder().sender(self.gossip.member().address()).data(data).build()
         runBlocking { ActorSystem.cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
     }

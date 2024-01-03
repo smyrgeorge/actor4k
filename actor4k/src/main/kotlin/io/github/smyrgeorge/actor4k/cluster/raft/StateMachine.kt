@@ -1,16 +1,14 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.microraft.statemachine.StateMachine
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.io.Serializable
 import java.util.function.Consumer
+import io.microraft.statemachine.StateMachine as RaftStateMachine
 
 
-class ClusterRaftStateMachine(
-    private val ring: ConsistentHash<ServerNode>,
-) : StateMachine {
+class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMachine {
 
     private var status = Status.OK
 
@@ -32,9 +30,9 @@ class ClusterRaftStateMachine(
         var result: Any = Unit
 
         when (val op = operation as Operation) {
-            Periodic -> Unit
-            LeaderElected -> Unit
-            is NodeIsJoining -> run {
+            Operation.Periodic -> Unit
+            Operation.LeaderElected -> Unit
+            is Operation.NodeIsJoining -> run {
                 log.info { "Received ($commitIndex): $operation" }
                 // Case that we need to add the leader.
                 // Is the first node to join the cluster.
@@ -51,7 +49,7 @@ class ClusterRaftStateMachine(
                 result = joiningNode as ServerNode
             }
 
-            is NodeIsLeaving -> {
+            is Operation.NodeIsLeaving -> {
                 log.info { "Received ($commitIndex): $operation" }
                 status = Status.A_NODE_IS_LEAVING
                 leavingNode = ring.nodes.first { it.dc == op.alias }
@@ -60,43 +58,43 @@ class ClusterRaftStateMachine(
                 result = leavingNode as ServerNode
             }
 
-            is NodeJoined -> {
+            is Operation.NodeJoined -> {
                 log.info { "Received ($commitIndex): $operation" }
                 ring.add(joiningNode!!)
                 joiningNode = null
                 status = Status.OK
             }
 
-            is NodeLeft -> {
+            is Operation.NodeLeft -> {
                 log.info { "Received ($commitIndex): $operation" }
                 ring.remove(leavingNode!!)
                 leavingNode = null
                 status = Status.OK
             }
 
-            is ShardsLocked -> {
+            is Operation.ShardsLocked -> {
                 log.info { "Received ($commitIndex): $operation" }
                 waitingShardLockFrom.remove(op.alias)
             }
 
-            is ShardedActorsFinished -> {
+            is Operation.ShardedActorsFinished -> {
                 log.info { "Received ($commitIndex): $operation" }
                 waitingShardLockFrom.remove(op.alias)
                 waitingShardedActorsToFinishFrom.remove(op.alias)
             }
 
-            GetStatus -> result = status
-            HasJoiningNode -> result = joiningNode != null
-            HasLeavingNode -> result = leavingNode != null
-            is PendingNodesSize -> result = waitingShardedActorsToFinishFrom.size
+            Operation.GetStatus -> result = status
+            Operation.HasJoiningNode -> result = joiningNode != null
+            Operation.HasLeavingNode -> result = leavingNode != null
+            is Operation.PendingNodesSize -> result = waitingShardedActorsToFinishFrom.size
         }
 
         // Do not log [Periodic] state updates.
-        if (operation is Periodic
-            || operation is GetStatus
-            || operation is HasJoiningNode
-            || operation is HasLeavingNode
-            || operation is PendingNodesSize
+        if (operation is Operation.Periodic
+            || operation is Operation.GetStatus
+            || operation is Operation.HasJoiningNode
+            || operation is Operation.HasLeavingNode
+            || operation is Operation.PendingNodesSize
         ) return result
 
         log.info {
@@ -117,7 +115,6 @@ class ClusterRaftStateMachine(
                 }
             }
         }
-
         return result
     }
 
@@ -152,57 +149,58 @@ class ClusterRaftStateMachine(
         latest.nodes.forEach { ring.add(it.toServerNode()) }
     }
 
-    override fun getNewTermOperation() = LeaderElected
+    override fun getNewTermOperation() = Operation.LeaderElected
 
-    sealed interface Operation : Serializable
-    data object Periodic : Operation {
-        private fun readResolve(): Any = Periodic
+    sealed interface Operation : Serializable {
+        data object Periodic : Operation {
+            private fun readResolve(): Any = Periodic
+        }
+
+        data object LeaderElected : Operation {
+            private fun readResolve(): Any = LeaderElected
+        }
+
+        data class NodeIsJoining(val alias: String, val host: String, val port: Int) : Operation {
+            fun toServerNode(): ServerNode = ServerNode(alias, host, port)
+        }
+
+        data object NodeJoined : Operation {
+            private fun readResolve(): Any = NodeJoined
+        }
+
+        data class NodeIsLeaving(val alias: String) : Operation
+        data object NodeLeft : Operation {
+            private fun readResolve(): Any = NodeLeft
+        }
+
+        data class ShardsLocked(val alias: String) : Operation
+        data class ShardedActorsFinished(val alias: String) : Operation
+
+        data object GetStatus : Operation {
+            private fun readResolve(): Any = GetStatus
+        }
+
+        data object PendingNodesSize : Operation {
+            private fun readResolve(): Any = PendingNodesSize
+        }
+
+        data object HasJoiningNode : Operation {
+            private fun readResolve(): Any = HasJoiningNode
+        }
+
+        data object HasLeavingNode : Operation {
+            private fun readResolve(): Any = HasLeavingNode
+        }
     }
 
-    data object LeaderElected : Operation {
-        private fun readResolve(): Any = LeaderElected
-    }
-
-    data class NodeIsJoining(val alias: String, val host: String, val port: Int) : Operation {
-        fun toServerNode(): ServerNode = ServerNode(alias, host, port)
-    }
-
-    data object NodeJoined : Operation {
-        private fun readResolve(): Any = NodeJoined
-    }
-
-    data class NodeIsLeaving(val alias: String) : Operation
-    data object NodeLeft : Operation {
-        private fun readResolve(): Any = NodeLeft
-    }
-
-    data class ShardsLocked(val alias: String) : Operation
-    data class ShardedActorsFinished(val alias: String) : Operation
-
-    data object GetStatus : Operation {
-        private fun readResolve(): Any = GetStatus
-    }
-
-    data object PendingNodesSize : Operation {
-        private fun readResolve(): Any = PendingNodesSize
-    }
-
-    data object HasJoiningNode : Operation {
-        private fun readResolve(): Any = HasJoiningNode
-    }
-
-    data object HasLeavingNode : Operation {
-        private fun readResolve(): Any = HasLeavingNode
-    }
-
-    private fun ServerNode.toEndpoint() = ClusterRaftEndpoint(dc, ip, port)
-    private fun ClusterRaftEndpoint.toServerNode() = ServerNode(alias, host, port)
+    private fun ServerNode.toEndpoint() = Endpoint(dc, ip, port)
+    private fun Endpoint.toServerNode() = ServerNode(alias, host, port)
 
     private data class Snapshot(
         val commitIndex: Long,
         val status: Status,
         val joiningNode: ServerNode?,
         val leavingNode: ServerNode?,
-        val nodes: List<ClusterRaftEndpoint>,
+        val nodes: List<Endpoint>,
     ) : Serializable
 }

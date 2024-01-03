@@ -3,7 +3,7 @@ package io.github.smyrgeorge.actor4k.cluster.raft
 import io.microraft.RaftEndpoint
 import java.io.Serializable
 
-data class ClusterRaftEndpoint(
+data class Endpoint(
     val alias: String,
     val host: String,
     val port: Int
@@ -13,7 +13,7 @@ data class ClusterRaftEndpoint(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ClusterRaftEndpoint
+        other as Endpoint
 
         return alias == other.alias
     }

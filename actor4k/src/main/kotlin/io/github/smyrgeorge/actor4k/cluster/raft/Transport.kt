@@ -5,20 +5,20 @@ import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.microraft.RaftEndpoint
 import io.microraft.model.message.RaftMessage
-import io.microraft.transport.Transport
 import io.scalecube.cluster.transport.api.Message
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.runBlocking
+import io.microraft.transport.Transport as RaftTransport
 
 
-class ClusterRaftTransport(private val self: ClusterRaftEndpoint) : Transport {
+class Transport(private val self: Endpoint) : RaftTransport {
 
     private val log = KotlinLogging.logger {}
 
     override fun send(target: RaftEndpoint, message: RaftMessage) {
-        target as ClusterRaftEndpoint
+        target as Endpoint
 
         if (self.alias == target.alias) {
             ActorSystem.cluster.raft.handle(message)
@@ -30,7 +30,7 @@ class ClusterRaftTransport(private val self: ClusterRaftEndpoint) : Transport {
                 try {
                     val member = ActorSystem.cluster.gossip.members().firstOrNull { it.alias() == target.id }
                     if (member != null) {
-                        val msg = Message.builder().data(MessageHandler.Protocol.RaftProtocol(message)).build()
+                        val msg = Message.builder().data(MessageHandler.Protocol.Targeted.RaftProtocol(message)).build()
                         ActorSystem.cluster.gossip.send(member, msg).awaitFirstOrNull()
                     } else {
                         log.warn { "Could not send ${message::class.simpleName} to ${target.alias}. Seems offline." }

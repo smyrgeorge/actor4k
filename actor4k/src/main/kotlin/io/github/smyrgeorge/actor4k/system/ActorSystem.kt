@@ -5,9 +5,11 @@ import io.github.smyrgeorge.actor4k.cluster.Cluster
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import java.time.Duration
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 object ActorSystem {
 
@@ -24,9 +26,10 @@ object ActorSystem {
     }
 
     object Conf {
-        val clusterLogStats: Duration = Duration.ofSeconds(5)
-        val registryCleanup: Duration = Duration.ofSeconds(60)
-        val actorExpiration: Duration = Duration.ofMinutes(15)
+        val clusterLogStats: Duration = 5.seconds
+        val registryCleanup: Duration = 60.seconds
+        val actorExpiration: Duration = 15.minutes
+        val memberManagerRoundDelay: Duration = 5.seconds
     }
 
     enum class Status {

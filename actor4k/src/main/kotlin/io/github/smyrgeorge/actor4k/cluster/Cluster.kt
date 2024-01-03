@@ -7,10 +7,10 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcClient
 import io.github.smyrgeorge.actor4k.cluster.grpc.GrpcService
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftMemberManager
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftTransport
+import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
+import io.github.smyrgeorge.actor4k.cluster.raft.MemberManager
+import io.github.smyrgeorge.actor4k.cluster.raft.StateMachine
+import io.github.smyrgeorge.actor4k.cluster.raft.Transport
 import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.grpc.netty.NettyServerBuilder
@@ -40,14 +40,14 @@ class Cluster(
     private val log = KotlinLogging.logger {}
 
     lateinit var raft: RaftNode
-    private lateinit var raftManager: ClusterRaftMemberManager
+    private lateinit var raftManager: MemberManager
     private val grpcClients: ConcurrentHashMap<String, GrpcClient> = ConcurrentHashMap()
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             while (true) {
-                delay(ActorSystem.Conf.clusterLogStats.toMillis())
+                delay(ActorSystem.Conf.clusterLogStats)
                 stats()
             }
         }
@@ -97,10 +97,10 @@ class Cluster(
         return this
     }
 
-    fun startRaft(initialGroupMembers: List<ClusterRaftEndpoint>): Cluster {
+    fun startRaft(initialGroupMembers: List<Endpoint>): Cluster {
         log.info { "Starting raft, initialGroupMembers=$initialGroupMembers" }
 
-        val endpoint = ClusterRaftEndpoint(node.alias, node.host, node.grpcPort)
+        val endpoint = Endpoint(node.alias, node.host, node.grpcPort)
         val config: RaftConfig = RaftConfig
             .newBuilder()
             .setLeaderElectionTimeoutMillis(10_000)
@@ -116,14 +116,14 @@ class Cluster(
             .setGroupId(node.namespace)
             .setLocalEndpoint(endpoint)
             .setInitialGroupMembers(initialGroupMembers)
-            .setTransport(ClusterRaftTransport(endpoint))
+            .setTransport(Transport(endpoint))
 //            .setRaftNodeReportListener { println("REPORT: $it") }
-            .setStateMachine(ClusterRaftStateMachine(ring))
+            .setStateMachine(StateMachine(ring))
             .build()
 
         raft.start()
 
-        raftManager = ClusterRaftMemberManager(node)
+        raftManager = MemberManager(node)
 
         return this
     }

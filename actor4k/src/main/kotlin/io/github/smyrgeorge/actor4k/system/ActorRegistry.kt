@@ -22,7 +22,7 @@ object ActorRegistry {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             while (true) {
-                delay(ActorSystem.Conf.registryCleanup.toMillis())
+                delay(ActorSystem.Conf.registryCleanup)
                 stopExpired()
             }
         }
@@ -108,7 +108,7 @@ object ActorRegistry {
     private suspend fun stopExpired(): Unit =
         registry.values.forEachParallel {
             val df = Instant.now().epochSecond - it.stats().last.epochSecond
-            if (df > ActorSystem.Conf.actorExpiration.seconds) {
+            if (df > ActorSystem.Conf.actorExpiration.inWholeSeconds) {
                 log.debug { "Closing ${it.address()} (expired)." }
                 it.stop()
             }

@@ -3,8 +3,8 @@ package io.github.smyrgeorge.actor4k.cluster.gossip
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.Stats
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
-import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
+import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
+import io.github.smyrgeorge.actor4k.cluster.raft.StateMachine
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.retryBlocking
@@ -28,21 +28,7 @@ class MessageHandler(
 
     private val rounds = 10
     private val delayPerRound: Long = 5_000
-
-    private var initialGroupMembers = emptyList<ClusterRaftEndpoint>()
-
-    sealed interface Protocol : Serializable {
-        data object ReqInitialGroupMembers : Protocol {
-            private fun readResolve(): Any = ReqInitialGroupMembers
-        }
-
-        data class ShardsLocked(val alias: String) : Protocol
-        data class ShardedActorsFinished(val alias: String) : Protocol
-        data class LockShardsForJoiningNode(val alias: String, val host: String, val port: Int) : Protocol
-        data class LockShardsForLeavingNode(val alias: String, val host: String, val port: Int) : Protocol
-        data class ResInitialGroupMembers(val members: List<ClusterRaftEndpoint>) : Protocol
-        data class RaftProtocol(val message: RaftMessage) : Protocol
-    }
+    private var initialGroupMembers = emptyList<Endpoint>()
 
     @Suppress("unused")
     @OptIn(DelicateCoroutinesApi::class)
@@ -63,11 +49,11 @@ class MessageHandler(
             exitProcess(1)
         } else if (nodes.size == 1 && nodes.first().alias() == node.alias) {
             log.info { "Found ${nodes.size} node (myself). It's going to be a lonely day..." }
-            listOf(ClusterRaftEndpoint(node.alias, node.host, node.grpcPort))
+            listOf(Endpoint(node.alias, node.host, node.grpcPort))
         } else {
             log.info { "Requesting initial group members form the network." }
             val self = ActorSystem.cluster.gossip.member().address()
-            val msg = Message.builder().data(Protocol.ReqInitialGroupMembers).sender(self).build()
+            val msg = Message.builder().data(Protocol.Gossip.ReqInitialGroupMembers).sender(self).build()
             for (i in 1..rounds) {
                 log.info { "Waiting for response... [$i/$rounds]" }
                 delay(delayPerRound)
@@ -104,23 +90,22 @@ class MessageHandler(
     override fun onGossip(g: Message) {
         try {
             log.info { "Received gossip: $g" }
-            when (val d = g.data<Protocol>()) {
-                Protocol.ReqInitialGroupMembers -> {
-                    val members: List<ClusterRaftEndpoint> = initialGroupMembers.ifEmpty {
+            when (val d = g.data<Protocol.Gossip>()) {
+                Protocol.Gossip.ReqInitialGroupMembers -> {
+                    val members: List<Endpoint> = initialGroupMembers.ifEmpty {
                         log.info { "Raft is not started will send the members found from the gossip protocol." }
                         ActorSystem.cluster.gossip.members().map {
                             val host = it.address().host()
                             val port = ActorSystem.cluster.node.grpcPort
-                            ClusterRaftEndpoint(it.alias(), host, port)
+                            Endpoint(it.alias(), host, port)
                         }
                     }
-                    val res = Protocol.ResInitialGroupMembers(members)
+                    val res = Protocol.Targeted.ResInitialGroupMembers(members)
                     val msg = Message.builder().data(res).build()
                     runBlocking { ActorSystem.cluster.gossip.send(g.sender(), msg).awaitFirstOrNull() }
                 }
 
-
-                is Protocol.LockShardsForJoiningNode -> {
+                is Protocol.Gossip.LockShardsForJoiningNode -> {
                     val self = ActorSystem.cluster
 
                     // Only respond if this node is part of the network.
@@ -133,15 +118,15 @@ class MessageHandler(
                     // Prepare and send the response to the sender.
                     val sender = g.sender()
                     val message = if (locked > 0) {
-                        Message.builder().data(Protocol.ShardsLocked(self.node.alias)).build()
+                        Message.builder().data(Protocol.Targeted.ShardsLocked(self.node.alias)).build()
                     } else {
-                        Message.builder().data(Protocol.ShardedActorsFinished(self.node.alias)).build()
+                        Message.builder().data(Protocol.Targeted.ShardedActorsFinished(self.node.alias)).build()
                     }
 
                     retryBlocking { self.gossip.send(sender, message).awaitFirstOrNull() }
                 }
 
-                is Protocol.LockShardsForLeavingNode -> {
+                is Protocol.Gossip.LockShardsForLeavingNode -> {
                     val self = ActorSystem.cluster
 
                     // Only respond if this node is part of the network.
@@ -154,18 +139,13 @@ class MessageHandler(
                     // Prepare and send the response to the sender.
                     val sender = g.sender()
                     val message = if (locked > 0) {
-                        Message.builder().data(Protocol.ShardsLocked(self.node.alias)).build()
+                        Message.builder().data(Protocol.Targeted.ShardsLocked(self.node.alias)).build()
                     } else {
-                        Message.builder().data(Protocol.ShardedActorsFinished(self.node.alias)).build()
+                        Message.builder().data(Protocol.Targeted.ShardedActorsFinished(self.node.alias)).build()
                     }
 
                     retryBlocking { self.gossip.send(sender, message).awaitFirstOrNull() }
                 }
-
-                is Protocol.RaftProtocol -> Unit
-                is Protocol.ShardsLocked -> Unit
-                is Protocol.ShardedActorsFinished -> Unit
-                is Protocol.ResInitialGroupMembers -> Unit
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -175,12 +155,12 @@ class MessageHandler(
     override fun onMessage(m: Message) {
         try {
             log.debug { "Received message: $m" }
-            when (val d = m.data<Protocol>()) {
-                is Protocol.ResInitialGroupMembers -> {
+            when (val d = m.data<Protocol.Targeted>()) {
+                is Protocol.Targeted.ResInitialGroupMembers -> {
                     initialGroupMembers.ifEmpty { initialGroupMembers = d.members }
                 }
 
-                is Protocol.RaftProtocol -> {
+                is Protocol.Targeted.RaftProtocol -> {
                     try {
                         ActorSystem.cluster.raft.handle(d.message)
                     } catch (e: UninitializedPropertyAccessException) {
@@ -188,21 +168,18 @@ class MessageHandler(
                     }
                 }
 
-                is Protocol.ShardsLocked -> {
+                is Protocol.Targeted.ShardsLocked -> {
                     log.info { m }
-                    val req = ClusterRaftStateMachine.ShardsLocked(d.alias)
+                    val req = StateMachine.Operation.ShardsLocked(d.alias)
                     ActorSystem.cluster.raft.replicate<Unit>(req)
                 }
 
-                is Protocol.ShardedActorsFinished -> {
+                is Protocol.Targeted.ShardedActorsFinished -> {
                     log.info { m }
-                    val req = ClusterRaftStateMachine.ShardedActorsFinished(d.alias)
+                    val req = StateMachine.Operation.ShardedActorsFinished(d.alias)
                     ActorSystem.cluster.raft.replicate<Unit>(req)
                 }
 
-                Protocol.ReqInitialGroupMembers -> Unit
-                is Protocol.LockShardsForJoiningNode -> Unit
-                is Protocol.LockShardsForLeavingNode -> Unit
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -231,6 +208,24 @@ class MessageHandler(
 
             MembershipEvent.Type.LEAVING -> log.info { "Node is leaving ${e.member().alias()}" }
             MembershipEvent.Type.UPDATED -> log.info { "Node updated: ${e.member().alias()}" }
+        }
+    }
+
+    sealed interface Protocol : Serializable {
+        sealed interface Gossip : Protocol {
+            data object ReqInitialGroupMembers : Gossip {
+                private fun readResolve(): Any = ReqInitialGroupMembers
+            }
+
+            data class LockShardsForJoiningNode(val alias: String, val host: String, val port: Int) : Gossip
+            data class LockShardsForLeavingNode(val alias: String, val host: String, val port: Int) : Gossip
+        }
+
+        sealed interface Targeted : Protocol {
+            data class ShardsLocked(val alias: String) : Targeted
+            data class ShardedActorsFinished(val alias: String) : Targeted
+            data class ResInitialGroupMembers(val members: List<Endpoint>) : Targeted
+            data class RaftProtocol(val message: RaftMessage) : Targeted
         }
     }
 }
