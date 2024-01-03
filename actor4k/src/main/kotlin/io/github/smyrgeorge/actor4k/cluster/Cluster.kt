@@ -63,7 +63,7 @@ class Cluster(
 
     private fun stats() {
         // Log [Stats].
-        log.info { stats }
+//        log.info { stats }
     }
 
     suspend fun msg(message: Envelope): Envelope.Response {
@@ -167,12 +167,7 @@ class Cluster(
                 .build()
 
             // Build hash ring.
-            val ring: ConsistentHash<ServerNode> = HashRing.newBuilder<ServerNode>()
-                // Hash ring name.
-                .name(node.namespace)
-                // Hash function to distribute partitions.
-                .hasher(DefaultHasher.METRO_HASH)
-                .build()
+            val ring: ConsistentHash<ServerNode> = hashRingOf(node.namespace)
 
             // Built cluster
             val cluster = Cluster(node, stats, serde, gossip, ring, grpc, grpcService)
@@ -182,5 +177,14 @@ class Cluster(
 
             return cluster
         }
+    }
+
+    companion object {
+        fun hashRingOf(namespace: String): ConsistentHash<ServerNode> = HashRing.newBuilder<ServerNode>()
+            // Hash ring name.
+            .name(namespace)
+            // Hash function to distribute partitions.
+            .hasher(DefaultHasher.METRO_HASH)
+            .build()
     }
 }

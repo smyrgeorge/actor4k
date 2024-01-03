@@ -6,8 +6,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.Node
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
 import kotlinx.coroutines.runBlocking
@@ -39,7 +39,7 @@ sealed interface Req {
 @Serializable
 data class Account(val accountNo: String, var balance: Int)
 
-data class AccountActor(val shard: Shard.Key, val key: Key) : Actor(shard, key) {
+data class AccountActor(override val shard: Shard.Key, override val key: Key) : Actor(shard, key) {
 
     private val account = Account(key.value, 0)
 

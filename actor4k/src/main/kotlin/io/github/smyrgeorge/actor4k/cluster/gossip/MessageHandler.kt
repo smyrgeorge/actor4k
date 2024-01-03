@@ -4,6 +4,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Node
 import io.github.smyrgeorge.actor4k.cluster.Stats
 import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftEndpoint
+import io.github.smyrgeorge.actor4k.cluster.raft.ClusterRaftStateMachine
+import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.retryBlocking
 import io.github.smyrgeorge.actor4k.util.toInstance
@@ -12,13 +14,13 @@ import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.io.Serializable
 import kotlin.system.exitProcess
 import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHandler
 
 class MessageHandler(
-    private val node: Node,
-    private val stats: Stats
+    private val node: Node, private val stats: Stats
 ) : ScaleCubeClusterMessageHandler {
 
     private val log = KotlinLogging.logger {}
@@ -33,6 +35,11 @@ class MessageHandler(
             private fun readResolve(): Any = ReqInitialGroupMembers
         }
 
+        data class ShardsLocked(val alias: String) : Protocol
+        data class ShardedActorsFinished(val alias: String) : Protocol
+        data class LockShardsForJoiningNode(val alias: String, val host: String, val port: Int) : Protocol
+
+        //        data class LockShardsForLeavingNode(val alias: String, val host: String, val port: Int) : Protocol
         data class ResInitialGroupMembers(val members: List<ClusterRaftEndpoint>) : Protocol
         data class RaftProtocol(val message: RaftMessage) : Protocol
     }
@@ -79,8 +86,9 @@ class MessageHandler(
         for (i in 1..rounds) {
             log.info { "Waiting connection with all initial group members... [$i/$rounds]" }
             delay(delayPerRound)
-            allConnected = initialGroupMembers
-                .all { m -> ActorSystem.cluster.gossip.members().any { m.alias == it.alias() } }
+            allConnected = initialGroupMembers.all { m ->
+                ActorSystem.cluster.gossip.members().any { m.alias == it.alias() }
+            }
             if (allConnected) break
         }
 
@@ -95,8 +103,8 @@ class MessageHandler(
 
     override fun onGossip(g: Message) {
         try {
-            log.debug { "Received gossip: $g" }
-            when (g.data<Protocol>()) {
+            log.info { "Received gossip: $g" }
+            when (val d = g.data<Protocol>()) {
                 Protocol.ReqInitialGroupMembers -> {
                     val members: List<ClusterRaftEndpoint> = initialGroupMembers.ifEmpty {
                         log.info { "Raft is not started will send the members found from the gossip protocol." }
@@ -113,6 +121,29 @@ class MessageHandler(
 
                 is Protocol.ResInitialGroupMembers -> Unit
                 is Protocol.RaftProtocol -> Unit
+                is Protocol.LockShardsForJoiningNode -> {
+                    val self = ActorSystem.cluster
+
+                    // Only respond if member of the network.
+                    if (self.ring.nodes.none { it.dc == node.alias }) return
+
+                    // Lock the shards.
+                    val node = ServerNode(d.alias, d.host, d.port)
+                    val locked = ShardManager.lockShardsForJoiningNode(node)
+
+                    // Prepare and send the response to the sender.
+                    val sender = g.sender()
+                    val message = if (locked > 0) {
+                        Message.builder().data(Protocol.ShardsLocked(self.node.alias)).build()
+                    } else {
+                        Message.builder().data(Protocol.ShardedActorsFinished(self.node.alias)).build()
+                    }
+
+                    retryBlocking { self.gossip.send(sender, message).awaitFirstOrNull() }
+                }
+
+                is Protocol.ShardsLocked -> Unit
+                is Protocol.ShardedActorsFinished -> Unit
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -124,9 +155,7 @@ class MessageHandler(
             log.debug { "Received message: $m" }
             when (val d = m.data<Protocol>()) {
                 is Protocol.ResInitialGroupMembers -> {
-                    initialGroupMembers.ifEmpty {
-                        initialGroupMembers = d.members
-                    }
+                    initialGroupMembers.ifEmpty { initialGroupMembers = d.members }
                 }
 
                 is Protocol.RaftProtocol -> {
@@ -138,6 +167,18 @@ class MessageHandler(
                 }
 
                 Protocol.ReqInitialGroupMembers -> Unit
+                is Protocol.LockShardsForJoiningNode -> Unit
+                is Protocol.ShardsLocked -> {
+                    log.info { m }
+                    val req = ClusterRaftStateMachine.ShardsLocked(d.alias)
+                    ActorSystem.cluster.raft.replicate<Unit>(req)
+                }
+
+                is Protocol.ShardedActorsFinished -> {
+                    log.info { m }
+                    val req = ClusterRaftStateMachine.ShardedActorsFinished(d.alias)
+                    ActorSystem.cluster.raft.replicate<Unit>(req)
+                }
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -145,14 +186,13 @@ class MessageHandler(
     }
 
     override fun onMembershipEvent(e: MembershipEvent) {
-        @Suppress("WHEN_ENUM_CAN_BE_NULL_IN_JAVA")
-        when (e.type()) {
+        @Suppress("WHEN_ENUM_CAN_BE_NULL_IN_JAVA") when (e.type()) {
             MembershipEvent.Type.ADDED -> {
                 val m = e.member()
                 log.info { "New node found: $m" }
 
-                val metadata = ByteArray(e.newMetadata().remaining())
-                    .also { e.newMetadata().get(it) }.toInstance<Metadata>()
+                val metadata =
+                    ByteArray(e.newMetadata().remaining()).also { e.newMetadata().get(it) }.toInstance<Metadata>()
 
                 retryBlocking(times = 3) {
                     ActorSystem.cluster.registerGrpcClientFor(m.alias(), m.address().host(), metadata.grpcPort)

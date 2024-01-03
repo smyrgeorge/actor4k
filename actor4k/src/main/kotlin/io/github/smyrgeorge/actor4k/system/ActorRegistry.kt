@@ -2,8 +2,9 @@ package io.github.smyrgeorge.actor4k.system
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
+import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.util.forEachParallel
 import kotlinx.coroutines.*
 import java.time.Instant
@@ -15,7 +16,7 @@ object ActorRegistry {
     private val log = KotlinLogging.logger {}
 
     // Only stores [Actor.Ref.Local].
-    private val registry = ConcurrentHashMap<String, Actor>(/* initialCapacity = */ 1024)
+    val registry = ConcurrentHashMap<String, Actor>(/* initialCapacity = */ 1024)
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -64,6 +65,10 @@ object ActorRegistry {
 
                 // Store [Actor.Ref] to the local storage.
                 registry[address] = a
+
+                // Declare shard to the [ShardManager]
+                ShardManager.operation(ShardManager.Op.REGISTER, shard)
+
                 a.ref()
             }
 
@@ -93,6 +98,7 @@ object ActorRegistry {
         registry[address]?.let {
             if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
             registry.remove(address)
+            ShardManager.operation(ShardManager.Op.UNREGISTER, it.shard)
         }
     }
 

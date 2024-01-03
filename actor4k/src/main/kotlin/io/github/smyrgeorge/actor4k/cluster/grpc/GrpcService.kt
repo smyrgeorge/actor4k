@@ -26,7 +26,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         ActorSystem.cluster.stats.message()
 
         val shard = Shard.Key(request.shard)
-        ShardManager.canHandle(shard)?.let {
+        ShardManager.isAvailable(shard)?.let {
             return Envelope.Response.error(shard, it).toProto()
         }
 
@@ -45,7 +45,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         ActorSystem.cluster.stats.message()
 
         val shard = Shard.Key(request.shard)
-        ShardManager.canHandle(shard)?.let {
+        ShardManager.isAvailable(shard)?.let {
             return Envelope.Response.error(shard, it).toProto()
         }
 
@@ -64,7 +64,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         ActorSystem.cluster.stats.message()
 
         val shard = Shard.Key(request.shard)
-        ShardManager.canHandle(shard)?.let {
+        ShardManager.isAvailable(shard)?.let {
             return Envelope.Response.error(shard, it).toProto()
         }
 

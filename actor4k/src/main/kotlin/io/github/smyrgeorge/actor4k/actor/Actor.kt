@@ -1,8 +1,8 @@
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
+import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.*
@@ -14,10 +14,7 @@ import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-abstract class Actor(
-    private val shard: Shard.Key,
-    private val key: Key
-) {
+abstract class Actor(open val shard: Shard.Key, open val key: Key) {
 
     protected val log = KotlinLogging.logger {}
     protected val name: String = nameOf(this::class.java)
