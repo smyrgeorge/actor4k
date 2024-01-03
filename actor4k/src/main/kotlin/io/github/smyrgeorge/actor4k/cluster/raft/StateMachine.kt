@@ -10,6 +10,7 @@ import io.microraft.statemachine.StateMachine as RaftStateMachine
 class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMachine {
 
     private var status = Status.OK
+    private var leader = Endpoint("Initial", "Initial", 0)
 
     private var joiningNode: ServerNode? = null
     private var leavingNode: ServerNode? = null
@@ -31,6 +32,11 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
         when (val op = operation as Operation) {
             Operation.Periodic -> Unit
             Operation.LeaderElected -> Unit
+            is Operation.SetLeader -> {
+                log.info { "Received ($commitIndex): $operation" }
+                leader = op.endpoint
+            }
+
             is Operation.NodeIsJoining -> run {
                 log.info { "Received ($commitIndex): $operation" }
                 // Case that we need to add the leader.
@@ -83,6 +89,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
             }
 
             Operation.GetStatus -> result = status
+            Operation.GetLeader -> result = leader
             Operation.HasJoiningNode -> result = joiningNode != null
             Operation.HasLeavingNode -> result = leavingNode != null
             Operation.PendingNodesSize -> result = waitingShardedActorsToFinishFrom.size
@@ -96,6 +103,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
                 append("\n")
                 append("New cluster state (commitIndex: $commitIndex):")
                 append("\n    Status: $status")
+                append("\n    Leader: ${leader.alias}")
                 append("\n    Nodes (${ring.nodes.size}):  ${ring.nodes.joinToString { it.dc }}")
                 if (status == Status.A_NODE_IS_JOINING) {
                     append("\n        Joining node: $joiningNode")
@@ -117,6 +125,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
         val snapshot = Snapshot(
             commitIndex = commitIndex,
             status = status,
+            leader = leader,
             joiningNode = joiningNode,
             leavingNode = leavingNode,
             nodes = ring.nodes.map { it.toEndpoint() }
@@ -135,6 +144,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
         val latest = snapshotChunks.maxBy { it.commitIndex }
 
         status = latest.status
+        leader = latest.leader
         joiningNode = latest.joiningNode
         leavingNode = latest.leavingNode
 
@@ -154,8 +164,12 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
         }
 
         data object LeaderElected : Operation {
-            override val doNotLog: Boolean = false
+            override val doNotLog: Boolean = true
             private fun readResolve(): Any = LeaderElected
+        }
+
+        data class SetLeader(val endpoint: Endpoint) : Operation {
+            override val doNotLog: Boolean = false
         }
 
         data class NodeIsJoining(val alias: String, val host: String, val port: Int) : Operation {
@@ -190,6 +204,11 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
             private fun readResolve(): Any = GetStatus
         }
 
+        data object GetLeader : Operation {
+            override val doNotLog: Boolean = true
+            private fun readResolve(): Any = GetLeader
+        }
+
         data object PendingNodesSize : Operation {
             override val doNotLog: Boolean = true
             private fun readResolve(): Any = PendingNodesSize
@@ -212,6 +231,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
     private data class Snapshot(
         val commitIndex: Long,
         val status: Status,
+        val leader: Endpoint,
         val joiningNode: ServerNode?,
         val leavingNode: ServerNode?,
         val nodes: List<Endpoint>,

@@ -67,6 +67,13 @@ class MemberManager(private val conf: Cluster.Conf) {
                 // It seems to help with the stability of the network.
                 self.replicate<Unit>(StateMachine.Operation.Periodic)
 
+                var endpoint = leaderIsNotSet()
+                if (endpoint != null) {
+                    val req = StateMachine.Operation.SetLeader(endpoint)
+                    self.replicate<Unit>(req)
+                    continue
+                }
+
                 var member = leaderNotInTheRing()
                 if (member != null) {
                     val (m, a) = member
@@ -103,7 +110,7 @@ class MemberManager(private val conf: Cluster.Conf) {
                     continue
                 }
 
-                val endpoint = anyOfflineCommittedNotInTheRing()
+                endpoint = anyOfflineCommittedNotInTheRing()
                 if (endpoint != null) {
                     log.info { "$endpoint (follower) will be removed." }
                     val mode = MembershipChangeMode.REMOVE_MEMBER
@@ -142,6 +149,18 @@ class MemberManager(private val conf: Cluster.Conf) {
                 log.error { e.message }
             }
         }
+    }
+
+    private fun leaderIsNotSet(): Endpoint? {
+        val self: RaftNode = ActorSystem.cluster.raft
+        val current = self.query<Endpoint>(
+            /* operation = */ StateMachine.Operation.GetLeader,
+            /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
+            /* minCommitIndex = */ Optional.empty(),
+            /* timeout = */ Optional.empty()
+        ).join().result
+        val actual = self.term.leaderEndpoint as Endpoint
+        return if (current == actual) null else actual
     }
 
     private fun leaderNotInTheRing(): Pair<Member, Address>? {
