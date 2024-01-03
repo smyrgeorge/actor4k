@@ -57,7 +57,14 @@ class ClusterRaftMemberManager(
                     if (serverNode != null) {
                         log.info { "$serverNode (follower) will be removed from the hash-ring." }
                         val req = ClusterRaftStateMachine.NodeRemoved(serverNode.dc)
-                        self.replicate<Unit>(req)
+                        val res = self.replicate<ServerNode>(req).join().result
+
+                        try {
+                            ShardManager.requestLockShardsForLeavingNode(res)
+                        } catch (e: Exception) {
+                            log.error(e) { "Could not request shard locking. Reason: ${e.message}" }
+                        }
+
                         continue
                     }
 

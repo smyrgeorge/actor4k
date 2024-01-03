@@ -15,21 +15,26 @@ class ClusterRaftStateMachine(
     private var status = Status.OK
 
     private var joiningNode: ServerNode? = null
+    private var leavingNode: ServerNode? = null
     private val waitingShardLockFrom = mutableSetOf<String>()
     private val waitingShardedActorsToFinishFrom = mutableSetOf<String>()
 
     enum class Status {
         OK,
-        SHARD_MIGRATION
+        A_NODE_IS_JOINING,
+        A_NODE_IS_LEAVING
     }
 
     private val log = KotlinLogging.logger {}
 
     override fun runOperation(commitIndex: Long, operation: Any): Any {
         // Do not log [Periodic] operations.
-        if (operation !is Periodic) {
+        if (operation !is Periodic && operation !is GetStatus) {
             log.info { "Received ($commitIndex): $operation" }
         }
+
+        // Store the operation result here.
+        var result: Any = Unit
 
         when (val op = operation as Operation) {
             Periodic -> Unit
@@ -43,12 +48,19 @@ class ClusterRaftStateMachine(
                     return@run
                 }
 
-                status = Status.SHARD_MIGRATION
-
+                status = Status.A_NODE_IS_JOINING
                 joiningNode = op.toServerNode()
                 waitingShardLockFrom.addAll(ring.nodes.map { it.dc })
-                waitingShardedActorsToFinishFrom.addAll(ring.nodes.map { it.dc })
-                return joiningNode as ServerNode
+                waitingShardedActorsToFinishFrom.addAll(waitingShardLockFrom)
+                result = joiningNode as ServerNode
+            }
+
+            is NodeRemoved -> {
+                status = Status.A_NODE_IS_LEAVING
+                leavingNode = ring.nodes.first { it.dc == op.alias }
+                waitingShardLockFrom.addAll(ring.nodes.filter { it.dc != op.alias }.map { it.dc })
+                waitingShardedActorsToFinishFrom.addAll(waitingShardLockFrom)
+                result = leavingNode as ServerNode
             }
 
             is ShardsLocked -> {
@@ -59,21 +71,31 @@ class ClusterRaftStateMachine(
                 waitingShardLockFrom.remove(op.alias)
                 waitingShardedActorsToFinishFrom.remove(op.alias)
                 if (waitingShardLockFrom.isEmpty() && waitingShardedActorsToFinishFrom.isEmpty()) {
-                    ring.add(joiningNode)
-                    joiningNode = null
+
+                    when (status) {
+                        Status.OK -> Unit
+                        Status.A_NODE_IS_JOINING -> {
+                            ring.add(joiningNode!!)
+                            joiningNode = null
+                        }
+
+                        Status.A_NODE_IS_LEAVING -> {
+                            ring.remove(leavingNode!!)
+                            leavingNode = null
+                        }
+                    }
+
                     status = Status.OK
                 }
             }
 
-            is NodeRemoved -> {
-                ring.nodes.firstOrNull { it.dc == op.alias }?.let { ring.remove(it) }
+            GetStatus -> {
+                result = status
             }
-
-            GetStatus -> return status
         }
 
         // Do not log [Periodic] state updates.
-        if (operation is Periodic) return Unit
+        if (operation is Periodic || operation is GetStatus) return result
 
         log.info {
             buildString {
@@ -81,15 +103,20 @@ class ClusterRaftStateMachine(
                 append("New cluster state (commitIndex: $commitIndex):")
                 append("\n    Status: $status")
                 append("\n    Nodes (${ring.nodes.size}):  ${ring.nodes.joinToString { it.dc }}")
-                if (status == Status.SHARD_MIGRATION) {
+                if (status == Status.A_NODE_IS_JOINING) {
                     append("\n        Joining node: $joiningNode")
+                }
+                if (status == Status.A_NODE_IS_LEAVING) {
+                    append("\n        Leaving node: $leavingNode")
+                }
+                if (status == Status.A_NODE_IS_JOINING || status == Status.A_NODE_IS_LEAVING) {
                     append("\n        Waiting shard lock from: $waitingShardLockFrom")
                     append("\n        Waiting sharded actors to finish from: $waitingShardedActorsToFinishFrom")
                 }
             }
         }
 
-        return Unit
+        return result
     }
 
     override fun takeSnapshot(commitIndex: Long, snapshotChunkConsumer: Consumer<Any>) {
@@ -97,7 +124,8 @@ class ClusterRaftStateMachine(
         val snapshot = Snapshot(
             commitIndex = commitIndex,
             status = status,
-            pendingJoinNode = joiningNode,
+            joiningNode = joiningNode,
+            leavingNode = leavingNode,
             nodes = ring.nodes.map { it.toEndpoint() }
         )
         snapshotChunkConsumer.accept(snapshot)
@@ -114,7 +142,8 @@ class ClusterRaftStateMachine(
         val latest = snapshotChunks.maxBy { it.commitIndex }
 
         status = latest.status
-        joiningNode = latest.pendingJoinNode
+        joiningNode = latest.joiningNode
+        leavingNode = latest.leavingNode
 
         // Empty hash-ring and then add the nodes from the snapshot.
         ring.nodes.forEach { ring.remove(it) }
@@ -150,7 +179,8 @@ class ClusterRaftStateMachine(
     private data class Snapshot(
         val commitIndex: Long,
         val status: Status,
-        val pendingJoinNode: ServerNode?,
+        val joiningNode: ServerNode?,
+        val leavingNode: ServerNode?,
         val nodes: List<ClusterRaftEndpoint>,
     ) : Serializable
 }

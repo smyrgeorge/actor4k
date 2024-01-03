@@ -20,7 +20,8 @@ import kotlin.system.exitProcess
 import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHandler
 
 class MessageHandler(
-    private val node: Node, private val stats: Stats
+    private val node: Node,
+    private val stats: Stats
 ) : ScaleCubeClusterMessageHandler {
 
     private val log = KotlinLogging.logger {}
@@ -38,8 +39,7 @@ class MessageHandler(
         data class ShardsLocked(val alias: String) : Protocol
         data class ShardedActorsFinished(val alias: String) : Protocol
         data class LockShardsForJoiningNode(val alias: String, val host: String, val port: Int) : Protocol
-
-        //        data class LockShardsForLeavingNode(val alias: String, val host: String, val port: Int) : Protocol
+        data class LockShardsForLeavingNode(val alias: String, val host: String, val port: Int) : Protocol
         data class ResInitialGroupMembers(val members: List<ClusterRaftEndpoint>) : Protocol
         data class RaftProtocol(val message: RaftMessage) : Protocol
     }
@@ -119,12 +119,11 @@ class MessageHandler(
                     runBlocking { ActorSystem.cluster.gossip.send(g.sender(), msg).awaitFirstOrNull() }
                 }
 
-                is Protocol.ResInitialGroupMembers -> Unit
-                is Protocol.RaftProtocol -> Unit
+
                 is Protocol.LockShardsForJoiningNode -> {
                     val self = ActorSystem.cluster
 
-                    // Only respond if member of the network.
+                    // Only respond if this node is part of the network.
                     if (self.ring.nodes.none { it.dc == node.alias }) return
 
                     // Lock the shards.
@@ -142,8 +141,31 @@ class MessageHandler(
                     retryBlocking { self.gossip.send(sender, message).awaitFirstOrNull() }
                 }
 
+                is Protocol.LockShardsForLeavingNode -> {
+                    val self = ActorSystem.cluster
+
+                    // Only respond if this node is part of the network.
+                    if (self.ring.nodes.none { it.dc == node.alias }) return
+
+                    // Lock the shards.
+                    val node = ServerNode(d.alias, d.host, d.port)
+                    val locked = ShardManager.lockShardsForLeavingNode(node)
+
+                    // Prepare and send the response to the sender.
+                    val sender = g.sender()
+                    val message = if (locked > 0) {
+                        Message.builder().data(Protocol.ShardsLocked(self.node.alias)).build()
+                    } else {
+                        Message.builder().data(Protocol.ShardedActorsFinished(self.node.alias)).build()
+                    }
+
+                    retryBlocking { self.gossip.send(sender, message).awaitFirstOrNull() }
+                }
+
+                is Protocol.RaftProtocol -> Unit
                 is Protocol.ShardsLocked -> Unit
                 is Protocol.ShardedActorsFinished -> Unit
+                is Protocol.ResInitialGroupMembers -> Unit
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -166,8 +188,6 @@ class MessageHandler(
                     }
                 }
 
-                Protocol.ReqInitialGroupMembers -> Unit
-                is Protocol.LockShardsForJoiningNode -> Unit
                 is Protocol.ShardsLocked -> {
                     log.info { m }
                     val req = ClusterRaftStateMachine.ShardsLocked(d.alias)
@@ -179,6 +199,10 @@ class MessageHandler(
                     val req = ClusterRaftStateMachine.ShardedActorsFinished(d.alias)
                     ActorSystem.cluster.raft.replicate<Unit>(req)
                 }
+
+                Protocol.ReqInitialGroupMembers -> Unit
+                is Protocol.LockShardsForJoiningNode -> Unit
+                is Protocol.LockShardsForLeavingNode -> Unit
             }
         } catch (e: Exception) {
             log.error(e) { e.message }

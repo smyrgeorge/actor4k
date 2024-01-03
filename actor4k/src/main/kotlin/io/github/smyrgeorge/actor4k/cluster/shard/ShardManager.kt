@@ -96,33 +96,39 @@ object ShardManager {
         runBlocking { ActorSystem.cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
     }
 
-//    fun requestLockShardsForLeavingNode(node: ServerNode) {
-//        val self = ActorSystem.cluster
-//        // The requester has to lock the shards immediately.
-//        lockShardsForJoiningNode(node)
-//        // Update the state.
-//        ActorSystem.cluster.raft.replicate<Unit>(ClusterRaftStateMachine.ShardsLocked(self.node.alias))
-//
-//        // Send the lock message to the other nodes.
-//        val data = MessageHandler.Protocol.LockShardsForLeavingNode(node.dc, node.ip, node.port)
-//        val message = Message.builder().sender(self.gossip.member().address()).data(data).build()
-//        runBlocking { ActorSystem.cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
-//    }
+    fun requestLockShardsForLeavingNode(node: ServerNode) {
+        val self = ActorSystem.cluster
+
+        // The requester has to lock the shards immediately.
+        val locked = lockShardsForLeavingNode(node)
+
+        // Update the state.
+        if (locked > 0) {
+            self.raft.replicate<Unit>(ClusterRaftStateMachine.ShardsLocked(self.node.alias))
+        } else {
+            self.raft.replicate<Unit>(ClusterRaftStateMachine.ShardedActorsFinished(self.node.alias))
+        }
+
+        // Send the lock message to the other nodes.
+        val data = MessageHandler.Protocol.LockShardsForLeavingNode(node.dc, node.ip, node.port)
+        val message = Message.builder().sender(self.gossip.member().address()).data(data).build()
+        runBlocking { ActorSystem.cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
+    }
 
     fun lockShardsForJoiningNode(node: ServerNode): Int {
         lockedShards.clear()
-
         val shards = getMigrationShardsForJoiningNode(node)
         lockedShards.addAll(shards)
-
         log.info { "Locked ${lockedShards.size} shards." }
         return lockedShards.size
     }
 
-    fun lockShardsForLeavingNode(node: ServerNode) {
+    fun lockShardsForLeavingNode(node: ServerNode): Int {
         lockedShards.clear()
-        lockedShards.addAll(getMigrationShardsForLeavingNode(node))
+        val shards = getMigrationShardsForLeavingNode(node)
+        lockedShards.addAll(shards)
         log.info { "Locked ${lockedShards.size} shards." }
+        return lockedShards.size
     }
 
     private fun getMigrationShardsForJoiningNode(node: ServerNode): Set<Shard.Key> {
