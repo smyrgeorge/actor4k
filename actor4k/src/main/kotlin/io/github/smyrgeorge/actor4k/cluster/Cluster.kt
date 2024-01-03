@@ -63,7 +63,7 @@ class Cluster(
 
     private fun stats() {
         // Log [Stats].
-//        log.info { stats }
+        log.info { stats }
     }
 
     suspend fun msg(message: Envelope): Envelope.Response {

@@ -16,13 +16,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 abstract class Actor(open val shard: Shard.Key, open val key: Key) {
-
     protected val log = KotlinLogging.logger {}
     protected val name: String = nameOf(this::class.java)
 
     private val stats: Stats = Stats()
     private var status = Status.INITIALISING
-    private val address: String = addressOf(this::class.java, key)
+    private val address: String by lazy { addressOf(this::class.java, key) }
     private val mail = Channel<Patterns>(capacity = Channel.UNLIMITED)
 
     @OptIn(DelicateCoroutinesApi::class)
