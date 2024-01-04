@@ -2,7 +2,6 @@ package io.github.smyrgeorge.actor4k.cluster.gossip
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
-import io.github.smyrgeorge.actor4k.cluster.Stats
 import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -17,10 +16,7 @@ import java.io.Serializable
 import kotlin.system.exitProcess
 import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHandler
 
-class MessageHandler(
-    private val conf: Cluster.Conf,
-    private val stats: Stats
-) : ScaleCubeClusterMessageHandler {
+class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHandler {
 
     private val log = KotlinLogging.logger {}
 
@@ -86,7 +82,6 @@ class MessageHandler(
 
 
     override fun onGossip(g: Message) {
-        stats.protocol()
         try {
             log.debug { "Received gossip: $g" }
             when (val d = g.data<Protocol.Gossip>()) {
@@ -113,7 +108,6 @@ class MessageHandler(
     }
 
     override fun onMessage(m: Message) {
-        stats.protocol()
         try {
             log.debug { "Received message: $m" }
             when (val d = m.data<Protocol.Targeted>()) {

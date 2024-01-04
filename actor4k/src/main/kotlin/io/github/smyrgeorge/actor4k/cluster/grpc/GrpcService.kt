@@ -21,7 +21,6 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         }
 
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
-        ActorSystem.cluster.stats.message()
         val shard = Shard.Key(request.shard)
         return try {
             val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
@@ -35,7 +34,6 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
     }
 
     override suspend fun tell(request: Cluster.Tell): Cluster.Response {
-        ActorSystem.cluster.stats.message()
         val shard = Shard.Key(request.shard)
         return try {
             val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
@@ -49,7 +47,6 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
     }
 
     override suspend fun getActor(request: Cluster.GetActor): Cluster.Response {
-        ActorSystem.cluster.stats.message()
         val shard = Shard.Key(request.shard)
         return try {
             val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)

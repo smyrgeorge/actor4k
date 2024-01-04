@@ -35,6 +35,9 @@ A lot of things need to be done, so sit tight…
     - [x] Use protobuf for actor messages (kotlinx protobuf)
 - [ ] Logging (in progress)
     - [ ] Configure log4j/slf4j
+    - [ ] Disable unnecessary messages
+- [ ] Benchmark (in progress)
+  - [ ] Load test using Jmeter (or another tool)
 - [ ] Testing
 - [ ] Metrics (in progress)
 - [ ] Documentation

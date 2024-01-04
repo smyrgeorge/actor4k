@@ -31,7 +31,6 @@ import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
 class Cluster(
     val conf: Conf,
-    val stats: Stats,
     val serde: Serde,
     val gossip: ScaleCubeCluster,
     val ring: ConsistentHash<ServerNode>,
@@ -40,6 +39,7 @@ class Cluster(
 ) {
     private val log = KotlinLogging.logger {}
 
+    private val stats: Stats = Stats()
     lateinit var raft: RaftNode
     lateinit var raftManager: MemberManager
     private val grpcClients: ConcurrentHashMap<String, GrpcClient> = ConcurrentHashMap()
@@ -142,9 +142,6 @@ class Cluster(
         }
 
         fun build(): Cluster {
-            // Initialize stats object here.
-            val stats = Stats()
-
             // Build cluster.
             val gossip: ScaleCubeCluster = ClusterImpl()
                 .transport { it.port(conf.gossipPort) }
@@ -153,7 +150,7 @@ class Cluster(
                 .membership { it.namespace(conf.namespace) }
                 .membership { it.seedMembers(conf.seedMembers) }
                 .transportFactory { TcpTransportFactory() }
-                .handler { MessageHandler(conf, stats) }
+                .handler { MessageHandler(conf) }
 
             // Build the [GrpcService].
             val grpcService = GrpcService()
@@ -168,7 +165,7 @@ class Cluster(
             val ring: ConsistentHash<ServerNode> = hashRingOf(conf.namespace)
 
             // Built cluster
-            val cluster = Cluster(conf, stats, serde, gossip, ring, grpc, grpcService)
+            val cluster = Cluster(conf, serde, gossip, ring, grpc, grpcService)
 
             // Register cluster to the ActorSystem.
             ActorSystem.register(cluster)

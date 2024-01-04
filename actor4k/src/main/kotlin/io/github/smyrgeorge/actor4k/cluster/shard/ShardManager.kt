@@ -38,6 +38,8 @@ object ShardManager {
         return null
     }
 
+    fun count(): Int = shards.size
+
     enum class Op {
         REGISTER,
         UNREGISTER
