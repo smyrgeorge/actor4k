@@ -1,3 +1,7 @@
+# Status
+
+![Build](https://github.com/smyrgeorge/actor4k/actions/workflows/ci.yml/badge.svg)
+
 # actor4k
 
 It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.coroutines).
@@ -37,7 +41,7 @@ A lot of things need to be done, so sit tight…
     - [ ] Configure log4j/slf4j
     - [ ] Disable unnecessary messages
 - [ ] Benchmark (in progress)
-  - [ ] Load test using Jmeter (or another tool)
+    - [ ] Load test using Jmeter (or another tool)
 - [ ] Testing
 - [ ] Metrics (in progress)
 - [ ] Documentation
@@ -45,6 +49,8 @@ A lot of things need to be done, so sit tight…
 - [ ] Persistence
 
 ## Run the example.
+
+[![asciicast](https://asciinema.org/a/629943.svg)](https://asciinema.org/a/629943)
 
 The included example tries to simulate a basic bank accounting system.
 
