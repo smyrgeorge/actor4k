@@ -1,8 +1,6 @@
-# Status
+# actor4k
 
 ![Build](https://github.com/smyrgeorge/actor4k/actions/workflows/ci.yml/badge.svg)
-
-# actor4k
 
 It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.coroutines).
 
