@@ -27,16 +27,13 @@ dependencies {
     // Internal dependencies.
     implementation(project(":actor4k"))
 
-    // Resolves: Address types of NameResolver 'unix' for 'node-2:50051' not supported by transport
-    api("io.grpc:grpc-all:$grpcVersion")
-
     // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.2")
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    api("com.fasterxml.jackson.core:jackson-core:2.16.0")
-    api("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
-    api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.16.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0")
 
     // https://github.com/http4k/http4k
     implementation(platform("org.http4k:http4k-bom:5.12.0.0"))
