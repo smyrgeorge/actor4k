@@ -61,11 +61,6 @@ dependencies {
     //https://github.com/MicroRaft/MicroRaft
     api("io.microraft:microraft:0.6")
 
-    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    api("com.fasterxml.jackson.core:jackson-core:2.16.0")
-    api("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
-    api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0")
-
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
     testApi("org.mockito.kotlin:mockito-kotlin:5.2.1")

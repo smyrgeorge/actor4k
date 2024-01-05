@@ -5,8 +5,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
-import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
 import io.github.smyrgeorge.actor4k.cluster.shard.Shard
+import io.github.smyrgeorge.actor4k.examples.bank.serde.Jackson
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
 import kotlinx.coroutines.runBlocking
@@ -82,7 +82,7 @@ fun main(args: Array<String>) {
         .build()
         .start()
 
-    val om: ObjectMapper = Serde.Jackson.create()
+    val om: ObjectMapper = Jackson.create()
     val app: RoutingHttpHandler = routes(
         "/api/account/{accountNo}" bind Method.GET to {
             runBlocking {

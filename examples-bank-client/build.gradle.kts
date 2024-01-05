@@ -29,6 +29,11 @@ dependencies {
     // Resolves: Address types of NameResolver 'unix' for 'node-2:50051' not supported by transport
     api("io.grpc:grpc-all:$grpcVersion")
 
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
+    api("com.fasterxml.jackson.core:jackson-core:2.16.0")
+    api("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
+    api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0")
+
     // https://github.com/http4k/http4k
     implementation(platform("org.http4k:http4k-bom:5.12.0.0"))
     implementation("org.http4k:http4k-core")

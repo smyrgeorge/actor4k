@@ -3,7 +3,7 @@ package io.github.smyrgeorge.actor4k.examples.client
 import arrow.core.fold
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.grpc.Serde
+import io.github.smyrgeorge.actor4k.examples.client.serde.Jackson
 import io.github.smyrgeorge.actor4k.util.forEachParallel
 import io.github.smyrgeorge.actor4k.util.mapParallel
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
 
     val log = KotlinLogging.logger {}
 
-    val om = Serde.Jackson.create()
+    val om = Jackson.create()
     val client = ApacheClient()
 
     val txValue = 10
