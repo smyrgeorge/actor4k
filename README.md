@@ -28,7 +28,8 @@ A lot of things need to be done, so sit tight…
     - [x] Implement `tell/ask` patterns across cluster nodes
     - [x] Add support for cross-node actor reference
     - [x] Introduce the concept of Shard
-    - [ ] Shard management and rebalancing (in progress)
+    - [x] Shard management and re-balance shards after a node joins/leaves cluster
+    - [ ] Review/Optimize `MemberManager`
     - [ ] Graceful shutdown
     - [ ] Error handling
 - [ ] Serialization (in progress)
@@ -39,9 +40,9 @@ A lot of things need to be done, so sit tight…
     - [ ] Configure log4j/slf4j
     - [ ] Disable unnecessary messages
 - [ ] Benchmark (in progress)
-    - [ ] Load test using Jmeter (or another tool)
+    - [ ] Load test
 - [ ] Testing
-- [ ] Metrics (in progress)
+- [ ] Metrics/Stats (in progress)
 - [ ] Documentation
 - [ ] Java compatibility
 - [ ] Persistence

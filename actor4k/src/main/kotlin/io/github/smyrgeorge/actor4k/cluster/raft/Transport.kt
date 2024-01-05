@@ -22,7 +22,7 @@ class Transport(private val self: Endpoint) : RaftTransport {
 
         if (self.alias == target.alias) {
             log.warn { "Received message from myself (I wasn't expecting this)." }
-            ActorSystem.cluster.raft.handle(message)
+            runBlocking { ActorSystem.cluster.raftManager.send(message) }
             return
         }
 

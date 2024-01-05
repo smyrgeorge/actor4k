@@ -5,13 +5,13 @@ import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.microraft.MembershipChangeMode
-import io.microraft.QueryPolicy
-import io.microraft.RaftNode
-import io.microraft.RaftNodeStatus
+import io.microraft.*
+import io.microraft.model.message.RaftMessage
 import io.scalecube.cluster.Member
 import io.scalecube.net.Address
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consumeEach
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.util.*
 
@@ -19,13 +19,22 @@ class MemberManager(private val conf: Cluster.Conf) {
 
     private val log = KotlinLogging.logger {}
 
+    private val protocol = Channel<RaftMessage>(capacity = Channel.UNLIMITED)
+    private val mail = Channel<MessageHandler.Protocol.Targeted>(capacity = Channel.UNLIMITED)
+
     init {
         // Start the main loop.
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) { loop() }
+        @OptIn(DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) { mail.consumeEach { handle(it) } }
     }
 
-    fun handle(m: MessageHandler.Protocol.Targeted) {
+    fun leader(): RaftEndpoint? = ActorSystem.cluster.raft.term.leaderEndpoint
+    suspend fun send(m: RaftMessage) = protocol.send(m)
+    suspend fun send(m: MessageHandler.Protocol.Targeted) = mail.send(m)
+
+    private fun handle(m: MessageHandler.Protocol.Targeted) {
         when (m) {
             is MessageHandler.Protocol.Targeted.ShardsLocked -> shardsLocked(m)
             is MessageHandler.Protocol.Targeted.ShardedActorsFinished -> shardedActorsFinished(m)
@@ -78,20 +87,31 @@ class MemberManager(private val conf: Cluster.Conf) {
                 if (member != null) {
                     val (m, a) = member
                     log.info { "${m.alias()} (leader) will be added to the hash-ring." }
-                    val req = StateMachine.Operation.NodeIsJoining(m.alias(), a.host(), a.port())
+                    val req = StateMachine.Operation.LeaderJoined(m.alias(), a.host(), a.port())
                     self.replicate<Unit>(req)
                     continue
                 }
 
-                val nodeReadyToJoin = getPendingNodesSize() == 0 && getHasJoiningNode()
+                val nodeReadyToJoin = getNodesStillMigratingShardsSize() == 0 && getHasJoiningNode()
                 if (nodeReadyToJoin) {
                     self.replicate<Unit>(StateMachine.Operation.NodeJoined)
                     continue
                 }
 
-                val nodeReadyToLeave = getPendingNodesSize() == 0 && getHasLeavingNode()
+                val nodeReadyToLeave = getNodesStillMigratingShardsSize() == 0 && getHasLeavingNode()
                 if (nodeReadyToLeave) {
                     self.replicate<Unit>(StateMachine.Operation.NodeLeft)
+                    continue
+                }
+
+                val readyToUnlockShards = readyToUnlockShards()
+                if (readyToUnlockShards) {
+                    self.replicate<Unit>(StateMachine.Operation.ShardMigrationCompleted)
+                    try {
+                        ShardManager.requestUnlockAShards()
+                    } catch (e: Exception) {
+                        log.error(e) { "Could not request unlock shards. Reason: ${e.message}" }
+                    }
                     continue
                 }
 
@@ -105,7 +125,7 @@ class MemberManager(private val conf: Cluster.Conf) {
                     try {
                         ShardManager.requestLockShardsForLeavingNode(res)
                     } catch (e: Exception) {
-                        log.error(e) { "Could not request shard locking. Reason: ${e.message}" }
+                        log.error(e) { "Could not request lock shards. Reason: ${e.message}" }
                     }
                     continue
                 }
@@ -173,6 +193,12 @@ class MemberManager(private val conf: Cluster.Conf) {
         return null
     }
 
+    private fun readyToUnlockShards(): Boolean {
+        val status = getStatus()
+        val pending = getNodesStillMigratingShardsSize()
+        return status.isMigration && pending == 0
+    }
+
     private fun anyOfflineCommittedInTheRing(): ServerNode? {
         val self: RaftNode = ActorSystem.cluster.raft
         val ring = ActorSystem.cluster.ring
@@ -221,10 +247,10 @@ class MemberManager(private val conf: Cluster.Conf) {
         ).join().result
     }
 
-    private fun getPendingNodesSize(): Int {
+    private fun getNodesStillMigratingShardsSize(): Int {
         val self: RaftNode = ActorSystem.cluster.raft
         return self.query<Int>(
-            /* operation = */ StateMachine.Operation.PendingNodesSize,
+            /* operation = */ StateMachine.Operation.GetNodesStillMigratingShardsSize,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
             /* minCommitIndex = */ Optional.empty(),
             /* timeout = */ Optional.empty()

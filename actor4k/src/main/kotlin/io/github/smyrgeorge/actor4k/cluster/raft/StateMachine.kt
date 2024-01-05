@@ -17,12 +17,6 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
     private val waitingShardLockFrom = mutableSetOf<String>()
     private val waitingShardedActorsToFinishFrom = mutableSetOf<String>()
 
-    enum class Status {
-        OK,
-        A_NODE_IS_JOINING,
-        A_NODE_IS_LEAVING
-    }
-
     private val log = KotlinLogging.logger {}
 
     override fun runOperation(commitIndex: Long, operation: Any): Any {
@@ -37,16 +31,13 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
                 leader = op.endpoint
             }
 
-            is Operation.NodeIsJoining -> run {
+            is Operation.LeaderJoined -> {
                 log.info { "Received ($commitIndex): $operation" }
-                // Case that we need to add the leader.
-                // Is the first node to join the cluster.
-                // No shard migration is needed.
-                if (ring.nodes.isEmpty()) {
-                    ring.add(op.toServerNode())
-                    return@run
-                }
+                ring.add(op.toServerNode())
+            }
 
+            is Operation.NodeIsJoining -> {
+                log.info { "Received ($commitIndex): $operation" }
                 status = Status.A_NODE_IS_JOINING
                 joiningNode = op.toServerNode()
                 waitingShardLockFrom.addAll(ring.nodes.map { it.dc })
@@ -67,14 +58,12 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
                 log.info { "Received ($commitIndex): $operation" }
                 ring.add(joiningNode!!)
                 joiningNode = null
-                status = Status.OK
             }
 
             is Operation.NodeLeft -> {
                 log.info { "Received ($commitIndex): $operation" }
                 ring.remove(leavingNode!!)
                 leavingNode = null
-                status = Status.OK
             }
 
             is Operation.ShardsLocked -> {
@@ -88,11 +77,16 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
                 waitingShardedActorsToFinishFrom.remove(op.alias)
             }
 
+            Operation.ShardMigrationCompleted -> {
+                log.info { "Received ($commitIndex): $operation" }
+                status = Status.OK
+            }
+
             Operation.GetStatus -> result = status
             Operation.GetLeader -> result = leader
             Operation.HasJoiningNode -> result = joiningNode != null
             Operation.HasLeavingNode -> result = leavingNode != null
-            Operation.PendingNodesSize -> result = waitingShardedActorsToFinishFrom.size
+            Operation.GetNodesStillMigratingShardsSize -> result = waitingShardedActorsToFinishFrom.size
         }
 
         // We do not log all the operations to the state.
@@ -111,7 +105,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
                 if (status == Status.A_NODE_IS_LEAVING) {
                     append("\n        Leaving node: $leavingNode")
                 }
-                if (status == Status.A_NODE_IS_JOINING || status == Status.A_NODE_IS_LEAVING) {
+                if (status.isMigration) {
                     append("\n        Waiting shard locks from: $waitingShardLockFrom")
                     append("\n        Waiting sharded actors to finish from: $waitingShardedActorsToFinishFrom")
                 }
@@ -172,6 +166,11 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
             override val doNotLog: Boolean = false
         }
 
+        data class LeaderJoined(val alias: String, val host: String, val port: Int) : Operation {
+            override val doNotLog: Boolean = false
+            fun toServerNode(): ServerNode = ServerNode(alias, host, port)
+        }
+
         data class NodeIsJoining(val alias: String, val host: String, val port: Int) : Operation {
             override val doNotLog: Boolean = false
             fun toServerNode(): ServerNode = ServerNode(alias, host, port)
@@ -199,6 +198,11 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
             override val doNotLog: Boolean = false
         }
 
+        data object ShardMigrationCompleted : Operation {
+            override val doNotLog: Boolean = false
+            private fun readResolve(): Any = ShardMigrationCompleted
+        }
+
         data object GetStatus : Operation {
             override val doNotLog: Boolean = true
             private fun readResolve(): Any = GetStatus
@@ -209,9 +213,9 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
             private fun readResolve(): Any = GetLeader
         }
 
-        data object PendingNodesSize : Operation {
+        data object GetNodesStillMigratingShardsSize : Operation {
             override val doNotLog: Boolean = true
-            private fun readResolve(): Any = PendingNodesSize
+            private fun readResolve(): Any = GetNodesStillMigratingShardsSize
         }
 
         data object HasJoiningNode : Operation {
@@ -236,4 +240,10 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
         val leavingNode: ServerNode?,
         val nodes: List<Endpoint>,
     ) : Serializable
+
+    enum class Status(val isMigration: Boolean) {
+        OK(false),
+        A_NODE_IS_JOINING(true),
+        A_NODE_IS_LEAVING(true)
+    }
 }

@@ -37,6 +37,7 @@ class Cluster(
     private val grpc: GrpcServer,
     private val grpcService: GrpcService
 ) {
+
     private val log = KotlinLogging.logger {}
 
     private val stats: Stats = Stats()

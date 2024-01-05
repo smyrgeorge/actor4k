@@ -101,6 +101,7 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
 
                 is Protocol.Gossip.LockShardsForJoiningNode -> ShardManager.lockShardsForJoiningNode(g.sender(), d)
                 is Protocol.Gossip.LockShardsForLeavingNode -> ShardManager.lockShardsForLeavingNode(g.sender(), d)
+                Protocol.Gossip.UnlockShards -> ShardManager.unlockShards()
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -123,8 +124,8 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
                     }
                 }
 
-                is Protocol.Targeted.ShardsLocked -> ActorSystem.cluster.raftManager.handle(d)
-                is Protocol.Targeted.ShardedActorsFinished -> ActorSystem.cluster.raftManager.handle(d)
+                is Protocol.Targeted.ShardsLocked -> runBlocking { ActorSystem.cluster.raftManager.send(d) }
+                is Protocol.Targeted.ShardedActorsFinished -> runBlocking { ActorSystem.cluster.raftManager.send(d) }
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -164,6 +165,9 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
 
             data class LockShardsForJoiningNode(val alias: String, val host: String, val port: Int) : Gossip
             data class LockShardsForLeavingNode(val alias: String, val host: String, val port: Int) : Gossip
+            data object UnlockShards : Gossip {
+                private fun readResolve(): Any = UnlockShards
+            }
         }
 
         sealed interface Targeted : Protocol {
