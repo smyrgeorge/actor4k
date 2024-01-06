@@ -16,7 +16,7 @@ services:
       - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
 
   bank-1:
-    image: actor4k-bank
+    image: microbank
     restart: unless-stopped
     environment:
       ACTOR4K_NODE_ID: bank-1
@@ -26,7 +26,7 @@ services:
     networks:
       loadbalancing:
   bank-2:
-    image: actor4k-bank
+    image: microbank
     restart: unless-stopped
     environment:
       ACTOR4K_NODE_ID: bank-2
@@ -36,7 +36,7 @@ services:
     networks:
       loadbalancing:
   bank-3:
-    image: actor4k-bank
+    image: microbank
     restart: unless-stopped
     environment:
       ACTOR4K_NODE_ID: bank-3
@@ -46,7 +46,7 @@ services:
     networks:
       loadbalancing:
   bank-4:
-    image: actor4k-bank
+    image: microbank
     restart: unless-stopped
     environment:
       ACTOR4K_NODE_ID: bank-4
