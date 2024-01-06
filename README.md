@@ -56,7 +56,7 @@ The included example tries to simulate a basic bank accounting system.
 It defines an `AccountActor` that can handle only two simple commands,
 `Req.GetAccount` and `Req.ApplyTx`.
 
-The client `examples-bank-client` generates traffic.
+The client `microbank-client` generates traffic.
 In the end will check the available balance (should be zero).
 
 So, with this example, we validate the cluster consistency.
@@ -75,10 +75,10 @@ The above script will do the following:
     - 3 custer bank nodes
     - a nginx acting as the loadbalancer
 
-Then you can run the `bank-client` in order to generate some traffic:
+Then you can run the `microbank-client` in order to generate some traffic:
 
 ```shell
-java -jar examples-bank-client/build/libs/examples-bank-client-0.1.0.jar
+java -jar microbank-client/build/libs/microbank-client-0.1.0.jar
 ```
 
 ### Cleanup
