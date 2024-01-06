@@ -4,7 +4,7 @@
 ./gradlew build
 
 # Build docker image.
-docker build . -t actor4k-bank -f examples-bank/src/main/docker/Dockerfile
+docker build . -t actor4k-bank -f microbank/src/main/docker/Dockerfile
 
 # Delete old containers (if any).
 docker compose down -v
