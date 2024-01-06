@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.system
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.util.forEachParallel
 import kotlinx.coroutines.*
@@ -30,14 +29,14 @@ object ActorRegistry {
 
     suspend fun <A : Actor> get(
         actor: KClass<A>,
-        key: Actor.Key,
-        shard: Shard.Key = Shard.Key(key.value)
+        key: String,
+        shard: String = key
     ): Actor.Ref = get(actor.java, key, shard)
 
     suspend fun <A : Actor> get(
         actor: Class<A>,
-        key: Actor.Key,
-        shard: Shard.Key = Shard.Key(key.value)
+        key: String,
+        shard: String = key
     ): Actor.Ref {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
@@ -60,7 +59,7 @@ object ActorRegistry {
                 // Case Local.
                 // Spawn the actor.
                 val a: Actor = actor
-                    .getConstructor(Shard.Key::class.java, Actor.Key::class.java)
+                    .getConstructor(String::class.java, String::class.java)
                     .newInstance(shard, key)
 
                 // Store [Actor.Ref] to the local storage.
@@ -75,7 +74,7 @@ object ActorRegistry {
         return ref
     }
 
-    suspend fun get(clazz: String, key: Actor.Key, shard: Shard.Key): Actor.Ref {
+    suspend fun get(clazz: String, key: String, shard: String): Actor.Ref {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
 
@@ -93,7 +92,7 @@ object ActorRegistry {
             ?: get(ref.actor, ref.key).let { registry[ref.address]!! }
     }
 
-    fun <A : Actor> unregister(actor: Class<A>, key: Actor.Key) {
+    fun <A : Actor> unregister(actor: Class<A>, key: String) {
         val address = Actor.addressOf(actor, key)
         registry[address]?.let {
             if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")

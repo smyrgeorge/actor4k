@@ -2,7 +2,6 @@ package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -10,12 +9,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
-import kotlinx.serialization.Serializable
 import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-abstract class Actor(open val shard: Shard.Key, open val key: Key) {
+abstract class Actor(open val shard: String, open val key: String) {
     protected val log = KotlinLogging.logger {}
     protected val name: String = nameOf(this::class.java)
 
@@ -104,18 +102,18 @@ abstract class Actor(open val shard: Shard.Key, open val key: Key) {
     }
 
     sealed class Ref(
-        open val shard: Shard.Key,
+        open val shard: String,
         open val name: String,
-        open val key: Key,
+        open val key: String,
         open val address: String
     ) {
         abstract suspend fun tell(msg: Any)
         abstract suspend fun <R> ask(msg: Any): R
 
         data class Local(
-            override val shard: Shard.Key,
+            override val shard: String,
             override val name: String,
-            override val key: Key,
+            override val key: String,
             val actor: Class<out Actor>,
             override val address: String = addressOf(name, key)
         ) : Ref(shard, name, key, address) {
@@ -136,9 +134,9 @@ abstract class Actor(open val shard: Shard.Key, open val key: Key) {
         }
 
         data class Remote(
-            override val shard: Shard.Key,
+            override val shard: String,
             override val name: String,
-            override val key: Key,
+            override val key: String,
             private val clazz: String,
             override val address: String = addressOf(name, key)
         ) : Ref(shard, name, key, address) {
@@ -156,14 +154,11 @@ abstract class Actor(open val shard: Shard.Key, open val key: Key) {
         }
     }
 
-    @Serializable
-    data class Key(val value: String)
-
     data class Stats(var last: Instant = Instant.now())
 
     companion object {
         private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"
-        fun <A : Actor> addressOf(actor: Class<A>, key: Key): String = addressOf(nameOf(actor), key)
-        private fun addressOf(actor: String, key: Key): String = "$actor-${key.value}"
+        fun <A : Actor> addressOf(actor: Class<A>, key: String): String = addressOf(nameOf(actor), key)
+        private fun addressOf(actor: String, key: String): String = "$actor-$key"
     }
 }

@@ -1,11 +1,10 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import com.google.protobuf.ByteString
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.proto.*
 
 fun Cluster.Response.toResponse() =
-    Envelope.Response(Shard.Key(shard), payload.toByteArray(), payloadClass, error)
+    Envelope.Response(shard, payload.toByteArray(), payloadClass, error)
 
 fun Cluster.Response.Error.toError() =
     Envelope.Response.Error(Envelope.Response.Error.Code.valueOf(code), message)
@@ -13,9 +12,9 @@ fun Cluster.Response.Error.toError() =
 fun Envelope.Ask.toProto(): Cluster.Ask {
     val m = this
     return ask {
-        shard = m.shard.value
+        shard = m.shard
         actorClazz = m.actorClazz
-        actorKey = m.actorKey.value
+        actorKey = m.actorKey
         payload = ByteString.copyFrom(m.payload)
         payloadClass = m.payloadClass
     }
@@ -24,9 +23,9 @@ fun Envelope.Ask.toProto(): Cluster.Ask {
 fun Envelope.Tell.toProto(): Cluster.Tell {
     val m = this
     return tell {
-        shard = m.shard.value
+        shard = m.shard
         actorClazz = m.actorClazz
-        actorKey = m.actorKey.value
+        actorKey = m.actorKey
         payload = ByteString.copyFrom(m.payload)
         payloadClass = m.payloadClass
     }
@@ -35,16 +34,16 @@ fun Envelope.Tell.toProto(): Cluster.Tell {
 fun Envelope.GetActor.toProto(): Cluster.GetActor {
     val m = this
     return getActor {
-        shard = m.shard.value
+        shard = m.shard
         actorClazz = m.actorClazz
-        actorKey = m.actorKey.value
+        actorKey = m.actorKey
     }
 }
 
 fun Envelope.Response.toProto(): Cluster.Response {
     val m = this
     return response {
-        shard = m.shard.value
+        shard = m.shard
         payload = ByteString.copyFrom(m.payload)
         payloadClass = m.payloadClass
         error = m.error

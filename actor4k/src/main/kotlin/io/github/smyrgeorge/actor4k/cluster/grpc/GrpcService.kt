@@ -1,8 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -21,44 +19,41 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         }
 
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
-        val shard = Shard.Key(request.shard)
         return try {
-            val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
+            val actor = ActorRegistry.get(request.actorClazz, request.actorKey, request.shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
             val res = actor.ask<Any>(msg)
-            Envelope.Response.ok(shard, res).toProto()
+            Envelope.Response.ok(request.shard, res).toProto()
         } catch (e: Exception) {
             log.error(e) { e.message }
-            e.toResponse(shard)
+            e.toResponse(request.shard)
         }
     }
 
     override suspend fun tell(request: Cluster.Tell): Cluster.Response {
-        val shard = Shard.Key(request.shard)
         return try {
-            val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
+            val actor = ActorRegistry.get(request.actorClazz, request.actorKey, request.shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
             actor.tell(msg)
-            Envelope.Response.ok(shard, ".").toProto()
+            Envelope.Response.ok(request.shard, ".").toProto()
         } catch (e: Exception) {
             log.error(e) { e.message }
-            e.toResponse(shard)
+            e.toResponse(request.shard)
         }
     }
 
     override suspend fun getActor(request: Cluster.GetActor): Cluster.Response {
-        val shard = Shard.Key(request.shard)
         return try {
-            val actor = ActorRegistry.get(request.actorClazz, Actor.Key(request.actorKey), shard)
-            val res = Envelope.GetActor.Ref(shard, request.actorClazz, actor.name, actor.key)
-            Envelope.Response.ok(shard, res).toProto()
+            val actor = ActorRegistry.get(request.actorClazz, request.actorKey, request.shard)
+            val res = Envelope.GetActor.Ref(request.shard, request.actorClazz, actor.name, actor.key)
+            Envelope.Response.ok(request.shard, res).toProto()
         } catch (e: Exception) {
             log.error(e) { e.message }
-            e.toResponse(shard)
+            e.toResponse(request.shard)
         }
     }
 
-    private fun Exception.toResponse(shard: Shard.Key): Cluster.Response {
+    private fun Exception.toResponse(shard: String): Cluster.Response {
         val code = if (this is Envelope.Response.Error.ClusterError) code else Envelope.Response.Error.Code.UNKNOWN
         val error = Envelope.Response.Error(code, message ?: "")
         return Envelope.Response.error(shard, error).toProto()

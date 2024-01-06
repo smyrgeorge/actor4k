@@ -18,23 +18,23 @@ object ShardManager {
     private val log = KotlinLogging.logger {}
 
     private var status: Status = Status.OK
-    private val shards = ConcurrentHashMap<Shard.Key, Int>()
+    private val shards = ConcurrentHashMap<String, Int>()
 
-    private val shardsBeingMigrated: MutableSet<Shard.Key> = mutableSetOf()
-    private val closedShardsAfterSharadMigrationRequest: MutableSet<Shard.Key> = mutableSetOf()
+    private val shardsBeingMigrated: MutableSet<String> = mutableSetOf()
+    private val closedShardsAfterSharadMigrationRequest: MutableSet<String> = mutableSetOf()
 
-    fun isLocked(shard: Shard.Key): Envelope.Response.Error? {
+    fun isLocked(shard: String): Envelope.Response.Error? {
         if (shardsBeingMigrated.contains(shard)) {
             return Envelope.Response.Error(
                 code = Envelope.Response.Error.Code.SHARD_ACCESS_ERROR,
-                message = "Cannot process message for shard='${shard.value}', shard is locked due to cluster migration."
+                message = "Cannot process message for shard='$shard', shard is locked due to cluster migration."
             )
         }
 
         if (ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.conf.alias) {
             return Envelope.Response.Error(
                 code = Envelope.Response.Error.Code.SHARD_ACCESS_ERROR,
-                message = "Message for requested shard='${shard.value}' is not supported for node='${ActorSystem.cluster.conf.alias}'."
+                message = "Message for requested shard='$shard' is not supported for node='${ActorSystem.cluster.conf.alias}'."
             )
         }
 
@@ -49,19 +49,19 @@ object ShardManager {
     }
 
     @Synchronized
-    fun operation(op: Op, shard: Shard.Key) =
+    fun operation(op: Op, shard: String) =
         when (op) {
             Op.REGISTER -> register(shard)
             Op.UNREGISTER -> unregister(shard)
         }
 
-    private fun register(shard: Shard.Key) {
+    private fun register(shard: String) {
         val existing: Int? = shards[shard]
         if (existing != null) shards[shard] = existing + 1
         else shards[shard] = 1
     }
 
-    private fun unregister(shard: Shard.Key) {
+    private fun unregister(shard: String) {
         when (val existing: Int? = shards[shard]) {
             null, 1 -> {
                 shards.remove(shard)
@@ -193,7 +193,7 @@ object ShardManager {
         return shardsBeingMigrated.size
     }
 
-    private fun getMigrationShardsForJoiningNode(node: ServerNode): Set<Shard.Key> {
+    private fun getMigrationShardsForJoiningNode(node: ServerNode): Set<String> {
         val self = ActorSystem.cluster.conf
         val ring = Cluster.hashRingOf(self.namespace).apply {
             // Add existing nodes.
@@ -202,10 +202,10 @@ object ShardManager {
             add(node)
         }
         // Find shards that we should migrate to another node.
-        return shards.filter { ring.locate(it.key.value).get().dc != self.alias }.map { it.key }.toSet()
+        return shards.filter { ring.locate(it.key).get().dc != self.alias }.map { it.key }.toSet()
     }
 
-    private fun getMigrationShardsForLeavingNode(node: ServerNode): Set<Shard.Key> {
+    private fun getMigrationShardsForLeavingNode(node: ServerNode): Set<String> {
         val self = ActorSystem.cluster.conf
         val ring = Cluster.hashRingOf(self.namespace).apply {
             // Add existing nodes.
@@ -214,7 +214,7 @@ object ShardManager {
             remove(node)
         }
         // Find shards that we should migrate to another node.
-        return shards.filter { ring.locate(it.key.value).get().dc != self.alias }.map { it.key }.toSet()
+        return shards.filter { ring.locate(it.key).get().dc != self.alias }.map { it.key }.toSet()
     }
 
     private fun informLeaderForTheLockedShards(sender: Address, locked: Int) {

@@ -1,52 +1,51 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.serialization.Serializable
 
 sealed interface Envelope {
 
-    val shard: Shard.Key
+    val shard: String
 
     @Suppress("ArrayInDataClass")
     data class Ask(
-        override val shard: Shard.Key,
+        override val shard: String,
         val actorClazz: String,
-        val actorKey: Actor.Key,
+        val actorKey: String,
         val payload: ByteArray,
         val payloadClass: String
     ) : Envelope
 
     @Suppress("ArrayInDataClass")
     data class Tell(
-        override val shard: Shard.Key,
+        override val shard: String,
         val actorClazz: String,
-        val actorKey: Actor.Key,
+        val actorKey: String,
         val payload: ByteArray,
         val payloadClass: String
     ) : Envelope
 
     data class GetActor(
-        override val shard: Shard.Key,
+        override val shard: String,
         val actorClazz: String,
-        val actorKey: Actor.Key
+        val actorKey: String
     ) : Envelope {
         @Serializable
         data class Ref(
-            val shard: Shard.Key,
+            val shard: String,
             val clazz: String,
             val name: String,
-            val key: Actor.Key
+            val key: String
         ) {
-            fun toRef(shard: Shard.Key): Actor.Ref = Actor.Ref.Remote(shard, name, key, clazz)
+            fun toRef(shard: String): Actor.Ref = Actor.Ref.Remote(shard, name, key, clazz)
         }
     }
 
     @Suppress("ArrayInDataClass")
     data class Response(
-        override val shard: Shard.Key,
+        override val shard: String,
         val payload: ByteArray,
         val payloadClass: String,
         val error: Boolean
@@ -69,7 +68,7 @@ sealed interface Envelope {
             else ActorSystem.cluster.serde.decode(payloadClass, payload)
 
         companion object {
-            fun error(shard: Shard.Key, error: Error): Response =
+            fun error(shard: String, error: Error): Response =
                 Response(
                     shard = shard,
                     payload = error.toProto().toByteArray(),
@@ -77,7 +76,7 @@ sealed interface Envelope {
                     error = true
                 )
 
-            fun ok(shard: Shard.Key, payload: Any): Response =
+            fun ok(shard: String, payload: Any): Response =
                 Response(
                     shard = shard,
                     payload = ActorSystem.cluster.serde.encode(payload::class.java, payload),

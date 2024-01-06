@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.microbank.serde.Jackson
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.scalecube.net.Address
@@ -38,9 +37,9 @@ sealed interface Req {
 @Serializable
 data class Account(val accountNo: String, var balance: Int)
 
-data class AccountActor(override val shard: Shard.Key, override val key: Key) : Actor(shard, key) {
+data class AccountActor(override val shard: String, override val key: String) : Actor(shard, key) {
 
-    private val account = Account(key.value, 0)
+    private val account = Account(key, 0)
 
     override fun onReceive(m: Message): Any {
         return when (val msg = m.cast<Req>()) {
@@ -88,7 +87,7 @@ fun main(args: Array<String>) {
             runBlocking {
                 val accountNo = it.path("accountNo") ?: error("Missing accountNo from path.")
                 val req = Req.GetAccount(accountNo)
-                val ref = ActorRegistry.get(AccountActor::class, Actor.Key(accountNo))
+                val ref = ActorRegistry.get(AccountActor::class, accountNo)
                 val res = ref.ask<Account>(req)
                 Response(Status.OK).body(om.writeValueAsString(res))
             }
@@ -97,7 +96,7 @@ fun main(args: Array<String>) {
             runBlocking {
                 val accountNo = it.path("accountNo") ?: error("Missing accountNo from path.")
                 val req = om.readValue<Req.ApplyTx>(it.body.stream)
-                val ref = ActorRegistry.get(AccountActor::class, Actor.Key(accountNo))
+                val ref = ActorRegistry.get(AccountActor::class, accountNo)
                 val res = ref.ask<Account>(req)
                 Response(Status.OK).body(om.writeValueAsString(res))
             }

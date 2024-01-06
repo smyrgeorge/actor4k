@@ -11,7 +11,6 @@ import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
 import io.github.smyrgeorge.actor4k.cluster.raft.MemberManager
 import io.github.smyrgeorge.actor4k.cluster.raft.StateMachine
 import io.github.smyrgeorge.actor4k.cluster.raft.Transport
-import io.github.smyrgeorge.actor4k.cluster.shard.Shard
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.grpc.netty.NettyServerBuilder
 import io.microraft.RaftConfig
@@ -79,8 +78,8 @@ class Cluster(
         }
     }
 
-    fun nodeOf(shard: Shard.Key): ServerNode =
-        ring.locate(shard.value).getOrNull()
+    fun nodeOf(shard: String): ServerNode =
+        ring.locate(shard).getOrNull()
             ?: error("Could not find node for shard='$shard', ring.size='${ring.size()}'.")
 
     fun registerGrpcClientFor(alias: String, host: String, port: Int) {
