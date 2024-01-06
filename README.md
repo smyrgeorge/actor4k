@@ -96,7 +96,7 @@ java -jar microbank-client/build/libs/microbank-client-0.1.0.jar
 ### Docker
 
 ```shell
-docker build . -t actor4k -f examples/src/main/docker/Dockerfile
+docker build . -t microbank -f microbank/src/main/docker/Dockerfile
 ```
 
 ## Links and References
