@@ -14,15 +14,19 @@ object ActorRegistry {
 
     private val log = KotlinLogging.logger {}
 
-    // Only stores [Actor.Ref.Local].
-    private val registry = ConcurrentHashMap<String, Actor>(/* initialCapacity = */ 1024)
+    // Stores [Actor].
+    private val local = ConcurrentHashMap<String, Actor>(/* initialCapacity = */ 1024)
+
+    // Stores [Actor.Ref.Remote].
+    private val remote = ConcurrentHashMap<String, Actor.Ref.Remote>(/* initialCapacity = */ 1024)
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             while (true) {
                 delay(ActorSystem.Conf.registryCleanup)
-                stopExpired()
+                stopLocalExpired()
+                removeRemoteExpired()
             }
         }
     }
@@ -44,17 +48,23 @@ object ActorRegistry {
         val address = Actor.addressOf(actor, key)
 
         // Check if the actor already exists in the local storage.
-        registry[address]?.let { return it.ref() }
+        local[address]?.let { return it.ref() }
 
         // Create Local/Remote actor.
         val ref: Actor.Ref =
             if (ActorSystem.clusterMode
                 && ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.conf.alias
             ) {
+                val existing = remote[address]
+                if (existing != null && Instant.now().isBefore(existing.exp)) return existing
+                else remote.remove(address)
+
                 // Case Remote.
                 // Forward the [Envelope.Spawn] message to the correct cluster node.
                 val msg = Envelope.GetActor(shard, actor.name, key)
-                ActorSystem.cluster.msg(msg).getOrThrow<Envelope.GetActor.Ref>().toRef(shard)
+                ActorSystem.cluster.msg(msg).getOrThrow<Envelope.GetActor.Ref>().toRef(shard).also {
+                    remote[address] = it
+                }
             } else {
                 // Case Local.
                 // Spawn the actor.
@@ -63,7 +73,7 @@ object ActorRegistry {
                     .newInstance(shard, key)
 
                 // Store [Actor.Ref] to the local storage.
-                registry[address] = a
+                local[address] = a
 
                 // Declare shard to the [ShardManager]
                 ShardManager.operation(ShardManager.Op.REGISTER, shard)
@@ -88,24 +98,26 @@ object ActorRegistry {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
 
-        return registry[ref.address] // If the actor is not in the registry (passivated) spawn a new one.
-            ?: get(ref.actor, ref.key).let { registry[ref.address]!! }
+        return local[ref.address] // If the actor is not in the registry (passivated) spawn a new one.
+            ?: get(ref.actor, ref.key).let { local[ref.address]!! }
     }
 
     fun <A : Actor> unregister(actor: Class<A>, key: String) {
         val address = Actor.addressOf(actor, key)
-        registry[address]?.let {
+        local[address]?.let {
             if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
-            registry.remove(address)
+            local.remove(address)
             ShardManager.operation(ShardManager.Op.UNREGISTER, it.shard)
         }
     }
 
     suspend fun stopAll(): Unit =
-        registry.values.forEachParallel { it.stop() }
+        // TODO: split in chunks
+        local.values.forEachParallel { it.stop() }
 
-    private suspend fun stopExpired(): Unit =
-        registry.values.forEachParallel {
+    private suspend fun stopLocalExpired(): Unit =
+        // TODO: split in chunks
+        local.values.forEachParallel {
             val df = Instant.now().epochSecond - it.stats().last.epochSecond
             if (df > ActorSystem.Conf.actorExpiration.inWholeSeconds) {
                 log.debug { "Closing ${it.address()} (expired)." }
@@ -113,5 +125,11 @@ object ActorRegistry {
             }
         }
 
-    fun count(): Int = registry.count()
+    private suspend fun removeRemoteExpired(): Unit =
+        // TODO: split in chunks
+        remote.values.forEachParallel {
+            if (Instant.now().isAfter(it.exp)) remote.remove(it.address)
+        }
+
+    fun count(): Int = local.count()
 }

@@ -31,8 +31,9 @@ object ActorSystem {
         val initializationDelayPerRound: Duration = 5.seconds
         val clusterLogStats: Duration = 30.seconds
         val clusterCollectStats: Duration = 10.seconds
-        val registryCleanup: Duration = 60.seconds
+        val registryCleanup: Duration = 30.seconds
         val actorExpiration: Duration = 15.minutes
+        val actorRemoteRefExpiration: Duration = 2.minutes
         val memberManagerRoundDelay: Duration = 2.seconds
     }
 

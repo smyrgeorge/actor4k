@@ -99,10 +99,10 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
                 append("\n    Status: $status")
                 append("\n    Leader: ${leader.alias}")
                 append("\n    Nodes (${ring.nodes.size}):  ${ring.nodes.joinToString { it.dc }}")
-                if (status == Status.A_NODE_IS_JOINING) {
+                if (joiningNode != null) {
                     append("\n        Joining node: $joiningNode")
                 }
-                if (status == Status.A_NODE_IS_LEAVING) {
+                if (leavingNode != null) {
                     append("\n        Leaving node: $leavingNode")
                 }
                 if (status.isMigration) {

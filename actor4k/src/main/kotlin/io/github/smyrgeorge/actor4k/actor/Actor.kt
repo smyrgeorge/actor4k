@@ -138,6 +138,7 @@ abstract class Actor(open val shard: String, open val key: String) {
             override val name: String,
             override val key: String,
             private val clazz: String,
+            val exp: Instant,
             override val address: String = addressOf(name, key)
         ) : Ref(shard, name, key, address) {
             override suspend fun tell(msg: Any) {

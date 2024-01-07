@@ -4,6 +4,7 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.serialization.Serializable
+import java.time.Instant
 
 sealed interface Envelope {
 
@@ -37,9 +38,19 @@ sealed interface Envelope {
             val shard: String,
             val clazz: String,
             val name: String,
-            val key: String
+            val key: String,
         ) {
-            fun toRef(shard: String): Actor.Ref = Actor.Ref.Remote(shard, name, key, clazz)
+            private val exp = Instant.now()
+                .plusSeconds(ActorSystem.Conf.actorRemoteRefExpiration.inWholeSeconds)
+                .epochSecond
+
+            fun toRef(shard: String): Actor.Ref.Remote = Actor.Ref.Remote(
+                shard = shard,
+                name = name,
+                key = key,
+                clazz = clazz,
+                exp = Instant.ofEpochSecond(exp)
+            )
         }
     }
 
