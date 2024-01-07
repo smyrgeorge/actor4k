@@ -7,7 +7,6 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.microbank.serde.Jackson
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
-import io.scalecube.net.Address
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import org.http4k.core.Method
@@ -60,8 +59,10 @@ fun main(args: Array<String>) {
     val httpPort = System.getenv("ACTOR4K_NODE_HTTP_PORT")?.toInt() ?: 9000
     val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 61100
     val gossipPort = System.getenv("ACTOR4K_NODE_GOSSIP_PORT")?.toInt() ?: 61000
-    val seedMembers: List<Address> = (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "localhost:$grpcPort")
-        .split(",").map { Address.from(it) }
+    val seedMembers: List<Cluster.Conf.Node> =
+        (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "$alias::localhost:$gossipPort")
+            .split(",")
+            .map { Cluster.Conf.Node.from(it) }
 
     val conf = Cluster.Conf
         .Builder()
@@ -70,6 +71,7 @@ fun main(args: Array<String>) {
         .namespace("actor4k")
         .grpcPort(grpcPort)
         .gossipPort(gossipPort)
+        .nodeManagement(Cluster.Conf.NodeManagement.DYNAMIC)
         .seedMembers(seedMembers)
         .build()
 

@@ -148,7 +148,7 @@ class Cluster(
                 .config { it.memberAlias(conf.alias) }
                 .config { it.metadata(Metadata(conf.grpcPort)) }
                 .membership { it.namespace(conf.namespace) }
-                .membership { it.seedMembers(conf.seedMembers) }
+                .membership { it.seedMembers(conf.seedMembers.map { it.address }) }
                 .transportFactory { TcpTransportFactory() }
                 .handler { MessageHandler(conf) }
 
@@ -180,8 +180,24 @@ class Cluster(
         val namespace: String,
         val grpcPort: Int,
         val gossipPort: Int,
-        val seedMembers: List<Address>
+        val nodeManagement: NodeManagement,
+        val seedMembers: List<Node>
     ) {
+
+        data class Node(
+            val alias: String,
+            val address: Address
+        ) {
+            companion object {
+                fun from(value: String): Node =
+                    value.split("::").let { Node(it[0], Address.from(it[1])) }
+            }
+        }
+
+        enum class NodeManagement {
+            STATIC,
+            DYNAMIC
+        }
 
         class Builder {
             private lateinit var alias: String
@@ -189,7 +205,8 @@ class Cluster(
             private lateinit var namespace: String
             private var grpcPort: Int = 61100
             private var gossipPort: Int = 61000
-            private var seedMembers: List<Address> = emptyList()
+            private var nodeManagement: NodeManagement = NodeManagement.STATIC
+            private var seedMembers: List<Node> = emptyList()
 
             fun alias(v: String): Builder {
                 alias = v
@@ -216,7 +233,12 @@ class Cluster(
                 return this
             }
 
-            fun seedMembers(v: List<Address>): Builder {
+            fun nodeManagement(v: NodeManagement): Builder {
+                nodeManagement = v
+                return this
+            }
+
+            fun seedMembers(v: List<Node>): Builder {
                 seedMembers = v
                 return this
             }
@@ -227,6 +249,7 @@ class Cluster(
                 namespace = namespace,
                 grpcPort = grpcPort,
                 gossipPort = gossipPort,
+                nodeManagement = nodeManagement,
                 seedMembers = seedMembers
             )
         }

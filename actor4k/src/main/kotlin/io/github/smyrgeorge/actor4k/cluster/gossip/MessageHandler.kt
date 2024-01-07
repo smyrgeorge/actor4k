@@ -12,6 +12,7 @@ import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.io.Serializable
 import kotlin.system.exitProcess
 import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHandler
@@ -27,6 +28,14 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
     @Suppress("unused")
     @OptIn(DelicateCoroutinesApi::class)
     private val job: Job = GlobalScope.launch(Dispatchers.IO) {
+        if (conf.nodeManagement == Cluster.Conf.NodeManagement.STATIC) {
+            log.info { "Starting cluster in STATIC mode. Any changes to the cluster will not be applied." }
+            conf.seedMembers.forEach {
+                ActorSystem.cluster.ring.add(ServerNode(it.alias, it.address.host(), it.address.port()))
+            }
+            return@launch
+        }
+
         for (i in 1..rounds) {
             log.info { "Waiting for other nodes to appear... [$i/$rounds]" }
             delay(delayPerRound)
