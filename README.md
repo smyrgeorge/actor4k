@@ -3,7 +3,6 @@
 ![Build](https://github.com/smyrgeorge/actor4k/actions/workflows/ci.yml/badge.svg)
 ![GitHub License](https://img.shields.io/github/license/smyrgeorge/actor4k)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/smyrgeorge/actor4k)
-![GitHub all releases](https://img.shields.io/github/downloads/smyrgeorge/actor4k/total)
 ![GitHub issues](https://img.shields.io/github/issues/smyrgeorge/actor4k)
 
 
