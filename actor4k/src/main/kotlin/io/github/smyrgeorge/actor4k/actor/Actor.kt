@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.util.java.JRef
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
@@ -123,6 +124,8 @@ abstract class Actor(open val shard: String, open val key: String) {
     ) {
         abstract suspend fun tell(msg: Any)
         abstract suspend fun <R> ask(msg: Any): R
+
+        fun asJava(): JRef = JRef(this)
 
         data class Local(
             override val shard: String,

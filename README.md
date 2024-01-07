@@ -6,29 +6,87 @@ It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.corou
 
 The primary objective is to create a minimal actor system capable of functioning in cluster mode.
 
+## Work in progress
+
+The project is currently under development.
+However, you can already use it with the `STATIC` cluster node management without any issues.
+We are already planning to use it in production in the very near future.
+
+## Let's create an Actor!
+
+```kotlin
+data class Req(val msg: String)
+data class Resp(val msg: String)
+
+data class AccountActor(
+    override val shard: String,
+    override val key: String
+) : Actor(shard, key) {
+    override fun onReceive(m: Message, r: Response.Builder): Response {
+        val msg = m.cast<Req>()
+        log.info { "[$name] Received message: $msg" }
+        val res = Resp("Pong!")
+        return r.value(res).build()
+    }
+}
+```
+
+Now let's send some messages:
+
+```kotlin
+val req = Req(msg = "[tell] Hello World!")
+a.tell(req)
+
+val req2 = Req(msg = "[ask] Ping!")
+val r = a.ask<Resp>(req2)
+println(r)
+```
+
+See other examples [here](examples%2Fsrc%2Fmain%2Fkotlin%2Fio%2Fgithub%2Fsmyrgeorge%2Factor4k%2Fexamples).
+
+You can also check the `microbank` example [here](microbank).
+Microbank is small banking account simulator that we have created to test `actor4k`.
+
+## Node management
+
+We offer 2 types of node management
+
+- `STATIC`: The cluster is initialized with a fixed number of nodes, and any changes to the network will not be applied.
+  For instance, if a node restarts or stops, the other nodes will continue sending traffic to that node. This mode can
+  be a suitable option for small clusters (e.g., 2-5 nodes) as it simplifies the cluster's operation and management.
+- `DYNAMIC`: The cluster will be initialized with a set of nodes (`seed-members`). Then, the leader of the network will
+  scan for changes and initiate a shard migration process for each change. For example, when a new node is discovered,
+  it will be added to the network after the shard migration is completed. Please note that this functionality has not
+  been thoroughly tested yet, so we may encounter data corruption.
+
+## Working with Java
+
+We provide special utilities to accomplish this.
+Whenever you need to, simply call the asJava() method and the magic will happen.
+
+For instance take a look here.
+
+```java
+Actor.Ref ref = ActorRegistry.INSTANCE.asJava().get(JActor.class, "ACC00011").join();
+String res = (String) ref.asJava().ask("Tell me something").join();
+```
+
+You can also find other
+examples [here](examples%2Fsrc%2Fmain%2Fjava%2Fio%2Fgithub%2Fsmyrgeorge%2Factor4k%2Fexamples%2Fjava).
+
 ## Key concepts
 
 - Using the `SWIM` gossip protocol for node/network discovery and low level communication.
 - Using `gRPC` for the necessary communications from one node to another.
 - Using the `raft` consensus algorithm for (only for `DYNAMIC` node management):
-  - `leader election`: the leader is responsible to manage the cluster state (add/remove nodes)
-  - `maintain cluster state`: replicate the cluster state across the nodes of the network
-
-## Node management
-We offer 2 types of node management
-- `STATIC`: The cluster is initialized with a fixed number of nodes, and any changes to the network will not be applied. For instance, if a node restarts or stops, the other nodes will continue sending traffic to that node. This mode can be a suitable option for small clusters (e.g., 2-5 nodes) as it simplifies the cluster's operation and management. 
-- `DYNAMIC`: The cluster will be initialized with a set of nodes (`seed-members`). Then, the leader of the network will scan for changes and initiate a shard migration process for each change. For example, when a new node is discovered, it will be added to the network after the shard migration is completed. Please note that this functionality has not been thoroughly tested yet, so we may encounter data corruption.
-
-## Work in progress
-
-The project is in a very early stage.
-Check the `examples` for additional info.
+    - `leader election`: the leader is responsible to manage the cluster state (add/remove nodes)
+    - `maintain cluster state`: replicate the cluster state across the nodes of the network
 
 ## Progress of the project
 
 A lot of things need to be done, so sit tight…
 
-- [ ] Cluster/Sharding (in progress)- 
+- [ ] Cluster/Sharding (in progress)-
     - [x] Support `STATIC/DYNAMIC` node management.
     - [x] Use `raft` consensus algorithm for the cluster node membership (control the state of the cluster).
     - [x] Implement `tell/ask` patterns across cluster nodes
@@ -42,17 +100,19 @@ A lot of things need to be done, so sit tight…
     - [x] Send protocol messages using the gossip protocol
     - [x] Use gRPC for sending messages from an actor to another (in the case of different nodes)
     - [x] Use protobuf for actor messages (kotlinx protobuf)
+- [x] Java compatibility
 - [ ] Logging (in progress)
     - [ ] Configure log4j/slf4j
     - [ ] Disable unnecessary messages
 - [ ] Benchmark (in progress)
-    - [x] GET a single account (JMeter) (see [microbank :: get single account.jmx](microbank-bench%2Fsrc%2Fjmeter%2Fmicrobank%20%3A%3A%20get%20single%20account.jmx)). Managed 16.6k req/sec with 3 nodes in a Macbook Pro with M1 Max
+    - [x] GET a single account (JMeter) (
+      see [microbank :: get single account.jmx](microbank-bench%2Fsrc%2Fjmeter%2Fmicrobank%20%3A%3A%20get%20single%20account.jmx)).
+      Managed 16.6k req/sec with 3 nodes in a Macbook Pro with M1 Max
     - [ ] Deploy `microbank` to a kubernetes cluster.
     - [ ] Load test with gatling (in progress)
 - [ ] Testing
 - [ ] Metrics/Stats (in progress)
 - [ ] Documentation
-- [ ] Java compatibility
 - [ ] Persistence
 
 ## Run the example.

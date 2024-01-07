@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
+import io.github.smyrgeorge.actor4k.util.java.JActorRegistry
 import io.github.smyrgeorge.actor4k.util.forEachParallel
 import kotlinx.coroutines.*
 import java.time.Instant
@@ -132,4 +133,6 @@ object ActorRegistry {
         }
 
     fun count(): Int = local.count()
+
+    fun asJava(): JActorRegistry = JActorRegistry
 }
