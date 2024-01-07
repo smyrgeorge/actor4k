@@ -42,10 +42,10 @@ abstract class Actor(open val shard: String, open val key: String) {
             mail.consumeEach {
                 stats.last = Instant.now()
                 val msg = Message(it.msg)
-                val reply = onReceive(msg)
+                val reply = onReceive(msg, Response.Builder())
                 when (it) {
                     is Patterns.Tell -> Unit
-                    is Patterns.Ask -> it.replyTo.send(reply)
+                    is Patterns.Ask -> it.replyTo.send(reply.value)
                 }
             }
         }
@@ -58,7 +58,21 @@ abstract class Actor(open val shard: String, open val key: String) {
         fun <T> cast(): T = value as? T ?: error("Could not cast to the requested type.")
     }
 
-    abstract fun onReceive(m: Message): Any
+    data class Response(
+        val value: Any
+    ) {
+        class Builder {
+            private lateinit var value: Any
+            fun value(v: Any): Builder {
+                value = v
+                return this
+            }
+
+            fun build(): Response = Response(value)
+        }
+    }
+
+    abstract fun onReceive(m: Message, r: Response.Builder): Response
 
     suspend fun <C> tell(msg: C) {
         if (status != Status.READY) error("$address is in status='$status' and thus is not accepting messages.")

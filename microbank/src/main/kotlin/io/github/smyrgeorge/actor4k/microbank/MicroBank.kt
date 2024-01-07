@@ -36,18 +36,22 @@ sealed interface Req {
 @Serializable
 data class Account(val accountNo: String, var balance: Int)
 
-data class AccountActor(override val shard: String, override val key: String) : Actor(shard, key) {
+data class AccountActor(
+    override val shard: String,
+    override val key: String
+) : Actor(shard, key) {
 
     private val account = Account(key, 0)
 
-    override fun onReceive(m: Message): Any {
-        return when (val msg = m.cast<Req>()) {
+    override fun onReceive(m: Message, r: Response.Builder): Response {
+        val res = when (val msg = m.cast<Req>()) {
             is Req.GetAccount -> account
             is Req.ApplyTx -> {
                 account.balance += msg.value
                 account
             }
         }
+        return r.value(res).build()
     }
 }
 
@@ -71,7 +75,7 @@ fun main(args: Array<String>) {
         .namespace("actor4k")
         .grpcPort(grpcPort)
         .gossipPort(gossipPort)
-        .nodeManagement(Cluster.Conf.NodeManagement.DYNAMIC)
+        .nodeManagement(Cluster.Conf.NodeManagement.STATIC)
         .seedMembers(seedMembers)
         .build()
 

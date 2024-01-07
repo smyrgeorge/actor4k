@@ -9,11 +9,15 @@ class ActorTest
 data class Req(val msg: String)
 data class Resp(val msg: String)
 
-data class AccountActor(override val shard: String, override val key: String) : Actor(shard, key) {
-    override fun onReceive(m: Message): Any {
+data class AccountActor(
+    override val shard: String,
+    override val key: String
+) : Actor(shard, key) {
+    override fun onReceive(m: Message, r: Response.Builder): Response {
         val msg = m.cast<Req>()
         log.info { "[$name] Received message: $msg" }
-        return Resp("Pong!")
+        val res = Resp("Pong!")
+        return r.value(res).build()
     }
 }
 
