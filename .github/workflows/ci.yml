@@ -28,13 +28,6 @@ jobs:
       - name: Gradle Build
         run: ./gradlew build
 
-      - name: Bump Project Version
-        uses: IMGARENA/version-bump-action@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          git-email: smyrgeorge@gmail.com
-          git-username: smyrgeorge
-
       - name: Gradle Publish
         run: ./gradlew publish
         env:
