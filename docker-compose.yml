@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
     environment:
       ACTOR4K_NODE_ID: bank-1
-      ACTOR4K_SEED_MEMBERS: bank-1:61000,bank-2:61000
+      ACTOR4K_SEED_MEMBERS: bank-1:61000,bank-2:61000,bank-3:61000
     ports:
       - "9001:9000"
     networks:
@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
     environment:
       ACTOR4K_NODE_ID: bank-2
-      ACTOR4K_SEED_MEMBERS: bank-1:61000,bank-2:61000
+      ACTOR4K_SEED_MEMBERS: bank-1:61000,bank-2:61000,bank-3:61000
     ports:
       - "9002:9000"
     networks:
