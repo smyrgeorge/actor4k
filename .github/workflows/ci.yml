@@ -32,10 +32,8 @@ jobs:
         uses: IMGARENA/version-bump-action@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          git-author-email: smyrgeorge@gmail.com
-          git-author-username: smyrgeorge
-          git-committer-email: smyrgeorge@gmail.com
-          git-committer-username: smyrgeorge
+          git-email: smyrgeorge@gmail.com
+          git-username: smyrgeorge
 
       - name: Gradle Publish
         run: ./gradlew publish
