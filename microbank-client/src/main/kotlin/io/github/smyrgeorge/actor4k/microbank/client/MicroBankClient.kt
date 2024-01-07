@@ -4,6 +4,7 @@ import arrow.core.fold
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.microbank.client.serde.Jackson
+import io.github.smyrgeorge.actor4k.util.chunked
 import io.github.smyrgeorge.actor4k.util.forEachParallel
 import io.github.smyrgeorge.actor4k.util.mapParallel
 import kotlinx.coroutines.Dispatchers
@@ -20,10 +21,6 @@ data class ApplyTx(val accountNo: String, val value: Int)
 data class Account(val accountNo: String, var balance: Int)
 
 fun main(args: Array<String>) {
-    fun chunkSize(size: Int, concurrency: Int): Int =
-        if (concurrency > size) size else size / concurrency
-
-
     val log = KotlinLogging.logger {}
 
     val om = Jackson.create()
@@ -36,7 +33,7 @@ fun main(args: Array<String>) {
 
     fun getAccounts() = runBlocking {
         (1..noOfAccounts)
-            .chunked(chunkSize(noOfAccounts, concurrency))
+            .chunked(noOfAccounts, concurrency)
             .mapParallel { l ->
                 withContext(Dispatchers.IO) {
                     l.map { id ->

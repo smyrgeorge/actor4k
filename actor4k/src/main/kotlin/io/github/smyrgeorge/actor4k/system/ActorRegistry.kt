@@ -4,8 +4,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
-import io.github.smyrgeorge.actor4k.util.java.JActorRegistry
+import io.github.smyrgeorge.actor4k.util.chunked
 import io.github.smyrgeorge.actor4k.util.forEachParallel
+import io.github.smyrgeorge.actor4k.util.java.JActorRegistry
 import kotlinx.coroutines.*
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -113,24 +114,27 @@ object ActorRegistry {
     }
 
     suspend fun stopAll(): Unit =
-        // TODO: split in chunks
-        local.values.forEachParallel { it.stop() }
+        local.values
+            .chunked(local.size, 4)
+            .forEachParallel { l -> l.forEach { it.stop() } }
 
     private suspend fun stopLocalExpired(): Unit =
-        // TODO: split in chunks
-        local.values.forEachParallel {
-            val df = Instant.now().epochSecond - it.stats().last.epochSecond
-            if (df > ActorSystem.Conf.actorExpiration.inWholeSeconds) {
-                log.debug { "Closing ${it.address()} (expired)." }
-                it.stop()
+        local.values
+            .chunked(local.size, 4)
+            .forEachParallel { l ->
+                l.forEach {
+                    val df = Instant.now().epochSecond - it.stats().last.epochSecond
+                    if (df > ActorSystem.Conf.actorExpiration.inWholeSeconds) {
+                        log.debug { "Closing ${it.address()} (expired)." }
+                        it.stop()
+                    }
+                }
             }
-        }
 
     private suspend fun removeRemoteExpired(): Unit =
-        // TODO: split in chunks
-        remote.values.forEachParallel {
-            if (Instant.now().isAfter(it.exp)) remote.remove(it.address)
-        }
+        remote.values
+            .chunked(remote.size, 4)
+            .forEachParallel { l -> l.forEach { if (Instant.now().isAfter(it.exp)) remote.remove(it.address) } }
 
     fun count(): Int = local.count()
 

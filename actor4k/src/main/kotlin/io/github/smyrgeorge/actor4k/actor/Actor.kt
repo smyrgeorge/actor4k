@@ -1,11 +1,11 @@
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.util.java.JRef
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.github.smyrgeorge.actor4k.util.java.JRef
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -34,10 +34,8 @@ abstract class Actor(open val shard: String, open val key: String) {
         }
 
     init {
-        // TODO: add initialization hooks.
         status = Status.READY
 
-        //  TODO: Block consumer until actor is initialized.
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.IO) {
             mail.consumeEach {

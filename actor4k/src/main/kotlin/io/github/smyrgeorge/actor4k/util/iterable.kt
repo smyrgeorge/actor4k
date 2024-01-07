@@ -11,3 +11,9 @@ suspend fun <A, B> Iterable<A>.mapParallel(context: CoroutineContext = Dispatche
 
 suspend fun <A> Iterable<A>.forEachParallel(context: CoroutineContext = Dispatchers.IO, f: suspend (A) -> Unit): Unit =
     withContext(context) { map { async { f(it) } }.awaitAll() }
+
+fun <T> Iterable<T>.chunked(total: Int, chunks: Int): List<List<T>> =
+    chunked(chunkSize(total, chunks))
+
+fun chunkSize(size: Int, chunks: Int): Int =
+    if (chunks > size) size else size / chunks
