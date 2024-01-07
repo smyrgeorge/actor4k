@@ -6,13 +6,18 @@ It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.corou
 
 The primary objective is to create a minimal actor system capable of functioning in cluster mode.
 
-# Key concepts
+## Key concepts
 
 - Using the `SWIM` gossip protocol for node/network discovery and low level communication.
-- Using the `raft` consensus algorithm for:
-    - `leader election`: the leader is responsible to manage the cluster state (add/remove nodes)
-    - `cluster state` across the nodes of the network
 - Using `gRPC` for the necessary communications from one node to another.
+- Using the `raft` consensus algorithm for (only for `DYNAMIC` node management):
+  - `leader election`: the leader is responsible to manage the cluster state (add/remove nodes)
+  - `maintain cluster state`: replicate the cluster state across the nodes of the network
+
+## Node management
+We offer 2 types of node management
+- `STATIC`: The cluster is initialized with a fixed number of nodes, and any changes to the network will not be applied. For instance, if a node restarts or stops, the other nodes will continue sending traffic to that node. This mode can be a suitable option for small clusters (e.g., 2-5 nodes) as it simplifies the cluster's operation and management. 
+- `DYNAMIC`: The cluster will be initialized with a set of nodes (`seed-members`). Then, the leader of the network will scan for changes and initiate a shard migration process for each change. For example, when a new node is discovered, it will be added to the network after the shard migration is completed. Please note that this functionality has not been thoroughly tested yet, so we may encounter data corruption.
 
 ## Work in progress
 
@@ -23,24 +28,27 @@ Check the `examples` for additional info.
 
 A lot of things need to be done, so sit tight…
 
-- [ ] Cluster/Sharding (in progress)
+- [ ] Cluster/Sharding (in progress)- 
+    - [x] Support `STATIC/DYNAMIC` node management.
     - [x] Use `raft` consensus algorithm for the cluster node membership (control the state of the cluster).
     - [x] Implement `tell/ask` patterns across cluster nodes
     - [x] Add support for cross-node actor reference
     - [x] Introduce the concept of Shard
     - [x] Shard management and re-balance shards after a node joins/leaves cluster
+    - [ ] Error handling
     - [ ] Review/Optimize `MemberManager`
     - [ ] Graceful shutdown
-    - [ ] Error handling
-- [ ] Serialization (in progress)
+- [x] Serialization
     - [x] Send protocol messages using the gossip protocol
-    - [x] Use gRPC for sending messages from an actor to another actor (in the case of different nodes)
+    - [x] Use gRPC for sending messages from an actor to another (in the case of different nodes)
     - [x] Use protobuf for actor messages (kotlinx protobuf)
 - [ ] Logging (in progress)
     - [ ] Configure log4j/slf4j
     - [ ] Disable unnecessary messages
 - [ ] Benchmark (in progress)
-    - [ ] Load test
+    - [x] GET a single account (JMeter) (see [microbank :: get single account.jmx](microbank-bench%2Fsrc%2Fjmeter%2Fmicrobank%20%3A%3A%20get%20single%20account.jmx)). Managed 16.6k req/sec with 3 nodes in a Macbook Pro with M1 Max
+    - [ ] Deploy `microbank` to a kubernetes cluster.
+    - [ ] Load test with gatling (in progress)
 - [ ] Testing
 - [ ] Metrics/Stats (in progress)
 - [ ] Documentation
