@@ -1,7 +1,11 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import com.google.protobuf.ByteString
-import io.github.smyrgeorge.actor4k.proto.*
+import io.github.smyrgeorge.actor4k.proto.Cluster
+import io.github.smyrgeorge.actor4k.proto.ask
+import io.github.smyrgeorge.actor4k.proto.getActor
+import io.github.smyrgeorge.actor4k.proto.response
+import io.github.smyrgeorge.actor4k.proto.tell
 
 fun Cluster.Response.toResponse() =
     Envelope.Response(shard, payload.toByteArray(), payloadClass, error)

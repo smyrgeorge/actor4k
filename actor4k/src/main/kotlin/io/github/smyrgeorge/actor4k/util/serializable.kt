@@ -1,6 +1,11 @@
 package io.github.smyrgeorge.actor4k.util
 
-import java.io.*
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.ObjectInput
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.io.Serializable
 
 @Suppress("UNCHECKED_CAST")
 fun <T : Serializable> ByteArray.toInstance(): T {
