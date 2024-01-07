@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build:
@@ -28,11 +28,10 @@ jobs:
 
       - name: Execute Gradle build
         run: ./gradlew build
+
+      - name: Execute Gradle Publish
+        run: ./gradlew publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-#      - name: Execute Gradle Publish
-#        run: ./gradlew publish
-#        env:
 #          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
 #          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
