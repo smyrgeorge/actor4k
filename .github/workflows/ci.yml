@@ -9,7 +9,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: Maven
+    permissions:
+      contents: read
+      packages: write
+#    environment: Maven
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
@@ -25,6 +28,8 @@ jobs:
 
       - name: Execute Gradle build
         run: ./gradlew build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 #      - name: Execute Gradle Publish
 #        run: ./gradlew publish

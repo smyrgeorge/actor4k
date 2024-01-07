@@ -71,13 +71,23 @@ java {
 }
 
 publishing {
+//    repositories {
+//        maven {
+//            name = "OSSRH"
+//            url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+//            credentials {
+//                username = System.getenv("MAVEN_USERNAME")
+//                password = System.getenv("MAVEN_PASSWORD")
+//            }
+//        }
+//    }
     repositories {
         maven {
-            name = "OSSRH"
-            url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/io.github.smyrgeorge/actor4k")
             credentials {
-                username = System.getenv("MAVEN_USERNAME")
-                password = System.getenv("MAVEN_PASSWORD")
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
             }
         }
     }
