@@ -12,6 +12,14 @@ The project is currently under development.
 However, you can already use it with the `STATIC` cluster node management without any issues.
 We are already planning to use it in production in the very near future.
 
+## Key concepts
+
+- Using the `SWIM` gossip protocol for node/network discovery and low level communication.
+- Using `gRPC` for the necessary communications from one node to another.
+- Using the `raft` consensus algorithm for (only for `DYNAMIC` node management):
+    - `leader election`: the leader is responsible to manage the cluster state (add/remove nodes)
+    - `maintain cluster state`: replicate the cluster state across the nodes of the network
+
 ## Let's create an Actor!
 
 ```kotlin
@@ -59,6 +67,41 @@ We offer 2 types of node management
   it will be added to the network after the shard migration is completed. Please note that this functionality has not
   been thoroughly tested yet, so we may encounter data corruption.
 
+## Let's start up the cluster
+
+```kotlin
+val alias = System.getenv("ACTOR4K_NODE_ID") ?: "bank-1"
+val host = System.getenv("ACTOR4K_NODE_HOST") ?: alias
+val httpPort = System.getenv("ACTOR4K_NODE_HTTP_PORT")?.toInt() ?: 9000
+val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 61100
+val gossipPort = System.getenv("ACTOR4K_NODE_GOSSIP_PORT")?.toInt() ?: 61000
+val seedMembers: List<Cluster.Conf.Node> =
+    (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "$alias::localhost:$gossipPort")
+        .split(",")
+        .map { Cluster.Conf.Node.from(it) }
+
+val conf = Cluster.Conf
+    .Builder()
+    .alias(alias)
+    .host(host)
+    .namespace("actor4k")
+    .grpcPort(grpcPort)
+    .gossipPort(gossipPort)
+    .nodeManagement(Cluster.Conf.NodeManagement.STATIC)
+    .seedMembers(seedMembers)
+    .build()
+
+log.info { conf }
+
+Cluster
+    .Builder()
+    .conf(conf)
+    .build()
+    .start()
+```
+
+Check the [microbank](microbank) example for more information.
+
 ## Working with Java
 
 We provide special utilities to accomplish this.
@@ -73,14 +116,6 @@ String res = (String) ref.asJava().ask("Tell me something").join();
 
 You can also find other
 examples [here](examples%2Fsrc%2Fmain%2Fjava%2Fio%2Fgithub%2Fsmyrgeorge%2Factor4k%2Fexamples%2Fjava).
-
-## Key concepts
-
-- Using the `SWIM` gossip protocol for node/network discovery and low level communication.
-- Using `gRPC` for the necessary communications from one node to another.
-- Using the `raft` consensus algorithm for (only for `DYNAMIC` node management):
-    - `leader election`: the leader is responsible to manage the cluster state (add/remove nodes)
-    - `maintain cluster state`: replicate the cluster state across the nodes of the network
 
 ## Progress of the project
 
