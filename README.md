@@ -1,4 +1,4 @@
-<p style="text-align: center; padding: 5px; background-color: #ffffff"><img src="logo.svg"></p>
+# actor4k
 
 ![Build](https://github.com/smyrgeorge/actor4k/actions/workflows/ci.yml/badge.svg)
 ![GitHub License](https://img.shields.io/github/license/smyrgeorge/actor4k)
@@ -9,13 +9,13 @@ It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.corou
 
 The primary objective is to create a minimal actor system capable of functioning in cluster mode.
 
-## Work in progress
+### Work in progress
 
 The project is currently under development.
 However, you can already use it with the `STATIC` cluster node management without any issues.
 We are already planning to use it in production in the very near future.
 
-## Key concepts
+### Key concepts
 
 - Using the `SWIM` gossip protocol for node/network discovery and low level communication.
 - Using `gRPC` for the necessary communications from one node to another.
@@ -23,7 +23,7 @@ We are already planning to use it in production in the very near future.
     - `leader election`: the leader is responsible to manage the cluster state (add/remove nodes)
     - `maintain cluster state`: replicate the cluster state across the nodes of the network
 
-## Let's create an Actor!
+### Let's create an Actor!
 
 ```kotlin
 data class Req(val msg: String)
@@ -58,7 +58,7 @@ See other examples [here](examples%2Fsrc%2Fmain%2Fkotlin%2Fio%2Fgithub%2Fsmyrgeo
 You can also check the `microbank` example [here](microbank).
 Microbank is small banking account simulator that we have created to test `actor4k`.
 
-## Node management
+### Node management
 
 We offer 2 types of node management
 
@@ -70,7 +70,7 @@ We offer 2 types of node management
   it will be added to the network after the shard migration is completed. Please note that this functionality has not
   been thoroughly tested yet, so we may encounter data corruption.
 
-## Let's start up the cluster
+### Let's start up the cluster
 
 ```kotlin
 val alias = System.getenv("ACTOR4K_NODE_ID") ?: "bank-1"
@@ -105,7 +105,7 @@ Cluster
 
 Check the [microbank](microbank) example for more information.
 
-## Working with Java
+### Working with Java
 
 We provide special utilities to accomplish this.
 Whenever you need to, simply call the asJava() method and the magic will happen.
@@ -120,7 +120,7 @@ String res = (String) ref.asJava().ask("Tell me something").join();
 You can also find other
 examples [here](examples%2Fsrc%2Fmain%2Fjava%2Fio%2Fgithub%2Fsmyrgeorge%2Factor4k%2Fexamples%2Fjava).
 
-## Progress of the project
+### Progress of the project
 
 A lot of things need to be done, so sit tight…
 
@@ -153,7 +153,7 @@ A lot of things need to be done, so sit tight…
 - [ ] Documentation
 - [ ] Persistence
 
-## Run the example.
+### Run the example.
 
 [![asciicast](https://asciinema.org/a/629943.svg)](https://asciinema.org/a/629943)
 
@@ -187,25 +187,25 @@ Then you can run the `microbank-client` in order to generate some traffic:
 java -jar microbank-client/build/libs/microbank-client-0.1.0.jar
 ```
 
-### Cleanup
+#### Cleanup
 
 ```shell
 ./gradelw clean && docker compose down -v
 ```
 
-## Build
+### Build
 
 ```shell
 ./gradlew build
 ```
 
-### Docker
+#### Docker
 
 ```shell
 docker build . -t microbank -f microbank/src/main/docker/Dockerfile
 ```
 
-## Links and References
+### Links and References
 
 - https://kotlinlang.org/docs/coroutines-guide.html
 - https://doc.akka.io/docs/akka/current/general/actor-systems.html
