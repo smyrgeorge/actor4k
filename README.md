@@ -1,10 +1,9 @@
-# actor4k
+<p style="text-align: center; padding: 5px; background-color: #ffffff"><img src="logo.svg"></p>
 
 ![Build](https://github.com/smyrgeorge/actor4k/actions/workflows/ci.yml/badge.svg)
 ![GitHub License](https://img.shields.io/github/license/smyrgeorge/actor4k)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/smyrgeorge/actor4k)
 ![GitHub issues](https://img.shields.io/github/issues/smyrgeorge/actor4k)
-
 
 It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.coroutines).
 
