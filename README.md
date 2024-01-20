@@ -170,7 +170,7 @@ So, with this example, we validate the cluster consistency.
 Run the following script (it will also build the project).
 
 ```shell
-./run.sh
+./scripts/run.sh
 ```
 
 The above script will do the following:
