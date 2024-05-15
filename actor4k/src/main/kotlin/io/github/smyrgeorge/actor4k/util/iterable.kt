@@ -15,5 +15,5 @@ suspend fun <A> Iterable<A>.forEachParallel(context: CoroutineContext = Dispatch
 fun <T> Iterable<T>.chunked(total: Int, chunks: Int): List<List<T>> =
     chunked(chunkSize(total, chunks))
 
-fun chunkSize(size: Int, chunks: Int): Int =
-    if (chunks > size) size else size / chunks
+private fun chunkSize(total: Int, chunks: Int): Int =
+    if (total == 0) 1 else if (chunks > total) total else total / chunks
