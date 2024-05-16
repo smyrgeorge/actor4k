@@ -62,10 +62,6 @@ data class AccountActor(
         account.balance = 0
     }
 
-    override fun onShutdown() {
-        println("XXXXXXXXXXXXXX")
-    }
-
     override fun onReceive(m: Message, r: Response.Builder): Response {
         val res = when (val msg = m.cast<Req>()) {
             is Req.GetAccount -> account
