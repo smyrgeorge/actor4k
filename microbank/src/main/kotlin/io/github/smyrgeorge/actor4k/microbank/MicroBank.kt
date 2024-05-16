@@ -30,8 +30,20 @@ sealed interface Req {
 
     @Serializable
     data class ApplyTx(override val accountNo: String, val value: Int) : Req
-}
 
+    class Builder(private val ref: Actor.Ref) {
+        suspend fun getAccount(accountNo: String): Account = ref.ask(GetAccount(accountNo))
+        suspend fun applyTx(cmd: ApplyTx): Account = ref.ask(cmd)
+    }
+
+    companion object {
+        fun to(ref: Actor.Ref): Builder = Builder(ref)
+        suspend fun to(key: String): Builder {
+            val ref = ActorRegistry.get(AccountActor::class, key)
+            return Builder(ref)
+        }
+    }
+}
 
 @Serializable
 data class Account(val accountNo: String, var balance: Int)
@@ -48,6 +60,10 @@ data class AccountActor(
         // E.g. fetch the data from the DB.
         // In this case we will assume that the balance is equal to '0'.
         account.balance = 0
+    }
+
+    override fun onShutdown() {
+        println("XXXXXXXXXXXXXX")
     }
 
     override fun onReceive(m: Message, r: Response.Builder): Response {
@@ -99,9 +115,7 @@ fun main(args: Array<String>) {
         "/api/account/{accountNo}" bind Method.GET to {
             runBlocking {
                 val accountNo = it.path("accountNo") ?: error("Missing accountNo from path.")
-                val req = Req.GetAccount(accountNo)
-                val ref = ActorRegistry.get(AccountActor::class, accountNo)
-                val res = ref.ask<Account>(req)
+                val res = Req.to(accountNo).getAccount(accountNo)
                 Response(Status.OK).body(om.writeValueAsString(res))
             }
         },
@@ -109,8 +123,7 @@ fun main(args: Array<String>) {
             runBlocking {
                 val accountNo = it.path("accountNo") ?: error("Missing accountNo from path.")
                 val req = om.readValue<Req.ApplyTx>(it.body.stream)
-                val ref = ActorRegistry.get(AccountActor::class, accountNo)
-                val res = ref.ask<Account>(req)
+                val res = Req.to(accountNo).applyTx(req)
                 Response(Status.OK).body(om.writeValueAsString(res))
             }
         }

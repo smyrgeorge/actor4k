@@ -100,6 +100,7 @@ object ActorRegistry {
         @Suppress("UNCHECKED_CAST")
         val actor = Class.forName(clazz) as? Class<Actor>
             ?: error("Could not find requested actor class='$clazz'.")
+
         return get(actor, key, shard)
     }
 
