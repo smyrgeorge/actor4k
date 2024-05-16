@@ -78,6 +78,9 @@ object ActorRegistry {
                     .getConstructor(String::class.java, String::class.java)
                     .newInstance(shard, key)
 
+                // Invoke activate (initialization) method.
+                actor.getMethod("activate").invoke(a)
+
                 // Store [Actor.Ref] to the local storage.
                 local[address] = a
 

@@ -41,7 +41,14 @@ data class AccountActor(
     override val key: String
 ) : Actor(shard, key) {
 
-    private val account = Account(key, 0)
+    private val account = Account(key, Int.MIN_VALUE)
+
+    override fun onActivate() {
+        // Initialize the account balance here.
+        // E.g. fetch the data from the DB.
+        // In this case we will assume that the balance is equal to '0'.
+        account.balance = 0
+    }
 
     override fun onReceive(m: Message, r: Response.Builder): Response {
         val res = when (val msg = m.cast<Req>()) {

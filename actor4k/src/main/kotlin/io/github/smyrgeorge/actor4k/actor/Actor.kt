@@ -37,7 +37,10 @@ abstract class Actor(open val shard: String, open val key: String) {
             }
         }
 
-    init {
+    open fun onActivate() {}
+    @Suppress("unused")
+    fun activate() {
+        onActivate()
         status = Status.READY
 
         @OptIn(DelicateCoroutinesApi::class)
