@@ -13,7 +13,7 @@ data class AccountActor(
     override val shard: String,
     override val key: String
 ) : Actor(shard, key) {
-    override fun onReceive(m: Message, r: Response.Builder): Response {
+    override suspend fun onReceive(m: Message, r: Response.Builder): Response {
         val msg = m.cast<Req>()
         log.info { "[$name] Received message: $msg" }
         val res = Resp("Pong!")

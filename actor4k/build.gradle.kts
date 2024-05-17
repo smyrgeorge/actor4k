@@ -26,6 +26,7 @@ val protobufVersion: String by rootProject.extra
 val grpcKotlinVersion: String by rootProject.extra
 
 dependencies {
+    api(kotlin("reflect"))
     // Kotlin
     // https://github.com/Kotlin/kotlinx.coroutines
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
@@ -59,7 +60,7 @@ dependencies {
     // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf
     api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.2")
 
-    //https://github.com/MicroRaft/MicroRaft
+    // https://github.com/MicroRaft/MicroRaft
     api("io.microraft:microraft:0.6")
 
     // Test dependencies

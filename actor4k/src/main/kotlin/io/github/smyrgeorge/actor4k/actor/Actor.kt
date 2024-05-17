@@ -37,9 +37,9 @@ abstract class Actor(open val shard: String, open val key: String) {
             }
         }
 
-    open fun onActivate() {}
+    open suspend fun onActivate() {}
     @Suppress("unused")
-    fun activate() {
+    suspend fun activate() {
         onActivate()
         status = Status.READY
 
@@ -78,7 +78,7 @@ abstract class Actor(open val shard: String, open val key: String) {
         }
     }
 
-    abstract fun onReceive(m: Message, r: Response.Builder): Response
+    abstract suspend fun onReceive(m: Message, r: Response.Builder): Response
 
     suspend fun <C> tell(msg: C) {
         if (status != Status.READY) error("$address is in status='$status' and thus is not accepting messages.")

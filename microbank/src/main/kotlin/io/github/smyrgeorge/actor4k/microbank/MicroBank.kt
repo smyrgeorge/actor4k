@@ -55,14 +55,14 @@ data class AccountActor(
 
     private val account = Account(key, Int.MIN_VALUE)
 
-    override fun onActivate() {
+    override suspend fun onActivate() {
         // Initialize the account balance here.
         // E.g. fetch the data from the DB.
         // In this case we will assume that the balance is equal to '0'.
         account.balance = 0
     }
 
-    override fun onReceive(m: Message, r: Response.Builder): Response {
+    override suspend fun onReceive(m: Message, r: Response.Builder): Response {
         val res = when (val msg = m.cast<Req>()) {
             is Req.GetAccount -> account
             is Req.ApplyTx -> {

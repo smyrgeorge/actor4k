@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
+import io.github.smyrgeorge.actor4k.util.callSuspend
 import io.github.smyrgeorge.actor4k.util.chunked
 import io.github.smyrgeorge.actor4k.util.forEachParallel
 import io.github.smyrgeorge.actor4k.util.java.JActorRegistry
@@ -79,7 +80,7 @@ object ActorRegistry {
                     .newInstance(shard, key)
 
                 // Invoke activate (initialization) method.
-                actor.getMethod("activate").invoke(a)
+                actor.callSuspend("activate", a)
 
                 // Store [Actor.Ref] to the local storage.
                 local[address] = a
