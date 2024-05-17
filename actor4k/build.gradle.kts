@@ -29,20 +29,20 @@ dependencies {
     api(kotlin("reflect"))
     // Kotlin
     // https://github.com/Kotlin/kotlinx.coroutines
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.7.3")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.8.1")
 
     // Logging
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
     api("org.slf4j:slf4j-api:2.0.10")
     api("org.slf4j:slf4j-reload4j:2.0.10")
     // https://github.com/oshai/kotlin-logging
-    api("io.github.oshai:kotlin-logging-jvm:6.0.1")
+    api("io.github.oshai:kotlin-logging-jvm:6.0.9")
 
     // Arrow
     // https://github.com/arrow-kt/arrow
-    api("io.arrow-kt:arrow-core:1.2.1")
-    api("io.arrow-kt:arrow-fx-coroutines:1.2.1")
+    api("io.arrow-kt:arrow-core:1.2.4")
+    api("io.arrow-kt:arrow-fx-coroutines:1.2.4")
 
     // https://central.sonatype.com/artifact/io.scalecube/scalecube-cluster
     api("io.scalecube:scalecube-cluster:2.6.17")
@@ -57,11 +57,11 @@ dependencies {
     api("io.grpc:grpc-protobuf:$grpcVersion")
     api("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
     api("com.google.protobuf:protobuf-kotlin:$protobufVersion")
-    // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf
-    api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.2")
+    // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf/kotlinx.serialization.protobuf/
+    api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")
 
     // https://github.com/MicroRaft/MicroRaft
-    api("io.microraft:microraft:0.6")
+    api("io.microraft:microraft:0.7")
 
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin

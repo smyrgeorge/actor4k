@@ -27,8 +27,8 @@ dependencies {
     // Internal dependencies.
     implementation(project(":actor4k"))
 
-    // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.2")
+    // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf/kotlinx.serialization.protobuf/
+    api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     implementation("com.fasterxml.jackson.core:jackson-core:2.16.0")

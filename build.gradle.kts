@@ -13,7 +13,7 @@ plugins {
     // NOTE: we use [apply] false.
     // https://docs.gradle.org/current/userguide/plugins.html#sec:subprojects_plugins_dsl
     // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.jvm
-    kotlin("jvm") version "1.9.22" apply false
+    kotlin("jvm") version "1.9.24" apply false
     // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
-    kotlin("plugin.serialization") version "1.9.22" apply false
+    kotlin("plugin.serialization") version "1.9.24" apply false
 }
