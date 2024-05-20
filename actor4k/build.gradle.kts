@@ -76,7 +76,7 @@ java {
 publishing {
     repositories {
         maven {
-            name = "OSSRH"
+            name = "sonatype"
             url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
             credentials {
                 username = System.getenv("MAVEN_USERNAME")
@@ -85,39 +85,39 @@ publishing {
         }
     }
 
-    publications {
-        val archivesBaseName = tasks.jar.get().archiveBaseName.get()
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            artifactId = archivesBaseName
-            pom {
-                name = archivesBaseName
-                packaging = "jar"
-                description = "A small actor system written in kotlin using Coroutines (kotlinx.coroutines)."
+    publications.withType<MavenPublication> {
+//        create<MavenPublication>("mavenJava") {
+//        val archivesBaseName = tasks.jar.get().archiveBaseName.get()
+//        from(components["java"])
+//        artifactId = archivesBaseName
+        pom {
+            name = "actor4k"
+            packaging = "jar"
+            description = "A small actor system written in kotlin using Coroutines (kotlinx.coroutines)."
+            url = "https://github.com/smyrgeorge/actor4k"
+
+            scm {
                 url = "https://github.com/smyrgeorge/actor4k"
+//                connection = "scm:git:https://github.com/smyrgeorge/actor4k.git"
+//                developerConnection = "scm:git:git@github.com:smyrgeorge/actor4k.git"
+            }
 
-                scm {
-                    url = "https://github.com/smyrgeorge/actor4k"
-                    connection = "scm:git:https://github.com/smyrgeorge/actor4k.git"
-                    developerConnection = "scm:git:git@github.com:smyrgeorge/actor4k.git"
+            licenses {
+                license {
+                    name = "MIT License"
+                    url = "https://github.com/smyrgeorge/actor4k/blob/main/LICENSE"
                 }
+            }
 
-                licenses {
-                    license {
-                        name = "MIT License"
-                        url = "https://github.com/smyrgeorge/actor4k/blob/main/LICENSE"
-                    }
-                }
-
-                developers {
-                    developer {
-                        name = "Yorgos S."
-                        email = "smyrgoerge@gmail.com"
-                        url = "https://smyrgeorge.github.io/"
-                    }
+            developers {
+                developer {
+                    name = "Yorgos S."
+                    email = "smyrgoerge@gmail.com"
+                    url = "https://smyrgeorge.github.io/"
                 }
             }
         }
+//        }
     }
 }
 
