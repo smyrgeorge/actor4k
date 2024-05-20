@@ -86,6 +86,8 @@ publishing {
     }
 
     publications.withType<MavenPublication> {
+        from(components["java"])
+        artifactId = tasks.jar.get().archiveBaseName.get()
 //        create<MavenPublication>("mavenJava") {
 //        val archivesBaseName = tasks.jar.get().archiveBaseName.get()
 //        from(components["java"])
