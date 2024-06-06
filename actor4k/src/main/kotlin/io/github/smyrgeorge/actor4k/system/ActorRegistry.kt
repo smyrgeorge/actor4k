@@ -13,19 +13,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 object ActorRegistry {
 
     private val log = KotlinLogging.logger {}
 
+    // Mutex for the create operation.
+    private val mutex = Mutex()
+
     // Stores [Actor].
-    private val local = ConcurrentHashMap<String, Actor>(/* initialCapacity = */ 1024)
+    private val local = HashMap<String, Actor>(/* initialCapacity = */ 1024)
 
     // Stores [Actor.Ref.Remote].
-    private val remote = ConcurrentHashMap<String, Actor.Ref.Remote>(/* initialCapacity = */ 1024)
+    private val remote = HashMap<String, Actor.Ref.Remote>(/* initialCapacity = */ 1024)
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -51,6 +54,10 @@ object ActorRegistry {
     ): Actor.Ref {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
+
+        // Limit the concurrent access to one at a time.
+        // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
+        mutex.lock()
 
         val address = Actor.addressOf(actor, key)
 
@@ -91,6 +98,9 @@ object ActorRegistry {
                 a.ref()
             }
 
+        // Drop the lock here.
+        mutex.unlock()
+
         return ref
     }
 
@@ -123,13 +133,11 @@ object ActorRegistry {
     }
 
     suspend fun stopAll(): Unit =
-        local.values
-            .chunked(local.size, 4)
+        local.values.chunked(local.size, 4)
             .forEachParallel { l -> l.forEach { it.stop() } }
 
     private suspend fun stopLocalExpired(): Unit =
-        local.values
-            .chunked(local.size, 4)
+        local.values.chunked(local.size, 4)
             .forEachParallel { l ->
                 l.forEach {
                     val df = Instant.now().epochSecond - it.stats().last.epochSecond
