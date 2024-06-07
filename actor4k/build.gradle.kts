@@ -73,6 +73,11 @@ java {
     withSourcesJar()
 }
 
+// Disable this task, because the protobuf plugin generates too many warnings.
+tasks.withType<Javadoc> {
+    enabled = false
+}
+
 publishing {
     repositories {
         maven {

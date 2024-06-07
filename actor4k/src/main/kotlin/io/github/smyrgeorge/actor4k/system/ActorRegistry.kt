@@ -14,6 +14,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import kotlin.reflect.KClass
 
@@ -57,15 +58,15 @@ object ActorRegistry {
 
         // Limit the concurrent access to one at a time.
         // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
-        mutex.lock()
+        val ref: Actor.Ref = mutex.withLock {
 
-        val address = Actor.addressOf(actor, key)
+            // Calculate the actor address.
+            val address: String = Actor.addressOf(actor, key)
 
-        // Check if the actor already exists in the local storage.
-        local[address]?.let { return it.ref() }
+            // Check if the actor already exists in the local storage.
+            local[address]?.let { return it.ref() }
 
-        // Create Local/Remote actor.
-        val ref: Actor.Ref =
+            // Create Local/Remote actor.
             if (ActorSystem.clusterMode
                 && ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.conf.alias
             ) {
@@ -76,9 +77,11 @@ object ActorRegistry {
                 // Case Remote.
                 // Forward the [Envelope.Spawn] message to the correct cluster node.
                 val msg = Envelope.GetActor(shard, actor.name, key)
-                ActorSystem.cluster.msg(msg).getOrThrow<Envelope.GetActor.Ref>().toRef(shard).also {
-                    remote[address] = it
-                }
+                ActorSystem.cluster
+                    .msg(msg)
+                    .getOrThrow<Envelope.GetActor.Ref>()
+                    .toRef(shard)
+                    .also { remote[address] = it }
             } else {
                 // Case Local.
                 // Spawn the actor.
@@ -97,9 +100,9 @@ object ActorRegistry {
 
                 a.ref()
             }
+        }
 
-        // Drop the lock here.
-        mutex.unlock()
+        log.debug { "Actor $ref created." }
 
         return ref
     }
@@ -123,37 +126,45 @@ object ActorRegistry {
             ?: get(ref.actor, ref.key).let { local[ref.address]!! }
     }
 
-    fun <A : Actor> unregister(actor: Class<A>, key: String) {
+    suspend fun <A : Actor> unregister(actor: Class<A>, key: String) {
         val address = Actor.addressOf(actor, key)
-        local[address]?.let {
-            if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
-            local.remove(address)
-            ShardManager.operation(ShardManager.Op.UNREGISTER, it.shard)
+        mutex.withLock {
+            local[address]?.let {
+                if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
+                local.remove(address)
+                ShardManager.operation(ShardManager.Op.UNREGISTER, it.shard)
+                log.debug { "Unregistered actor $address." }
+            }
         }
     }
 
-    suspend fun stopAll(): Unit =
-        local.values.chunked(local.size, 4)
-            .forEachParallel { l -> l.forEach { it.stop() } }
+    suspend fun stopAll(): Unit = mutex.withLock {
+        log.debug { "Stop all local actors. Total: ${local.size}" }
+        local.values.chunked(local.size, 4).forEachParallel { l ->
+            l.forEach { it.stop() }
+        }
+    }
 
-    private suspend fun stopLocalExpired(): Unit =
-        local.values.chunked(local.size, 4)
-            .forEachParallel { l ->
-                l.forEach {
-                    val df = Instant.now().epochSecond - it.stats().last.epochSecond
-                    if (df > ActorSystem.Conf.actorExpiration.inWholeSeconds) {
-                        log.debug { "Closing ${it.address()} (expired)." }
-                        it.stop()
-                    }
+    private suspend fun stopLocalExpired(): Unit = mutex.withLock {
+        log.debug { "Stop all local expired actors. Total: ${local.size}" }
+        local.values.chunked(local.size, 4).forEachParallel { l ->
+            l.forEach {
+                val df = Instant.now().epochSecond - it.stats().last.epochSecond
+                if (df > ActorSystem.Conf.actorExpiration.inWholeSeconds) {
+                    log.debug { "Closing ${it.address()} (expired)." }
+                    it.stop()
                 }
             }
+        }
+    }
 
-    private suspend fun removeRemoteExpired(): Unit =
-        remote.values
-            .chunked(remote.size, 4)
-            .forEachParallel { l -> l.forEach { if (Instant.now().isAfter(it.exp)) remote.remove(it.address) } }
+    private suspend fun removeRemoteExpired(): Unit = mutex.withLock {
+        log.debug { "Removing all remote expired actors. Total: ${remote.size}" }
+        remote.values.chunked(remote.size, 4).forEachParallel { l ->
+            l.forEach { if (Instant.now().isAfter(it.exp)) remote.remove(it.address) }
+        }
+    }
 
     fun count(): Int = local.count()
-
     fun asJava(): JActorRegistry = JActorRegistry
 }
