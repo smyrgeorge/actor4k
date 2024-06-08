@@ -142,7 +142,7 @@ examples [here](examples%2Fsrc%2Fmain%2Fjava%2Fio%2Fgithub%2Fsmyrgeorge%2Factor4
 
 A lot of things need to be done, so sit tight…
 
-- [ ] Cluster/Sharding (in progress)-
+- [ ] Cluster/Sharding
     - [x] Support `STATIC/DYNAMIC` node management.
     - [x] Use `raft` consensus algorithm for the cluster node membership (control the state of the cluster).
     - [x] Implement `tell/ask` patterns across cluster nodes
@@ -158,7 +158,7 @@ A lot of things need to be done, so sit tight…
     - [x] Use protobuf for actor messages (kotlinx protobuf)
 - [x] Java compatibility
 - [ ] Logging (in progress)
-    - [ ] Configure log4j/slf4j
+    - [x] Configure log4j/slf4j
     - [ ] Disable unnecessary messages
 - [ ] Benchmark (in progress)
     - [x] GET a single account (JMeter) (

@@ -18,11 +18,6 @@ import io.microraft.RaftNode
 import io.scalecube.cluster.ClusterImpl
 import io.scalecube.net.Address
 import io.scalecube.transport.netty.tcp.TcpTransportFactory
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
@@ -43,20 +38,9 @@ class Cluster(
 
     private val log = KotlinLogging.logger {}
 
-    private val stats: Stats = Stats()
     lateinit var raft: RaftNode
     lateinit var raftManager: MemberManager
     private val grpcClients: ConcurrentHashMap<String, GrpcClient> = ConcurrentHashMap()
-
-    init {
-        @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
-            while (true) {
-                delay(ActorSystem.Conf.clusterLogStats)
-                stats()
-            }
-        }
-    }
 
     suspend fun shutdown() {
 //        raftManager.shutdown()
@@ -64,11 +48,6 @@ class Cluster(
         grpc.shutdown()
         grpcClients.values.forEach { it.close() }
         gossip.shutdown()
-    }
-
-    private fun stats() {
-        // Log [Stats].
-        log.info { stats }
     }
 
     suspend fun msg(message: Envelope): Envelope.Response {

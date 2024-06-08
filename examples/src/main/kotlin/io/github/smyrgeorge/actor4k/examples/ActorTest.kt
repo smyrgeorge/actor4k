@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
 class ActorTest
@@ -35,6 +36,8 @@ fun main(args: Array<String>) {
         val a2: Actor.Ref.Local = ActorRegistry.get(AccountActor::class, "ACC0010") as Actor.Ref.Local
         println(a2.status())
         a2.stop()
-        a2.tell(req)
+        delay(1000)
+
+        a2.tell(req) // Will re-create the actor.
     }
 }

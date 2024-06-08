@@ -2,8 +2,11 @@ package io.github.smyrgeorge.actor4k.system
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
@@ -11,16 +14,43 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
+@Suppress("MemberVisibilityCanBePrivate")
 object ActorSystem {
 
     private val log = KotlinLogging.logger {}
 
+    var type: Type = Type.SIMPLE
     var status: Status = Status.READY
-    var clusterMode: Boolean = false
+    var stats: Stats = Stats.Simple()
+
     lateinit var cluster: Cluster
 
+    init {
+        @OptIn(DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
+            while (true) {
+                delay(Conf.clusterCollectStats)
+                stats.collect()
+            }
+        }
+
+        @OptIn(DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
+            while (true) {
+                delay(Conf.clusterLogStats)
+                stats()
+            }
+        }
+    }
+
+    fun stats() {
+        // Log [Stats].
+        log.info { stats }
+    }
+
     fun register(c: Cluster): ActorSystem {
-        clusterMode = true
+        type = Type.CLUSTER
+        stats = Stats.Cluster()
         cluster = c
         return this
     }
@@ -42,6 +72,11 @@ object ActorSystem {
         SHUTTING_DOWN
     }
 
+    enum class Type {
+        SIMPLE,
+        CLUSTER
+    }
+
     @Suppress("unused")
     private val hook = Runtime.getRuntime().addShutdownHook(
         thread(start = false) { runBlocking(Dispatchers.IO) { Shutdown.shutdown(Shutdown.Trigger.EXTERNAL) } }
@@ -56,7 +91,7 @@ object ActorSystem {
             log.info { "Closing ${ActorRegistry.count()} actors.." }
             ActorRegistry.stopAll()
 
-            if (clusterMode) {
+            if (isCluster()) {
                 log.info { "Informing cluster that we are about to leave.." }
                 cluster.shutdown()
             }
@@ -80,4 +115,6 @@ object ActorSystem {
             EXTERNAL
         }
     }
+
+    fun isCluster(): Boolean = type == Type.CLUSTER
 }

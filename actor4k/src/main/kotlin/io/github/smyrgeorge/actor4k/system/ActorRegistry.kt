@@ -18,6 +18,7 @@ import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import kotlin.reflect.KClass
 
+@Suppress("MemberVisibilityCanBePrivate")
 object ActorRegistry {
 
     private val log = KotlinLogging.logger {}
@@ -26,10 +27,10 @@ object ActorRegistry {
     private val mutex = Mutex()
 
     // Stores [Actor].
-    private val local = HashMap<String, Actor>(/* initialCapacity = */ 1024)
+    private val local: MutableMap<String, Actor> = mutableMapOf()
 
     // Stores [Actor.Ref.Remote].
-    private val remote = HashMap<String, Actor.Ref.Remote>(/* initialCapacity = */ 1024)
+    private val remote: MutableMap<String, Actor.Ref.Remote> = mutableMapOf()
 
     init {
         @OptIn(DelicateCoroutinesApi::class)
@@ -67,7 +68,7 @@ object ActorRegistry {
             local[address]?.let { return it.ref() }
 
             // Create Local/Remote actor.
-            if (ActorSystem.clusterMode
+            if (ActorSystem.isCluster()
                 && ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.conf.alias
             ) {
                 val existing = remote[address]
@@ -108,9 +109,6 @@ object ActorRegistry {
     }
 
     suspend fun get(clazz: String, key: String, shard: String): Actor.Ref {
-        if (ActorSystem.status != ActorSystem.Status.READY)
-            error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
-
         @Suppress("UNCHECKED_CAST")
         val actor = Class.forName(clazz) as? Class<Actor>
             ?: error("Could not find requested actor class='$clazz'.")
@@ -118,15 +116,12 @@ object ActorRegistry {
         return get(actor, key, shard)
     }
 
-    suspend fun get(ref: Actor.Ref.Local): Actor {
-        if (ActorSystem.status != ActorSystem.Status.READY)
-            error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
+    suspend fun get(ref: Actor.Ref.Local): Actor =
+        get(ref.actor, ref.key).let { local[ref.address]!! }
 
-        return local[ref.address] // If the actor is not in the registry (passivated) spawn a new one.
-            ?: get(ref.actor, ref.key).let { local[ref.address]!! }
-    }
+    suspend fun deregister(actor: Actor) = deregister(actor::class.java, actor.key)
 
-    suspend fun <A : Actor> unregister(actor: Class<A>, key: String) {
+    suspend fun <A : Actor> deregister(actor: Class<A>, key: String) {
         val address = Actor.addressOf(actor, key)
         mutex.withLock {
             local[address]?.let {
@@ -139,20 +134,20 @@ object ActorRegistry {
     }
 
     suspend fun stopAll(): Unit = mutex.withLock {
-        log.debug { "Stop all local actors. Total: ${local.size}" }
+        log.debug { "Stopping all local actors. Total: ${local.size}" }
         local.values.chunked(local.size, 4).forEachParallel { l ->
-            l.forEach { it.stop() }
+            l.forEach { it.shutdown() }
         }
     }
 
     private suspend fun stopLocalExpired(): Unit = mutex.withLock {
-        log.debug { "Stop all local expired actors. Total: ${local.size}" }
+        log.debug { "Stopping all local expired actors. Total: ${local.size}" }
         local.values.chunked(local.size, 4).forEachParallel { l ->
             l.forEach {
                 val df = Instant.now().epochSecond - it.stats().last.epochSecond
                 if (df > ActorSystem.Conf.actorExpiration.inWholeSeconds) {
                     log.debug { "Closing ${it.address()} (expired)." }
-                    it.stop()
+                    it.shutdown()
                 }
             }
         }

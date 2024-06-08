@@ -33,11 +33,13 @@ abstract class Actor(open val shard: String, open val key: String) {
             for (e in this) action(e)
             if (isClosedForReceive) {
                 status = Status.FINISHED
-                ActorRegistry.unregister(this@Actor::class.java, key)
+                ActorRegistry.deregister(this@Actor)
             }
         }
 
     open suspend fun onActivate() {}
+    abstract suspend fun onReceive(m: Message, r: Response.Builder): Response
+
     @Suppress("unused")
     suspend fun activate() {
         onActivate()
@@ -47,6 +49,7 @@ abstract class Actor(open val shard: String, open val key: String) {
         GlobalScope.launch(Dispatchers.IO) {
             mail.consumeEach {
                 stats.last = Instant.now()
+                stats.messages += 1
                 val msg = Message(it.msg)
                 val reply = onReceive(msg, Response.Builder())
                 when (it) {
@@ -78,8 +81,6 @@ abstract class Actor(open val shard: String, open val key: String) {
         }
     }
 
-    abstract suspend fun onReceive(m: Message, r: Response.Builder): Response
-
     suspend fun <C> tell(msg: C) {
         if (status != Status.READY) error("$address is in status='$status' and thus is not accepting messages.")
         Patterns.Tell(msg as Any).let { mail.send(it) }
@@ -100,7 +101,7 @@ abstract class Actor(open val shard: String, open val key: String) {
     fun stats(): Stats = stats
     fun address(): String = address
 
-    fun stop(cause: Throwable? = null) {
+    fun shutdown(cause: Throwable? = null) {
         status = Status.FINISHING
         mail.close(cause)
     }
@@ -141,18 +142,18 @@ abstract class Actor(open val shard: String, open val key: String) {
         ) : Ref(shard, name, key, address) {
             override suspend fun tell(msg: Any) {
                 // Check if the requested shard is locked.
-                if (ActorSystem.clusterMode) ShardManager.isLocked(shard)?.ex()
+                if (ActorSystem.isCluster()) ShardManager.isLocked(shard)?.ex()
                 ActorRegistry.get(this).tell(msg)
             }
 
             override suspend fun <R> ask(msg: Any): R {
                 // Check if the requested shard is locked.
-                if (ActorSystem.clusterMode) ShardManager.isLocked(shard)?.ex()
+                if (ActorSystem.isCluster()) ShardManager.isLocked(shard)?.ex()
                 return ActorRegistry.get(this).ask(msg)
             }
 
             suspend fun status(): Status = ActorRegistry.get(this).status
-            suspend fun stop(cause: Throwable? = null) = ActorRegistry.get(this).stop(cause)
+            suspend fun stop(cause: Throwable? = null) = ActorRegistry.get(this).shutdown(cause)
         }
 
         data class Remote(
@@ -177,7 +178,10 @@ abstract class Actor(open val shard: String, open val key: String) {
         }
     }
 
-    data class Stats(var last: Instant = Instant.now())
+    data class Stats(
+        var last: Instant = Instant.now(),
+        var messages: Long = 0
+    )
 
     companion object {
         private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"
