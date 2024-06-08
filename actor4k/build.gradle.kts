@@ -1,14 +1,14 @@
+import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    `maven-publish`
-    `java-library`
-    signing
     kotlin("jvm")
     kotlin("plugin.serialization")
     // https://plugins.gradle.org/plugin/com.google.protobuf
     id("com.google.protobuf") version "0.9.4"
+    // https://github.com/vanniktech/gradle-maven-publish-plugin
+    id("com.vanniktech.maven.publish") version "0.28.0"
 }
 
 group = rootProject.group
@@ -68,69 +68,52 @@ dependencies {
     testApi("org.mockito.kotlin:mockito-kotlin:5.2.1")
 }
 
-java {
-    withJavadocJar()
-    withSourcesJar()
-}
 
 // Disable this task, because the protobuf plugin generates too many warnings.
 tasks.withType<Javadoc> {
     enabled = false
 }
 
-publishing {
-    repositories {
-        maven {
-            name = "sonatype"
-            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-            credentials {
-                username = System.getenv("MAVEN_USERNAME")
-                password = System.getenv("MAVEN_PASSWORD")
+mavenPublishing {
+    coordinates(
+        groupId = group as String,
+        artifactId = name,
+        version = version as String
+    )
+
+    pom {
+        name = "actor4k"
+        description = "A small actor system written in kotlin using Coroutines (kotlinx.coroutines)."
+        url = "https://github.com/smyrgeorge/actor4k"
+
+        licenses {
+            license {
+                name = "MIT License"
+                url = "https://github.com/smyrgeorge/actor4k/blob/main/LICENSE"
             }
+        }
+
+        developers {
+            developer {
+                id = "smyrgeorge"
+                name = "Yorgos S."
+                email = "smyrgoerge@gmail.com"
+                url = "https://smyrgeorge.github.io/"
+            }
+        }
+
+        scm {
+            url = "https://github.com/smyrgeorge/actor4k"
+            connection = "scm:git:https://github.com/smyrgeorge/actor4k.git"
+            developerConnection = "scm:git:git@github.com:smyrgeorge/actor4k.git"
         }
     }
 
-    publications {
-        val archivesBaseName = tasks.jar.get().archiveBaseName.get()
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            artifactId = archivesBaseName
-            pom {
-                name = "actor4k"
-                packaging = "jar"
-                description = "A small actor system written in kotlin using Coroutines (kotlinx.coroutines)."
-                url = "https://github.com/smyrgeorge/actor4k"
+    // Configure publishing to Maven Central
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-                scm {
-                    url = "https://github.com/smyrgeorge/actor4k"
-                    connection = "scm:git:https://github.com/smyrgeorge/actor4k.git"
-                    developerConnection = "scm:git:git@github.com:smyrgeorge/actor4k.git"
-                }
-
-                licenses {
-                    license {
-                        name = "MIT License"
-                        url = "https://github.com/smyrgeorge/actor4k/blob/main/LICENSE"
-                    }
-                }
-
-                developers {
-                    developer {
-                        name = "Yorgos S."
-                        email = "smyrgoerge@gmail.com"
-                        url = "https://smyrgeorge.github.io/"
-                    }
-                }
-            }
-        }
-    }
-}
-
-signing {
-    val signingKey = System.getenv("MAVEN_SIGNING_KEY")
-    val signingPassword = System.getenv("MAVEN_SIGNING_PASSWORD")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign(publishing.publications)
+    // Enable GPG signing for all publications
+    signAllPublications()
 }
 
 tasks.withType<KotlinCompile> {
