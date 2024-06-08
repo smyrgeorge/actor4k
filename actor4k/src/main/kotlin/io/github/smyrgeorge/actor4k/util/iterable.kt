@@ -16,4 +16,4 @@ fun <T> Iterable<T>.chunked(total: Int, chunks: Int): List<List<T>> =
     chunked(chunkSize(total, chunks))
 
 private fun chunkSize(total: Int, chunks: Int): Int =
-    if (total == 0) 1 else if (chunks > total) total else total / chunks
+    if (chunks > total) chunks else total / chunks

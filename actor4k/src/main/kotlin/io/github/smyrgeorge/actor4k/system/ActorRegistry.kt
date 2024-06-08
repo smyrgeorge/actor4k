@@ -104,7 +104,6 @@ object ActorRegistry {
         }
 
         log.debug { "Actor $ref created." }
-
         return ref
     }
 
@@ -113,13 +112,15 @@ object ActorRegistry {
         val actor = Class.forName(clazz) as? Class<Actor>
             ?: error("Could not find requested actor class='$clazz'.")
 
-        return get(actor, key, shard)
+        val address = Actor.addressOf(actor, key)
+        return local[address]?.ref() ?: get(actor, key, shard)
     }
 
     suspend fun get(ref: Actor.Ref.Local): Actor =
-        get(ref.actor, ref.key).let { local[ref.address]!! }
+        local[ref.address] ?: get(ref.actor, ref.key).let { local[ref.address]!! }
 
-    suspend fun deregister(actor: Actor) = deregister(actor::class.java, actor.key)
+    suspend fun deregister(actor: Actor): Unit =
+        deregister(actor::class.java, actor.key)
 
     suspend fun <A : Actor> deregister(actor: Class<A>, key: String) {
         val address = Actor.addressOf(actor, key)
