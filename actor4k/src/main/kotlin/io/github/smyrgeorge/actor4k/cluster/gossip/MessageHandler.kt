@@ -28,8 +28,8 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
 
     private val log = KotlinLogging.logger {}
 
-    private val rounds = ActorSystem.Conf.initializationRounds
-    private val delayPerRound = ActorSystem.Conf.initializationDelayPerRound
+    private val rounds = ActorSystem.conf.initializationRounds
+    private val delayPerRound = ActorSystem.conf.initializationDelayPerRound
     private var initialGroupMembers = emptyList<Endpoint>()
 
     @Suppress("unused")

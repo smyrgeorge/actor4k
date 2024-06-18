@@ -61,7 +61,7 @@ class MemberManager(private val conf: Cluster.Conf) {
 
     private suspend fun loop() {
         while (true) {
-            delay(ActorSystem.Conf.memberManagerRoundDelay)
+            delay(ActorSystem.conf.memberManagerRoundDelay)
             try {
                 // We make changes every round.
                 val self: RaftNode = ActorSystem.cluster.raft

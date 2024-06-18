@@ -23,7 +23,7 @@ abstract class Actor(open val shard: String, open val key: String) {
     private val stats: Stats = Stats()
     private var status = Status.INITIALISING
     private val address: String by lazy { addressOf(this::class.java, key) }
-    private val mail = Channel<Patterns>(capacity = ActorSystem.Conf.actorQueueSize)
+    private val mail = Channel<Patterns>(capacity = ActorSystem.conf.actorQueueSize)
 
     @OptIn(DelicateCoroutinesApi::class)
     private suspend inline fun <E> ReceiveChannel<E>.consumeEach(action: (E) -> Unit): Unit =

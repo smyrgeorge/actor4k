@@ -18,6 +18,7 @@ object ActorSystem {
 
     private val log = KotlinLogging.logger {}
 
+    var conf = Conf()
     var type: Type = Type.SIMPLE
     var status: Status = Status.READY
     var stats: Stats = Stats.Simple()
@@ -27,14 +28,14 @@ object ActorSystem {
     init {
         launchGlobal {
             while (true) {
-                delay(Conf.clusterCollectStats)
+                delay(conf.clusterCollectStats)
                 stats.collect()
             }
         }
 
         launchGlobal {
             while (true) {
-                delay(Conf.clusterLogStats)
+                delay(conf.clusterLogStats)
                 stats()
             }
         }
@@ -46,23 +47,11 @@ object ActorSystem {
     }
 
     fun register(c: Cluster): ActorSystem {
+        if (isCluster()) error("Cannot register a cluster while it is registered")
         type = Type.CLUSTER
         stats = Stats.Cluster()
         cluster = c
         return this
-    }
-
-    @Suppress("MayBeConstant")
-    object Conf {
-        val actorQueueSize: Int = Channel.UNLIMITED // Will suspend the senders if the mailbox is full.
-        val initializationRounds: Int = 10
-        val initializationDelayPerRound: Duration = 5.seconds
-        val clusterLogStats: Duration = 30.seconds
-        val clusterCollectStats: Duration = 10.seconds
-        val registryCleanup: Duration = 30.seconds
-        val actorExpiration: Duration = 15.minutes
-        val actorRemoteRefExpiration: Duration = 2.minutes
-        val memberManagerRoundDelay: Duration = 2.seconds
     }
 
     enum class Status {
@@ -74,6 +63,18 @@ object ActorSystem {
         SIMPLE,
         CLUSTER
     }
+
+    data class Conf(
+        val actorQueueSize: Int = Channel.UNLIMITED, // Will suspend the senders if the mailbox is full.
+        val initializationRounds: Int = 10,
+        val initializationDelayPerRound: Duration = 5.seconds,
+        val clusterLogStats: Duration = 30.seconds,
+        val clusterCollectStats: Duration = 10.seconds,
+        val registryCleanup: Duration = 30.seconds,
+        val actorExpiration: Duration = 15.minutes,
+        val actorRemoteRefExpiration: Duration = 2.minutes,
+        val memberManagerRoundDelay: Duration = 2.seconds
+    )
 
     @Suppress("unused")
     private val hook = Runtime.getRuntime().addShutdownHook(

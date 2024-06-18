@@ -32,7 +32,7 @@ object ActorRegistry {
     init {
         launchGlobal {
             while (true) {
-                delay(ActorSystem.Conf.registryCleanup)
+                delay(ActorSystem.conf.registryCleanup)
                 stopLocalExpired()
                 removeRemoteExpired()
             }
@@ -142,7 +142,7 @@ object ActorRegistry {
         local.values.chunked(local.size, 4).forEachParallel { l ->
             l.forEach {
                 val df = Instant.now().epochSecond - it.stats().last.epochSecond
-                if (df > ActorSystem.Conf.actorExpiration.inWholeSeconds) {
+                if (df > ActorSystem.conf.actorExpiration.inWholeSeconds) {
                     log.debug { "Closing ${it.address()} (expired)." }
                     it.shutdown()
                 }

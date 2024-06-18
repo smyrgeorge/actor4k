@@ -41,7 +41,7 @@ sealed interface Envelope {
             val key: String,
         ) {
             private val exp = Instant.now()
-                .plusSeconds(ActorSystem.Conf.actorRemoteRefExpiration.inWholeSeconds)
+                .plusSeconds(ActorSystem.conf.actorRemoteRefExpiration.inWholeSeconds)
                 .epochSecond
 
             fun toRef(shard: String): Actor.Ref.Remote = Actor.Ref.Remote(
