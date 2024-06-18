@@ -2,11 +2,9 @@ package io.github.smyrgeorge.actor4k.system
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
-import kotlinx.coroutines.DelicateCoroutinesApi
+import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
@@ -26,16 +24,14 @@ object ActorSystem {
     lateinit var cluster: Cluster
 
     init {
-        @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
+        launchGlobal {
             while (true) {
                 delay(Conf.clusterCollectStats)
                 stats.collect()
             }
         }
 
-        @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
+        launchGlobal {
             while (true) {
                 delay(Conf.clusterLogStats)
                 stats()

@@ -8,11 +8,8 @@ import io.github.smyrgeorge.actor4k.util.callSuspend
 import io.github.smyrgeorge.actor4k.util.chunked
 import io.github.smyrgeorge.actor4k.util.forEachParallel
 import io.github.smyrgeorge.actor4k.util.java.JActorRegistry
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Instant
@@ -33,8 +30,7 @@ object ActorRegistry {
     private val remote: MutableMap<String, Actor.Ref.Remote> = mutableMapOf()
 
     init {
-        @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
+        launchGlobal {
             while (true) {
                 delay(ActorSystem.Conf.registryCleanup)
                 stopLocalExpired()

@@ -6,13 +6,11 @@ import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.java.JRef
+import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import java.time.Instant
 import kotlin.time.Duration
@@ -45,8 +43,7 @@ abstract class Actor(open val shard: String, open val key: String) {
         onActivate()
         status = Status.READY
 
-        @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
+        launchGlobal {
             mail.consumeEach {
                 stats.last = Instant.now()
                 stats.messages += 1

@@ -1,9 +1,17 @@
 package io.github.smyrgeorge.actor4k.util
 
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+
+@OptIn(DelicateCoroutinesApi::class)
+fun launchGlobal(f: suspend () -> Unit): Job =
+    GlobalScope.launch(Dispatchers.IO) { f() }
 
 suspend fun <T> io(f: suspend () -> T): T =
     withContext(Dispatchers.IO) { f() }

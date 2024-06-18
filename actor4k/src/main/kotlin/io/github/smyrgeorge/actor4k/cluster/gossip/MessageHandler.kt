@@ -5,6 +5,7 @@ import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
 import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.github.smyrgeorge.actor4k.util.launchGlobal
 import io.github.smyrgeorge.actor4k.util.retryBlocking
 import io.github.smyrgeorge.actor4k.util.toInstance
 import io.microraft.model.message.RaftMessage
@@ -32,14 +33,13 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
     private var initialGroupMembers = emptyList<Endpoint>()
 
     @Suppress("unused")
-    @OptIn(DelicateCoroutinesApi::class)
-    private val job: Job = GlobalScope.launch(Dispatchers.IO) {
+    private val job: Job = launchGlobal {
         if (conf.nodeManagement == Cluster.Conf.NodeManagement.STATIC) {
             log.info { "Starting cluster in STATIC mode. Any changes to the cluster will not be applied." }
             conf.seedMembers.forEach {
                 ActorSystem.cluster.ring.add(ServerNode(it.alias, it.address.host(), it.address.port()))
             }
-            return@launch
+            return@launchGlobal
         }
 
         for (i in 1..rounds) {
