@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
@@ -53,6 +54,7 @@ object ActorSystem {
 
     @Suppress("MayBeConstant")
     object Conf {
+        val actorQueueSize: Int = Channel.UNLIMITED // Will suspend the senders if the mailbox is full.
         val initializationRounds: Int = 10
         val initializationDelayPerRound: Duration = 5.seconds
         val clusterLogStats: Duration = 30.seconds
