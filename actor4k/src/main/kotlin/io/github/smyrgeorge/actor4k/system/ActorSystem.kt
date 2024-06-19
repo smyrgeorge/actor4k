@@ -20,7 +20,7 @@ object ActorSystem {
 
     var conf = Conf()
     var type: Type = Type.SIMPLE
-    var status: Status = Status.READY
+    var status: Status = Status.NOT_READY
     var stats: Stats = Stats.Simple()
 
     lateinit var cluster: Cluster
@@ -54,7 +54,15 @@ object ActorSystem {
         return this
     }
 
+    fun start(c: Conf = Conf()): ActorSystem {
+        conf = c
+        if (isCluster()) cluster.start()
+        status = Status.READY
+        return this
+    }
+
     enum class Status {
+        NOT_READY,
         READY,
         SHUTTING_DOWN
     }

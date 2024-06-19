@@ -7,6 +7,7 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.microbank.serde.Jackson
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import org.http4k.core.Method
@@ -74,7 +75,7 @@ data class AccountActor(
     }
 }
 
-fun main(args: Array<String>) {
+fun main() {
     val log = KotlinLogging.logger {}
 
     val alias = System.getenv("ACTOR4K_NODE_ID") ?: "bank-1"
@@ -100,10 +101,13 @@ fun main(args: Array<String>) {
 
     log.info { conf }
 
-    Cluster
+    val cluster = Cluster
         .Builder()
         .conf(conf)
         .build()
+
+    ActorSystem
+        .register(cluster)
         .start()
 
     val om: ObjectMapper = Jackson.create()

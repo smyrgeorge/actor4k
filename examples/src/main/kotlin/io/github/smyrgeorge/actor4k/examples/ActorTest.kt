@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
@@ -22,8 +23,11 @@ data class AccountActor(
     }
 }
 
-fun main(args: Array<String>) {
+fun main() {
     runBlocking {
+        // Start the actor system.
+        ActorSystem.start()
+
         val a: Actor.Ref = ActorRegistry.get(AccountActor::class, "ACC0010")
 
         val req = Req(msg = "[tell] Hello World!")

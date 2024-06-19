@@ -131,7 +131,7 @@ class Cluster(
                 .config { it.memberAlias(conf.alias) }
                 .config { it.metadata(Metadata(conf.grpcPort)) }
                 .membership { it.namespace(conf.namespace) }
-                .membership { it.seedMembers(conf.seedMembers.map { it.address }) }
+                .membership { it.seedMembers(conf.seedMembers.map { n -> n.address }) }
                 .transportFactory { TcpTransportFactory() }
                 .handler { MessageHandler(conf) }
 
@@ -149,9 +149,6 @@ class Cluster(
 
             // Built cluster
             val cluster = Cluster(conf, serde, gossip, ring, grpc, grpcService)
-
-            // Register cluster to the ActorSystem.
-            ActorSystem.register(cluster)
 
             return cluster
         }

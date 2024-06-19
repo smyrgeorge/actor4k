@@ -1,8 +1,8 @@
 package io.github.smyrgeorge.actor4k.examples
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.system.ActorRegistry
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -10,8 +10,8 @@ import kotlinx.coroutines.withContext
 
 class ClusterTest
 
-fun main(args: Array<String>) {
-    val log = KotlinLogging.logger {}
+fun main() {
+//    val log = KotlinLogging.logger {}
 
     val alias = System.getenv("ACTOR4K_NODE_ID") ?: "node-1"
     val swimPort = System.getenv("ACTOR4K_NODE_SWIM_PORT")?.toInt() ?: 61100
@@ -29,10 +29,13 @@ fun main(args: Array<String>) {
         .seedMembers(seedMembers)
         .build()
 
-    Cluster
+    val cluster = Cluster
         .Builder()
         .conf(conf)
         .build()
+
+    ActorSystem
+        .register(cluster)
         .start()
 
     runBlocking {

@@ -5,9 +5,11 @@ import io.github.smyrgeorge.actor4k.examples.AccountActor;
 import io.github.smyrgeorge.actor4k.examples.Req;
 import io.github.smyrgeorge.actor4k.examples.Resp;
 import io.github.smyrgeorge.actor4k.system.ActorRegistry;
+import io.github.smyrgeorge.actor4k.system.ActorSystem;
 
 public class JCluster {
     public static void main(String[] args) {
+        ActorSystem.INSTANCE.start(ActorSystem.INSTANCE.getConf());
         Actor.Ref ref = ActorRegistry.INSTANCE.asJava().get(AccountActor.class, "ACC00011").join();
         System.out.println(ref);
         Req req = new Req("[tell] Hello World!");
