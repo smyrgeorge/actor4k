@@ -55,7 +55,7 @@ object ActorRegistry {
 
         // Limit the concurrent access to one at a time.
         // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
-        val ref: Actor.Ref = mutex.withLock {
+        val (ref: Actor.Ref, actorInstance: Class<A>?) = mutex.withLock {
 
             // Calculate the actor address.
             val address: String = Actor.addressOf(actor, key)
@@ -74,11 +74,13 @@ object ActorRegistry {
                 // Case Remote.
                 // Forward the [Envelope.Spawn] message to the correct cluster node.
                 val msg = Envelope.GetActor(shard, actor.name, key)
-                ActorSystem.cluster
+                val ref = ActorSystem.cluster
                     .msg(msg)
                     .getOrThrow<Envelope.GetActor.Ref>()
                     .toRef(shard)
                     .also { remote[address] = it }
+
+                ref to null
             } else {
                 // Case Local.
                 // Spawn the actor.
@@ -86,18 +88,18 @@ object ActorRegistry {
                     .getConstructor(String::class.java, String::class.java)
                     .newInstance(shard, key)
 
-                // Invoke activate (initialization) method.
-                actor.callSuspend("activate", a)
-
                 // Store [Actor.Ref] to the local storage.
                 local[address] = a
 
                 // Declare shard to the [ShardManager]
                 ShardManager.operation(ShardManager.Op.REGISTER, shard)
 
-                a.ref()
+                a.ref() to actor
             }
         }
+
+        // Invoke activate (initialization) method.
+        actorInstance?.callSuspend("activate", actor)
 
         log.debug { "Actor $ref created." }
         return ref
