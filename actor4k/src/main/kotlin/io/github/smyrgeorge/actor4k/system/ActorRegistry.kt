@@ -98,8 +98,8 @@ object ActorRegistry {
             }
         }
 
-        // Invoke activate (initialization) method.
-        actorInstance?.callSuspend("activate", actor)
+        // Invoke onActivate (initialization) method.
+        actorInstance?.callSuspend("onActivate", actor)
 
         log.debug { "Actor $ref created." }
         return ref
