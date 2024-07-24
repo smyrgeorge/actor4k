@@ -55,7 +55,7 @@ object ActorRegistry {
 
         // Limit the concurrent access to one at a time.
         // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
-        val (ref: Actor.Ref, actorInstance: Class<A>?) = mutex.withLock {
+        val (ref: Actor.Ref, actorInstance: Actor?) = mutex.withLock {
 
             // Calculate the actor address.
             val address: String = Actor.addressOf(actor, key)
@@ -94,12 +94,12 @@ object ActorRegistry {
                 // Declare shard to the [ShardManager]
                 ShardManager.operation(ShardManager.Op.REGISTER, shard)
 
-                a.ref() to actor
+                a.ref() to a
             }
         }
 
         // Invoke activate (initialization) method.
-        actorInstance?.callSuspend("activate", actor)
+        actorInstance?.let { actor.callSuspend("activate", it) }
 
         log.debug { "Actor $ref created." }
         return ref
