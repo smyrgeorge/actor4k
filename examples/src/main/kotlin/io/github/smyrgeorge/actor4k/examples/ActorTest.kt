@@ -15,6 +15,11 @@ data class AccountActor(
     override val shard: String,
     override val key: String
 ) : Actor(shard, key) {
+
+    override suspend fun onActivate(m: Message?) {
+        m?.let { log.info { "Initialised with $m" } }
+    }
+
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {
         val msg = m.cast<Req>()
         log.info { "[$name] Received message: $msg" }
@@ -37,10 +42,12 @@ fun main() {
         val r = a.ask<Resp>(req2)
         println(r)
 
-        val a2: Actor.Ref.Local = ActorRegistry.get(AccountActor::class, "ACC0010") as Actor.Ref.Local
+        val a2: Actor.Ref.Local = ActorRegistry.get(AccountActor::class, "ACC0010", req) as Actor.Ref.Local
         println(a2.status())
         a2.stop()
         delay(1000)
+
+        val a3: Actor.Ref.Local = ActorRegistry.get(AccountActor::class, "ACC0030", req) as Actor.Ref.Local
 
         a2.tell(req) // Will re-create the actor.
     }

@@ -35,12 +35,12 @@ abstract class Actor(open val shard: String, open val key: String) {
             }
         }
 
-    open suspend fun onActivate() {}
+    open suspend fun onActivate(m: Message?) {}
     abstract suspend fun onReceive(m: Message, r: Response.Builder): Response
 
     @Suppress("unused")
-    suspend fun activate() {
-        onActivate()
+    suspend fun activate(m: Any?) {
+        onActivate(m?.let { Message(m) })
         status = Status.READY
 
         launchGlobal {
@@ -79,12 +79,12 @@ abstract class Actor(open val shard: String, open val key: String) {
     }
 
     suspend fun <C> tell(msg: C) {
-        if (status != Status.READY) error("$address is in status='$status' and thus is not accepting messages.")
+        if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
         Patterns.Tell(msg as Any).let { mail.send(it) }
     }
 
     suspend fun <C, R> ask(msg: C, timeout: Duration = 30.seconds): R {
-        if (status != Status.READY) error("$address is in status='$status' and thus is not accepting messages.")
+        if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
         return withTimeout(timeout) {
             Patterns.Ask(msg as Any).let {
                 mail.send(it)
@@ -112,11 +112,13 @@ abstract class Actor(open val shard: String, open val key: String) {
         data class Ask(override val msg: Any, val replyTo: Channel<Any> = Channel(Channel.RENDEZVOUS)) : Patterns
     }
 
-    enum class Status {
-        INITIALISING,
-        READY,
-        FINISHING,
-        FINISHED
+    enum class Status(
+        val canAcceptMessages: Boolean
+    ) {
+        INITIALISING(true),
+        READY(true),
+        FINISHING(false),
+        FINISHED(false)
     }
 
     sealed class Ref(

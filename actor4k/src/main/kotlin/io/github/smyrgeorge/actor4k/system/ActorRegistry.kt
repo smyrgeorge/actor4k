@@ -42,13 +42,21 @@ object ActorRegistry {
     suspend fun <A : Actor> get(
         actor: KClass<A>,
         key: String,
-        shard: String = key
-    ): Actor.Ref = get(actor.java, key, shard)
+        message: Any? = null // The first message will be passed to the actor onActivate method.
+    ): Actor.Ref = get(actor.java, key, key, message)
+
+    suspend fun <A : Actor> get(
+        actor: KClass<A>,
+        key: String,
+        shard: String = key,
+        message: Any? = null // The first message will be passed to the actor onActivate method.
+    ): Actor.Ref = get(actor.java, key, shard, message)
 
     suspend fun <A : Actor> get(
         actor: Class<A>,
         key: String,
-        shard: String = key
+        shard: String = key,
+        message: Any? = null // The first message will be passed to the actor onActivate method.
     ): Actor.Ref {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
@@ -98,8 +106,13 @@ object ActorRegistry {
             }
         }
 
-        // Invoke activate (initialization) method.
-        actorInstance?.let { actor.callSuspend("activate", it) }
+        try {
+            // Invoke activate (initialization) method.
+            actorInstance?.callSuspend("activate", message)
+        } catch (e: Exception) {
+            deregister(actor = actor, key = key, force = true)
+            throw e
+        }
 
         log.debug { "Actor $ref created." }
         return ref
@@ -120,11 +133,11 @@ object ActorRegistry {
     suspend fun deregister(actor: Actor): Unit =
         deregister(actor::class.java, actor.key)
 
-    suspend fun <A : Actor> deregister(actor: Class<A>, key: String) {
+    suspend fun <A : Actor> deregister(actor: Class<A>, key: String, force: Boolean = false) {
         val address = Actor.addressOf(actor, key)
         mutex.withLock {
             local[address]?.let {
-                if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
+                if (!force && it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
                 local.remove(address)
                 ShardManager.operation(ShardManager.Op.UNREGISTER, it.shard)
                 log.debug { "Unregistered actor $address." }
