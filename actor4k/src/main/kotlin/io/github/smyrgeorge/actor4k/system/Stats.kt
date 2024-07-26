@@ -13,6 +13,9 @@ abstract class Stats {
         override fun collect() {
             actors = ActorRegistry.count()
         }
+
+        override fun toString(): String =
+            "[SIMPLE: actors=$actors]"
     }
 
     data class Cluster(
@@ -26,5 +29,8 @@ abstract class Stats {
             nodes = ActorSystem.cluster.ring.size()
             shards = ShardManager.count()
         }
+
+        override fun toString(): String =
+            "[CLUSTER: actors=$actors, nodes=$nodes, shards=$shards]"
     }
 }

@@ -12,6 +12,7 @@ import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.lang.reflect.InvocationTargetException
 import java.time.Instant
 import kotlin.reflect.KClass
 
@@ -53,13 +54,12 @@ object ActorRegistry {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
 
+        // Calculate the actor address.
+        val address: String = Actor.addressOf(actor, key)
+
         // Limit the concurrent access to one at a time.
         // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
         val (ref: Actor.Ref, actorInstance: Actor?) = mutex.withLock {
-
-            // Calculate the actor address.
-            val address: String = Actor.addressOf(actor, key)
-
             // Check if the actor already exists in the local storage.
             local[address]?.let { return it.ref() }
 
@@ -99,7 +99,19 @@ object ActorRegistry {
         }
 
         // Invoke activate (initialization) method.
-        actorInstance?.let { actor.callSuspend("activate", it) }
+        actorInstance?.let {
+            try {
+                actor.callSuspend(it, "activate")
+            } catch (e: InvocationTargetException) {
+                log.error { "Could not activate ${it.address()}. Reason: ${e.targetException.message}" }
+                deregister(actor = actor, key = key, force = true)
+                throw e
+            } catch (e: Exception) {
+                log.error { "Could not activate ${it.address()}." }
+                deregister(actor = actor, key = key, force = true)
+                throw e
+            }
+        }
 
         log.debug { "Actor $ref created." }
         return ref
@@ -120,11 +132,11 @@ object ActorRegistry {
     suspend fun deregister(actor: Actor): Unit =
         deregister(actor::class.java, actor.key)
 
-    suspend fun <A : Actor> deregister(actor: Class<A>, key: String) {
+    suspend fun <A : Actor> deregister(actor: Class<A>, key: String, force: Boolean = false) {
         val address = Actor.addressOf(actor, key)
         mutex.withLock {
             local[address]?.let {
-                if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
+                if (!force && it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
                 local.remove(address)
                 ShardManager.operation(ShardManager.Op.UNREGISTER, it.shard)
                 log.debug { "Unregistered actor $address." }

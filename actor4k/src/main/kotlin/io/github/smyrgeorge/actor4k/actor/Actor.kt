@@ -18,22 +18,13 @@ import kotlin.time.Duration.Companion.seconds
 
 abstract class Actor(open val shard: String, open val key: String) {
     protected val log = KotlinLogging.logger {}
-    protected val name: String = nameOf(this::class.java)
+
+    private var status = Status.INITIALISING
+    private val name: String = nameOf(this::class.java)
+    private val address: String by lazy { addressOf(this::class.java, key) }
 
     private val stats: Stats = Stats()
-    private var status = Status.INITIALISING
-    private val address: String by lazy { addressOf(this::class.java, key) }
-    private val mail = Channel<Patterns>(capacity = ActorSystem.conf.actorQueueSize)
-
-    @OptIn(DelicateCoroutinesApi::class)
-    private suspend inline fun <E> ReceiveChannel<E>.consumeEach(action: (E) -> Unit): Unit =
-        consume {
-            for (e in this) action(e)
-            if (isClosedForReceive) {
-                status = Status.FINISHED
-                ActorRegistry.deregister(this@Actor)
-            }
-        }
+    private lateinit var mail: Channel<Patterns>
 
     open suspend fun onActivate() {}
     abstract suspend fun onReceive(m: Message, r: Response.Builder): Response
@@ -41,6 +32,11 @@ abstract class Actor(open val shard: String, open val key: String) {
     @Suppress("unused")
     suspend fun activate() {
         onActivate()
+
+        // If activate success, initialise the receive channel.
+        mail = Channel(capacity = ActorSystem.conf.actorQueueSize)
+
+        // Set 'READY' status.
         status = Status.READY
 
         launchGlobal {
@@ -79,12 +75,12 @@ abstract class Actor(open val shard: String, open val key: String) {
     }
 
     suspend fun <C> tell(msg: C) {
-        if (status != Status.READY) error("$address is in status='$status' and thus is not accepting messages.")
+        if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
         Patterns.Tell(msg as Any).let { mail.send(it) }
     }
 
     suspend fun <C, R> ask(msg: C, timeout: Duration = 30.seconds): R {
-        if (status != Status.READY) error("$address is in status='$status' and thus is not accepting messages.")
+        if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
         return withTimeout(timeout) {
             Patterns.Ask(msg as Any).let {
                 mail.send(it)
@@ -95,6 +91,7 @@ abstract class Actor(open val shard: String, open val key: String) {
     }
 
     fun status(): Status = status
+    fun name(): String = name
     fun stats(): Stats = stats
     fun address(): String = address
 
@@ -112,11 +109,13 @@ abstract class Actor(open val shard: String, open val key: String) {
         data class Ask(override val msg: Any, val replyTo: Channel<Any> = Channel(Channel.RENDEZVOUS)) : Patterns
     }
 
-    enum class Status {
-        INITIALISING,
-        READY,
-        FINISHING,
-        FINISHED
+    enum class Status(
+        val canAcceptMessages: Boolean
+    ) {
+        INITIALISING(true),
+        READY(true),
+        FINISHING(false),
+        FINISHED(false)
     }
 
     sealed class Ref(
@@ -179,6 +178,16 @@ abstract class Actor(open val shard: String, open val key: String) {
         var last: Instant = Instant.now(),
         var messages: Long = 0
     )
+
+    @OptIn(DelicateCoroutinesApi::class)
+    private suspend inline fun <E> ReceiveChannel<E>.consumeEach(action: (E) -> Unit): Unit =
+        consume {
+            for (e in this) action(e)
+            if (isClosedForReceive) {
+                status = Status.FINISHED
+                ActorRegistry.deregister(this@Actor)
+            }
+        }
 
     companion object {
         private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"

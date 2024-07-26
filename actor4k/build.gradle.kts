@@ -8,7 +8,7 @@ plugins {
     // https://plugins.gradle.org/plugin/com.google.protobuf
     id("com.google.protobuf") version "0.9.4"
     // https://github.com/vanniktech/gradle-maven-publish-plugin
-    id("com.vanniktech.maven.publish") version "0.28.0"
+    id("com.vanniktech.maven.publish") version "0.29.0"
 }
 
 group = rootProject.group
@@ -34,10 +34,10 @@ dependencies {
 
     // Logging
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    api("org.slf4j:slf4j-api:2.0.10")
-    api("org.slf4j:slf4j-reload4j:2.0.10")
+    api("org.slf4j:slf4j-api:2.0.13")
+    api("org.slf4j:slf4j-reload4j:2.0.13")
     // https://github.com/oshai/kotlin-logging
-    api("io.github.oshai:kotlin-logging-jvm:6.0.9")
+    api("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
     // Arrow
     // https://github.com/arrow-kt/arrow
@@ -57,6 +57,7 @@ dependencies {
     api("io.grpc:grpc-protobuf:$grpcVersion")
     api("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
     api("com.google.protobuf:protobuf-kotlin:$protobufVersion")
+    // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-protobuf
     // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf/kotlinx.serialization.protobuf/
     api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")
 
@@ -65,7 +66,7 @@ dependencies {
 
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
-    testApi("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testApi("org.mockito.kotlin:mockito-kotlin:5.4.0")
 }
 
 

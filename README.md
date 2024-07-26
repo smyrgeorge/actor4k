@@ -167,6 +167,7 @@ A lot of things need to be done, so sit tight…
     - [ ] Deploy `microbank` to a kubernetes cluster.
     - [ ] Load test with gatling (in progress)
 - [ ] Testing
+- [ ] Native Kotlin support (in progress)
 - [ ] Metrics/Stats (in progress)
 - [ ] Documentation
 - [ ] Persistence
