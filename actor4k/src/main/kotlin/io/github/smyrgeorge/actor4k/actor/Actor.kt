@@ -18,29 +18,25 @@ import kotlin.time.Duration.Companion.seconds
 
 abstract class Actor(open val shard: String, open val key: String) {
     protected val log = KotlinLogging.logger {}
-    protected val name: String = nameOf(this::class.java)
+
+    private var status = Status.INITIALISING
+    private val name: String = nameOf(this::class.java)
+    private val address: String by lazy { addressOf(this::class.java, key) }
 
     private val stats: Stats = Stats()
-    private var status = Status.INITIALISING
-    private val address: String by lazy { addressOf(this::class.java, key) }
-    private val mail = Channel<Patterns>(capacity = ActorSystem.conf.actorQueueSize)
+    private lateinit var mail: Channel<Patterns>
 
-    @OptIn(DelicateCoroutinesApi::class)
-    private suspend inline fun <E> ReceiveChannel<E>.consumeEach(action: (E) -> Unit): Unit =
-        consume {
-            for (e in this) action(e)
-            if (isClosedForReceive) {
-                status = Status.FINISHED
-                ActorRegistry.deregister(this@Actor)
-            }
-        }
-
-    open suspend fun onActivate(m: Message?) {}
+    open suspend fun onActivate() {}
     abstract suspend fun onReceive(m: Message, r: Response.Builder): Response
 
     @Suppress("unused")
-    suspend fun activate(m: Any?) {
-        onActivate(m?.let { Message(m) })
+    suspend fun activate() {
+        onActivate()
+
+        // If activate success, initialise the receive channel.
+        mail = Channel(capacity = ActorSystem.conf.actorQueueSize)
+
+        // Set 'READY' status.
         status = Status.READY
 
         launchGlobal {
@@ -95,6 +91,7 @@ abstract class Actor(open val shard: String, open val key: String) {
     }
 
     fun status(): Status = status
+    fun name(): String = name
     fun stats(): Stats = stats
     fun address(): String = address
 
@@ -181,6 +178,16 @@ abstract class Actor(open val shard: String, open val key: String) {
         var last: Instant = Instant.now(),
         var messages: Long = 0
     )
+
+    @OptIn(DelicateCoroutinesApi::class)
+    private suspend inline fun <E> ReceiveChannel<E>.consumeEach(action: (E) -> Unit): Unit =
+        consume {
+            for (e in this) action(e)
+            if (isClosedForReceive) {
+                status = Status.FINISHED
+                ActorRegistry.deregister(this@Actor)
+            }
+        }
 
     companion object {
         private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"

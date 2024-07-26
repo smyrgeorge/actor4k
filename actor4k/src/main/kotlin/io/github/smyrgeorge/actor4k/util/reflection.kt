@@ -1,7 +1,11 @@
 package io.github.smyrgeorge.actor4k.util
 
+import kotlin.reflect.KClass
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.memberFunctions
 
-suspend fun Any.callSuspend(method: String, vararg args: Any?): Any? =
-    this::class.memberFunctions.first { it.name == method }.callSuspend(this, *args)
+suspend fun Class<*>.callSuspend(obj: Any, method: String, vararg args: Any?): Any? =
+    this.kotlin.callSuspend(obj, method, *args)
+
+suspend fun KClass<*>.callSuspend(obj: Any, method: String, vararg args: Any?): Any? =
+    this.memberFunctions.first { it.name == method }.callSuspend(obj, *args)

@@ -12,6 +12,7 @@ import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.lang.reflect.InvocationTargetException
 import java.time.Instant
 import kotlin.reflect.KClass
 
@@ -42,32 +43,23 @@ object ActorRegistry {
     suspend fun <A : Actor> get(
         actor: KClass<A>,
         key: String,
-        message: Any? = null // The first message will be passed to the actor onActivate method.
-    ): Actor.Ref = get(actor.java, key, key, message)
-
-    suspend fun <A : Actor> get(
-        actor: KClass<A>,
-        key: String,
-        shard: String = key,
-        message: Any? = null // The first message will be passed to the actor onActivate method.
-    ): Actor.Ref = get(actor.java, key, shard, message)
+        shard: String = key
+    ): Actor.Ref = get(actor.java, key, shard)
 
     suspend fun <A : Actor> get(
         actor: Class<A>,
         key: String,
-        shard: String = key,
-        message: Any? = null // The first message will be passed to the actor onActivate method.
+        shard: String = key
     ): Actor.Ref {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
 
+        // Calculate the actor address.
+        val address: String = Actor.addressOf(actor, key)
+
         // Limit the concurrent access to one at a time.
         // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
         val (ref: Actor.Ref, actorInstance: Actor?) = mutex.withLock {
-
-            // Calculate the actor address.
-            val address: String = Actor.addressOf(actor, key)
-
             // Check if the actor already exists in the local storage.
             local[address]?.let { return it.ref() }
 
@@ -106,12 +98,19 @@ object ActorRegistry {
             }
         }
 
-        try {
-            // Invoke activate (initialization) method.
-            actorInstance?.callSuspend("activate", message)
-        } catch (e: Exception) {
-            deregister(actor = actor, key = key, force = true)
-            throw e
+        // Invoke activate (initialization) method.
+        actorInstance?.let {
+            try {
+                actor.callSuspend(it, "activate")
+            } catch (e: InvocationTargetException) {
+                log.error { "Could not activate ${it.address()}. Reason: ${e.targetException.message}" }
+                deregister(actor = actor, key = key, force = true)
+                throw e
+            } catch (e: Exception) {
+                log.error { "Could not activate ${it.address()}." }
+                deregister(actor = actor, key = key, force = true)
+                throw e
+            }
         }
 
         log.debug { "Actor $ref created." }

@@ -31,12 +31,12 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    implementation("com.fasterxml.jackson.core:jackson-core:2.16.0")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.17.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
 
     // https://github.com/http4k/http4k
-    implementation(platform("org.http4k:http4k-bom:5.12.0.0"))
+    implementation(platform("org.http4k:http4k-bom:5.26.0.0"))
     implementation("org.http4k:http4k-core")
     implementation("org.http4k:http4k-server-netty")
 }
