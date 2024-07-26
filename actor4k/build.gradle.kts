@@ -34,8 +34,8 @@ dependencies {
 
     // Logging
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    api("org.slf4j:slf4j-api:2.0.13")
-    api("org.slf4j:slf4j-reload4j:2.0.13")
+    implementation("org.slf4j:slf4j-api:2.0.13")
+    implementation("org.slf4j:slf4j-reload4j:2.0.13")
     // https://github.com/oshai/kotlin-logging
     api("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
@@ -45,11 +45,11 @@ dependencies {
     api("io.arrow-kt:arrow-fx-coroutines:1.2.4")
 
     // https://central.sonatype.com/artifact/io.scalecube/scalecube-cluster
-    api("io.scalecube:scalecube-cluster:2.6.17")
-    api("io.scalecube:scalecube-transport-netty:2.6.17")
+    implementation("io.scalecube:scalecube-cluster:2.6.17")
+    implementation("io.scalecube:scalecube-transport-netty:2.6.17")
 
     // https://mvnrepository.com/artifact/com.github.ishugaliy/allgood-consistent-hash
-    api("com.github.ishugaliy:allgood-consistent-hash:1.0.0")
+    implementation("com.github.ishugaliy:allgood-consistent-hash:1.0.0")
 
     // Protobuf
     api("io.grpc:grpc-api:$grpcVersion")
@@ -62,11 +62,11 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")
 
     // https://github.com/MicroRaft/MicroRaft
-    api("io.microraft:microraft:0.7")
+    implementation("io.microraft:microraft:0.7")
 
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
-    testApi("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
 }
 
 

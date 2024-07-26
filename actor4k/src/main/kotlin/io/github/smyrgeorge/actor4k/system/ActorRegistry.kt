@@ -52,7 +52,7 @@ object ActorRegistry {
         shard: String = key
     ): Actor.Ref {
         if (ActorSystem.status != ActorSystem.Status.READY)
-            error("Cannot get/create actor because cluster is ${ActorSystem.status}.")
+            error("Cannot get/create actor, cluster is ${ActorSystem.status}.")
 
         // Calculate the actor address.
         val address: String = Actor.addressOf(actor, key)
@@ -157,7 +157,7 @@ object ActorRegistry {
             l.forEach {
                 val df = Instant.now().epochSecond - it.stats().last.epochSecond
                 if (df > ActorSystem.conf.actorExpiration.inWholeSeconds) {
-                    log.debug { "Closing ${it.address()} (expired)." }
+                    log.debug { "Closing ${it.address()}, ${it.stats()} (expired)." }
                     it.shutdown()
                 }
             }

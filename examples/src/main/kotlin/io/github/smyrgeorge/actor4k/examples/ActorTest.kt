@@ -20,6 +20,10 @@ data class AccountActor(
         log.info { "[${address()}] activated" }
     }
 
+    override suspend fun onFirstMessage(m: Message) {
+        log.info { "[${address()}] first message: $m" }
+    }
+
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {
         val msg = m.cast<Req>()
         log.info { "[${address()}] Received message: $msg" }

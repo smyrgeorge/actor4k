@@ -26,7 +26,23 @@ abstract class Actor(open val shard: String, open val key: String) {
     private val stats: Stats = Stats()
     private lateinit var mail: Channel<Patterns>
 
+    /**
+     * Is called by the [ActorRegistry].
+     * Is called before the [Actor] begins to consume [Message]s.
+     * In case of an error the [ActorRegistry] will deregister the newly created [Actor].
+     * You can use this hook to early initialise the [Actor]'s state.
+     */
     open suspend fun onActivate() {}
+
+    /**
+     * Only is called before the [onReceive] method, only for the first message.
+     * You can use this method to lazy initialise the [Actor].
+     */
+    open suspend fun onFirstMessage(m: Message) {}
+
+    /**
+     * Handle the incoming [Message]s.
+     */
     abstract suspend fun onReceive(m: Message, r: Response.Builder): Response
 
     @Suppress("unused")
@@ -39,11 +55,14 @@ abstract class Actor(open val shard: String, open val key: String) {
         // Set 'READY' status.
         status = Status.READY
 
+        // Start the mail consumer.
         launchGlobal {
             mail.consumeEach {
                 stats.last = Instant.now()
                 stats.messages += 1
-                val msg = Message(it.msg)
+                val msg = Message(stats.messages, it.msg).also { msg ->
+                    if (msg.isFirst()) onFirstMessage(msg)
+                }
                 val reply = onReceive(msg, Response.Builder())
                 when (it) {
                     is Patterns.Tell -> Unit
@@ -54,10 +73,13 @@ abstract class Actor(open val shard: String, open val key: String) {
     }
 
     data class Message(
+        val id: Long,
         private val value: Any
     ) {
         @Suppress("UNCHECKED_CAST")
         fun <T> cast(): T = value as? T ?: error("Could not cast to the requested type.")
+
+        fun isFirst(): Boolean = id == 1L
     }
 
     data class Response(

@@ -11,7 +11,6 @@ import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
 import io.github.smyrgeorge.actor4k.cluster.raft.MemberManager
 import io.github.smyrgeorge.actor4k.cluster.raft.StateMachine
 import io.github.smyrgeorge.actor4k.cluster.raft.Transport
-import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.grpc.netty.NettyServerBuilder
 import io.microraft.RaftConfig
 import io.microraft.RaftNode

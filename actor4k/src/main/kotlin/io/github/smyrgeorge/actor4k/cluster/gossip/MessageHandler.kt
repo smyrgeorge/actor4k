@@ -11,12 +11,8 @@ import io.github.smyrgeorge.actor4k.util.toInstance
 import io.microraft.model.message.RaftMessage
 import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.runBlocking
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
