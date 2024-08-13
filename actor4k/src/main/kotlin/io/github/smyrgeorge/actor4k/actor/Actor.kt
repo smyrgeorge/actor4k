@@ -21,6 +21,7 @@ abstract class Actor(open val shard: String, open val key: String) {
     protected val log = KotlinLogging.logger {}
 
     private var status = Status.INITIALISING
+    private var initializedAt: Instant? = null
     private val name: String = nameOf(this::class.java)
     private val address: String by lazy { addressOf(this::class.java, key) }
 
@@ -59,6 +60,10 @@ abstract class Actor(open val shard: String, open val key: String) {
         // Start the mail consumer.
         launchGlobal {
             mail.consumeEach {
+                // If we get a shutdown event and the actor never initialized successfully,
+                // we need to drop all the messages.
+                if (initializedAt == null && status.willSoonFinish) return@consumeEach
+
                 stats.last = Instant.now()
                 stats.messages += 1
 
@@ -66,15 +71,18 @@ abstract class Actor(open val shard: String, open val key: String) {
                     if (msg.isFirst()) {
                         try {
                             onActivate(msg)
+                            initializedAt = Instant.now()
                         } catch (e: ClosedSendChannelException) {
                             log.warn { "[activate] Did not manage to reply in time (although the message was processed). $it" }
                         } catch (e: Exception) {
-                            log.error { "[activate] An error occurred while processing $it" }
+                            log.error { "[$address] Failed to activate, will shutdown (${e.message ?: ""})" }
+                            shutdown()
+                            return@consumeEach
                         }
                     }
                 }
 
-                val reply = onReceive(msg, Response.Builder())
+                val reply: Response = onReceive(msg, Response.Builder())
                 when (it) {
                     is Patterns.Tell -> Unit
                     is Patterns.Ask -> {
@@ -142,9 +150,9 @@ abstract class Actor(open val shard: String, open val key: String) {
     fun stats(): Stats = stats
     fun address(): String = address
 
-    fun shutdown(cause: Throwable? = null) {
+    fun shutdown() {
         status = Status.FINISHING
-        mail.close(cause)
+        mail.close()
     }
 
     fun ref(): Ref.Local = Ref.Local(shard, name, key, this::class.java)
@@ -157,12 +165,13 @@ abstract class Actor(open val shard: String, open val key: String) {
     }
 
     enum class Status(
-        val canAcceptMessages: Boolean
+        val canAcceptMessages: Boolean,
+        val willSoonFinish: Boolean
     ) {
-        INITIALISING(true),
-        READY(true),
-        FINISHING(false),
-        FINISHED(false)
+        INITIALISING(true, false),
+        READY(true, false),
+        FINISHING(false, true),
+        FINISHED(false, true)
     }
 
     sealed class Ref(
@@ -196,7 +205,7 @@ abstract class Actor(open val shard: String, open val key: String) {
             }
 
             suspend fun status(): Status = ActorRegistry.get(this).status
-            suspend fun stop(cause: Throwable? = null) = ActorRegistry.get(this).shutdown(cause)
+            suspend fun stop() = ActorRegistry.get(this).shutdown()
         }
 
         data class Remote(
