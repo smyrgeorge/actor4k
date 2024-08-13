@@ -62,7 +62,14 @@ abstract class Actor(open val shard: String, open val key: String) {
             mail.consumeEach {
                 // If we get a shutdown event and the actor never initialized successfully,
                 // we need to drop all the messages.
-                if (initializedAt == null && status.willSoonFinish) return@consumeEach
+                if (initializedAt == null && status.willSoonFinish) {
+                    if (it is Patterns.Ask) {
+                        val e = IllegalStateException("Actor is closed prematurely (never initialized).")
+                        val r: Result<Any> = Result.failure(e)
+                        it.replyTo.send(r)
+                    }
+                    return@consumeEach
+                }
 
                 stats.last = Instant.now()
                 stats.messages += 1
@@ -72,22 +79,31 @@ abstract class Actor(open val shard: String, open val key: String) {
                         try {
                             onActivate(msg)
                             initializedAt = Instant.now()
-                        } catch (e: ClosedSendChannelException) {
-                            log.warn { "[activate] Did not manage to reply in time (although the message was processed). $it" }
                         } catch (e: Exception) {
                             log.error { "[$address] Failed to activate, will shutdown (${e.message ?: ""})" }
+                            if (it is Patterns.Ask) {
+                                try {
+                                    val r: Result<Any> = Result.failure(e)
+                                    it.replyTo.send(r)
+                                } catch (e: Exception) {
+                                    log.debug { "Could not send reply to the client." }
+                                }
+                            }
                             shutdown()
                             return@consumeEach
                         }
                     }
                 }
 
-                val reply: Response = onReceive(msg, Response.Builder())
+                val reply: Result<Response> = runCatching { onReceive(msg, Response.Builder()) }
                 when (it) {
                     is Patterns.Tell -> Unit
                     is Patterns.Ask -> {
                         try {
-                            it.replyTo.send(reply.value)
+                            val r: Result<Any> =
+                                if (reply.isSuccess) Result.success(reply.getOrThrow().value)
+                                else Result.failure(reply.exceptionOrNull()!!)
+                            it.replyTo.send(r)
                         } catch (e: ClosedSendChannelException) {
                             log.warn { "[consume] Did not manage to reply in time (although the message was processed). $it" }
                         } catch (e: Exception) {
@@ -137,8 +153,9 @@ abstract class Actor(open val shard: String, open val key: String) {
         return try {
             withTimeout(timeout) {
                 mail.send(ask)
+                val reply = ask.replyTo.receive().getOrThrow()
                 @Suppress("UNCHECKED_CAST")
-                ask.replyTo.receive() as? R ?: error("Could not cast to the requested type.")
+                reply as? R ?: error("Could not cast to the requested type.")
             }
         } finally {
             ask.replyTo.close()
@@ -160,8 +177,14 @@ abstract class Actor(open val shard: String, open val key: String) {
     private sealed interface Patterns {
         val msg: Any
 
-        data class Tell(override val msg: Any) : Patterns
-        data class Ask(override val msg: Any, val replyTo: Channel<Any> = Channel(Channel.RENDEZVOUS)) : Patterns
+        data class Tell(
+            override val msg: Any
+        ) : Patterns
+
+        data class Ask(
+            override val msg: Any,
+            val replyTo: Channel<Result<Any>> = Channel(Channel.RENDEZVOUS)
+        ) : Patterns
     }
 
     enum class Status(
