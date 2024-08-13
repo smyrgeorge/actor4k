@@ -22,6 +22,10 @@ val grpcVersion: String by rootProject.extra
 dependencies {
     // Internal dependencies.
     implementation(project(":actor4k"))
+
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation("org.slf4j:slf4j-api:2.0.13")
+    implementation("org.slf4j:slf4j-reload4j:2.0.13")
 }
 
 tasks.withType<KotlinCompile> {

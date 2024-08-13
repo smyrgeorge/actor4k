@@ -9,6 +9,7 @@ import io.github.smyrgeorge.actor4k.util.java.JRef
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.withTimeout
@@ -32,13 +33,13 @@ abstract class Actor(open val shard: String, open val key: String) {
      * In case of an error the [ActorRegistry] will deregister the newly created [Actor].
      * You can use this hook to early initialise the [Actor]'s state.
      */
-    open suspend fun onActivate() {}
+    open suspend fun onBeforeActivate() {}
 
     /**
      * Only is called before the [onReceive] method, only for the first message.
      * You can use this method to lazy initialise the [Actor].
      */
-    open suspend fun onFirstMessage(m: Message) {}
+    open suspend fun onActivate(m: Message) {}
 
     /**
      * Handle the incoming [Message]s.
@@ -47,7 +48,7 @@ abstract class Actor(open val shard: String, open val key: String) {
 
     @Suppress("unused")
     suspend fun activate() {
-        onActivate()
+        onBeforeActivate()
 
         // If activate success, initialise the receive channel.
         mail = Channel(capacity = ActorSystem.conf.actorQueueSize)
@@ -60,13 +61,31 @@ abstract class Actor(open val shard: String, open val key: String) {
             mail.consumeEach {
                 stats.last = Instant.now()
                 stats.messages += 1
+
                 val msg = Message(stats.messages, it.msg).also { msg ->
-                    if (msg.isFirst()) onFirstMessage(msg)
+                    if (msg.isFirst()) {
+                        try {
+                            onActivate(msg)
+                        } catch (e: ClosedSendChannelException) {
+                            log.warn { "[activate] Did not manage to reply in time (although the message was processed). $it" }
+                        } catch (e: Exception) {
+                            log.error { "[activate] An error occurred while processing $it" }
+                        }
+                    }
                 }
+
                 val reply = onReceive(msg, Response.Builder())
                 when (it) {
                     is Patterns.Tell -> Unit
-                    is Patterns.Ask -> it.replyTo.send(reply.value)
+                    is Patterns.Ask -> {
+                        try {
+                            it.replyTo.send(reply.value)
+                        } catch (e: ClosedSendChannelException) {
+                            log.warn { "[consume] Did not manage to reply in time (although the message was processed). $it" }
+                        } catch (e: Exception) {
+                            log.error { "[consume] An error occurred while processing $it" }
+                        }
+                    }
                 }
             }
         }
@@ -98,17 +117,23 @@ abstract class Actor(open val shard: String, open val key: String) {
 
     suspend fun <C> tell(msg: C) {
         if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
-        Patterns.Tell(msg as Any).let { mail.send(it) }
+
+        val tell = Patterns.Tell(msg as Any)
+        mail.send(tell)
     }
 
     suspend fun <C, R> ask(msg: C, timeout: Duration = 30.seconds): R {
         if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
-        return withTimeout(timeout) {
-            Patterns.Ask(msg as Any).let {
-                mail.send(it)
+
+        val ask = Patterns.Ask(msg as Any)
+        return try {
+            withTimeout(timeout) {
+                mail.send(ask)
                 @Suppress("UNCHECKED_CAST")
-                it.replyTo.receive() as? R ?: error("Could not cast to the requested type.")
+                ask.replyTo.receive() as? R ?: error("Could not cast to the requested type.")
             }
+        } finally {
+            ask.replyTo.close()
         }
     }
 

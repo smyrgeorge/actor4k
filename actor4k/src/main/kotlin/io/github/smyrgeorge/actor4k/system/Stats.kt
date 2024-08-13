@@ -15,7 +15,7 @@ abstract class Stats {
         }
 
         override fun toString(): String =
-            "[SIMPLE: actors=$actors]"
+            "[actors=$actors]"
     }
 
     data class Cluster(
@@ -31,6 +31,6 @@ abstract class Stats {
         }
 
         override fun toString(): String =
-            "[CLUSTER: actors=$actors, nodes=$nodes, shards=$shards]"
+            "[actors=$actors, nodes=$nodes, shards=$shards]"
     }
 }

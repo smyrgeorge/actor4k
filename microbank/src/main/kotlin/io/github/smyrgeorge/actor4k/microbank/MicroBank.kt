@@ -56,7 +56,7 @@ data class AccountActor(
 
     private val account = Account(key, Int.MIN_VALUE)
 
-    override suspend fun onActivate() {
+    override suspend fun onBeforeActivate() {
         // Initialize the account balance here.
         // E.g. fetch the data from the DB.
         // In this case we will assume that the balance is equal to '0'.

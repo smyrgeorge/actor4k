@@ -33,9 +33,6 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.8.1")
 
     // Logging
-    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    implementation("org.slf4j:slf4j-api:2.0.13")
-    implementation("org.slf4j:slf4j-reload4j:2.0.13")
     // https://github.com/oshai/kotlin-logging
     api("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
@@ -52,11 +49,11 @@ dependencies {
     implementation("com.github.ishugaliy:allgood-consistent-hash:1.0.0")
 
     // Protobuf
-    api("io.grpc:grpc-api:$grpcVersion")
-    api("io.grpc:grpc-netty:$grpcVersion")
-    api("io.grpc:grpc-protobuf:$grpcVersion")
-    api("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
-    api("com.google.protobuf:protobuf-kotlin:$protobufVersion")
+    implementation("io.grpc:grpc-api:$grpcVersion")
+    implementation("io.grpc:grpc-netty:$grpcVersion")
+    implementation("io.grpc:grpc-protobuf:$grpcVersion")
+    implementation("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
+    implementation("com.google.protobuf:protobuf-kotlin:$protobufVersion")
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-protobuf
     // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf/kotlinx.serialization.protobuf/
     api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")

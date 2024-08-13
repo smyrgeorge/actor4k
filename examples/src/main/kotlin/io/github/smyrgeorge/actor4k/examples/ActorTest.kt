@@ -16,12 +16,12 @@ data class AccountActor(
     override val key: String
 ) : Actor(shard, key) {
 
-    override suspend fun onActivate() {
-        log.info { "[${address()}] activated" }
+    override suspend fun onBeforeActivate() {
+        log.info { "[${address()}] before-activate" }
     }
 
-    override suspend fun onFirstMessage(m: Message) {
-        log.info { "[${address()}] first message: $m" }
+    override suspend fun onActivate(m: Message) {
+        log.info { "[${address()}] activate ($m)" }
     }
 
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {
