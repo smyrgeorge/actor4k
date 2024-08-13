@@ -106,8 +106,7 @@ object ActorSystem {
             // Wait for all actors to finish.
             while (ActorRegistry.count() > 0) {
                 log.info { "Waiting ${ActorRegistry.count()} actors to finish." }
-                // TODO: too large value, delay, with back-of.
-                delay(5_000)
+                delay(1000)
             }
 
             when (triggeredBy) {
