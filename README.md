@@ -5,6 +5,7 @@
 ![GitHub License](https://img.shields.io/github/license/smyrgeorge/actor4k)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/smyrgeorge/actor4k)
 ![GitHub issues](https://img.shields.io/github/issues/smyrgeorge/actor4k)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.9.24-blue.svg?logo=kotlin)](http://kotlinlang.org)
 
 It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.coroutines).
 
@@ -51,6 +52,14 @@ data class AccountActor(
     override val shard: String,
     override val key: String
 ) : Actor(shard, key) {
+    override suspend fun onBeforeActivate() {
+        log.info { "[${address()}] before-activate" }
+    }
+
+    override suspend fun onActivate(m: Message) {
+        log.info { "[${address()}] activate ($m)" }
+    }
+  
     override fun onReceive(m: Message, r: Response.Builder): Response {
         val msg = m.cast<Req>()
         log.info { "[$name] Received message: $msg" }
@@ -63,6 +72,8 @@ data class AccountActor(
 Now let's send some messages:
 
 ```kotlin
+val a: Actor.Ref = ActorSystem.get(AccountActor::class, "ACC0010")
+
 val req = Req(msg = "[tell] Hello World!")
 a.tell(req)
 
@@ -131,8 +142,9 @@ Whenever you need to, simply call the asJava() method and the magic will happen.
 For instance take a look here.
 
 ```java
-Actor.Ref ref = ActorRegistry.INSTANCE.asJava().get(JActor.class, "ACC00011").join();
-String res = (String) ref.asJava().ask("Tell me something").join();
+ActorSystem system = ActorSystem.INSTANCE.start(ActorSystem.INSTANCE.getConf());
+Actor.Ref ref = system.getRegistry().asJava().get(AccountActor.class, "ACC00011").join();
+System.out.println(ref);
 ```
 
 You can also find other

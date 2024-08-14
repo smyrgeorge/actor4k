@@ -44,7 +44,7 @@ fun main() {
             delay(5_000)
 
             val req = Req("Hello!!")
-            val ref = ActorRegistry.get(AccountActor::class, "ACC00011")
+            val ref = ActorSystem.get(AccountActor::class, "ACC00011")
             println(ref)
 
             while (true) {

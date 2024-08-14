@@ -11,7 +11,7 @@ abstract class Stats {
         override var actors: Int = 0,
     ) : Stats() {
         override fun collect() {
-            actors = ActorRegistry.count()
+            actors = ActorSystem.registry.count()
         }
 
         override fun toString(): String =
@@ -24,7 +24,7 @@ abstract class Stats {
         private var shards: Int = 0
     ) : Stats() {
         override fun collect() {
-            actors = ActorRegistry.count()
+            actors = ActorSystem.registry.count()
             // Set cluster members size.
             nodes = ActorSystem.cluster.ring.size()
             shards = ShardManager.count()

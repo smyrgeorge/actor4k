@@ -9,8 +9,8 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem;
 
 public class JCluster {
     public static void main(String[] args) {
-        ActorSystem.INSTANCE.start(ActorSystem.INSTANCE.getConf());
-        Actor.Ref ref = ActorRegistry.INSTANCE.asJava().get(AccountActor.class, "ACC00011").join();
+        ActorSystem system = ActorSystem.INSTANCE.start(ActorSystem.INSTANCE.getConf());
+        Actor.Ref ref = system.getRegistry().asJava().get(AccountActor.class, "ACC00011").join();
         System.out.println(ref);
         Req req = new Req("[tell] Hello World!");
         Resp resp = (Resp) ref.asJava().ask(req).join();

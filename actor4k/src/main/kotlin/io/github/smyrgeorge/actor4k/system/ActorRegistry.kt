@@ -17,7 +17,7 @@ import java.time.Instant
 import kotlin.reflect.KClass
 
 @Suppress("MemberVisibilityCanBePrivate")
-object ActorRegistry {
+class ActorRegistry {
 
     private val log = KotlinLogging.logger {}
 

@@ -40,7 +40,7 @@ sealed interface Req {
     companion object {
         fun to(ref: Actor.Ref): Builder = Builder(ref)
         suspend fun to(key: String): Builder {
-            val ref = ActorRegistry.get(AccountActor::class, key)
+            val ref = ActorSystem.get(AccountActor::class, key)
             return Builder(ref)
         }
     }

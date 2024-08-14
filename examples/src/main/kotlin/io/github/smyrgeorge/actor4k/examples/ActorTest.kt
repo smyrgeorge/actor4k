@@ -37,7 +37,7 @@ fun main() {
         // Start the actor system.
         ActorSystem.start()
 
-        val a: Actor.Ref = ActorRegistry.get(AccountActor::class, "ACC0010")
+        val a: Actor.Ref = ActorSystem.get(AccountActor::class, "ACC0010")
 
         val req = Req(msg = "[tell] Hello World!")
         a.tell(req)
@@ -46,12 +46,12 @@ fun main() {
         val r = a.ask<Resp>(req2)
         println(r)
 
-        val a2: Actor.Ref.Local = ActorRegistry.get(AccountActor::class, "ACC0010") as Actor.Ref.Local
+        val a2: Actor.Ref.Local = ActorSystem.get(AccountActor::class, "ACC0010") as Actor.Ref.Local
         println(a2.status())
         a2.stop()
         delay(1000)
 
-        val a3: Actor.Ref.Local = ActorRegistry.get(AccountActor::class, "ACC0030") as Actor.Ref.Local
+        val a3: Actor.Ref.Local = ActorSystem.get(AccountActor::class, "ACC0030") as Actor.Ref.Local
 
         a2.tell(req) // Will re-create the actor.
     }

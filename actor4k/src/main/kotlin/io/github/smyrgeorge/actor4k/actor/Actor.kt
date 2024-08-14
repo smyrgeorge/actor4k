@@ -220,17 +220,17 @@ abstract class Actor(open val shard: String, open val key: String) {
             override suspend fun tell(msg: Any) {
                 // Check if the requested shard is locked.
                 if (ActorSystem.isCluster()) ShardManager.isLocked(shard)?.ex()
-                ActorRegistry.get(this).tell(msg)
+                ActorSystem.registry.get(this).tell(msg)
             }
 
             override suspend fun <R> ask(msg: Any): R {
                 // Check if the requested shard is locked.
                 if (ActorSystem.isCluster()) ShardManager.isLocked(shard)?.ex()
-                return ActorRegistry.get(this).ask(msg)
+                return ActorSystem.registry.get(this).ask(msg)
             }
 
-            suspend fun status(): Status = ActorRegistry.get(this).status
-            suspend fun stop() = ActorRegistry.get(this).shutdown()
+            suspend fun status(): Status = ActorSystem.registry.get(this).status
+            suspend fun stop() = ActorSystem.registry.get(this).shutdown()
         }
 
         data class Remote(
@@ -272,7 +272,7 @@ abstract class Actor(open val shard: String, open val key: String) {
             }
             if (isClosedForReceive) {
                 status = Status.FINISHED
-                ActorRegistry.unregister(this@Actor)
+                ActorSystem.registry.unregister(this@Actor)
             }
         }
 

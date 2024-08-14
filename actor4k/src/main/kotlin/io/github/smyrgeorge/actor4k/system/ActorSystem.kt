@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.system
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.Dispatchers
@@ -8,6 +9,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
+import kotlin.reflect.KClass
 import kotlin.system.exitProcess
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -24,6 +26,7 @@ object ActorSystem {
     var stats: Stats = Stats.Simple()
 
     lateinit var cluster: Cluster
+    lateinit var registry: ActorRegistry
 
     init {
         launchGlobal {
@@ -41,10 +44,11 @@ object ActorSystem {
         }
     }
 
-    fun stats() {
-        // Log [Stats].
-        log.info { stats }
-    }
+    suspend fun <A : Actor> get(actor: KClass<A>, key: String, shard: String = key): Actor.Ref =
+        registry.get(actor.java, key, shard)
+
+    suspend fun <A : Actor> get(actor: Class<A>, key: String, shard: String = key): Actor.Ref =
+        registry.get(actor, key, shard)
 
     fun register(c: Cluster): ActorSystem {
         if (isCluster()) error("Cannot register a cluster while it's already registered.")
@@ -57,6 +61,7 @@ object ActorSystem {
     fun start(c: Conf = Conf()): ActorSystem {
         if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
         conf = c
+        registry = ActorRegistry()
         if (isCluster()) cluster.start()
         status = Status.READY
         return this
@@ -96,8 +101,8 @@ object ActorSystem {
             log.info { "Received shutdown signal by $triggeredBy.." }
             status = Status.SHUTTING_DOWN
 
-            log.info { "Closing ${ActorRegistry.count()} actors.." }
-            ActorRegistry.stopAll()
+            log.info { "Closing ${registry.count()} actors.." }
+            registry.stopAll()
 
             if (isCluster()) {
                 log.info { "Informing cluster that we are about to leave.." }
@@ -105,8 +110,8 @@ object ActorSystem {
             }
 
             // Wait for all actors to finish.
-            while (ActorRegistry.count() > 0) {
-                log.info { "Waiting ${ActorRegistry.count()} actors to finish." }
+            while (registry.count() > 0) {
+                log.info { "Waiting ${registry.count()} actors to finish." }
                 delay(1000)
             }
 
@@ -125,4 +130,9 @@ object ActorSystem {
     }
 
     fun isCluster(): Boolean = type == Type.CLUSTER
+
+    fun stats() {
+        // Log [Stats].
+        log.info { stats }
+    }
 }

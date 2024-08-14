@@ -20,7 +20,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun ask(request: Cluster.Ask): Cluster.Response {
         return try {
-            val actor = ActorRegistry.get(request.actorClazz, request.actorKey, request.shard)
+            val actor = ActorSystem.registry.get(request.actorClazz, request.actorKey, request.shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
             val res = actor.ask<Any>(msg)
             Envelope.Response.ok(request.shard, res).toProto()
@@ -32,7 +32,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun tell(request: Cluster.Tell): Cluster.Response {
         return try {
-            val actor = ActorRegistry.get(request.actorClazz, request.actorKey, request.shard)
+            val actor = ActorSystem.registry.get(request.actorClazz, request.actorKey, request.shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
             actor.tell(msg)
             Envelope.Response.ok(request.shard, ".").toProto()
@@ -44,7 +44,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun getActor(request: Cluster.GetActor): Cluster.Response {
         return try {
-            val actor = ActorRegistry.get(request.actorClazz, request.actorKey, request.shard)
+            val actor = ActorSystem.registry.get(request.actorClazz, request.actorKey, request.shard)
             val res = Envelope.GetActor.Ref(request.shard, request.actorClazz, actor.name, actor.key)
             Envelope.Response.ok(request.shard, res).toProto()
         } catch (e: Exception) {
