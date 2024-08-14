@@ -3,7 +3,7 @@ package io.github.smyrgeorge.actor4k.system
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
-import io.github.smyrgeorge.actor4k.cluster.ICluster
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.Stats
 import io.github.smyrgeorge.actor4k.util.launchGlobal
@@ -28,7 +28,7 @@ object ActorSystem {
     var status: Status = Status.NOT_READY
 
     lateinit var stats: Stats
-    lateinit var cluster: ICluster
+    lateinit var cluster: Cluster
     lateinit var registry: ActorRegistry
 
     init {
@@ -63,7 +63,7 @@ object ActorSystem {
         return this
     }
 
-    fun register(c: ICluster): ActorSystem {
+    fun register(c: Cluster): ActorSystem {
         if (isCluster()) error("Cannot register a cluster while it's already registered.")
         type = Type.CLUSTER
         cluster = c

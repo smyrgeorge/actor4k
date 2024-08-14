@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.microraft.RaftEndpoint
@@ -13,11 +13,10 @@ import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.runBlocking
 import io.microraft.transport.Transport as RaftTransport
 
-
 class Transport(private val self: Endpoint) : RaftTransport {
 
     private val log = KotlinLogging.logger {}
-    private val cluster: Cluster = ActorSystem.cluster as Cluster
+    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
 
     override fun send(target: RaftEndpoint, message: RaftMessage) {
         target as Endpoint

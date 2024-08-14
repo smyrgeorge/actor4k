@@ -2,7 +2,7 @@ package io.github.smyrgeorge.actor4k.cluster.system.registry
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
-import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.actor.ref.RemoteRef
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -17,7 +17,7 @@ import java.lang.reflect.InvocationTargetException
 import java.time.Instant
 
 class ClusterActorRegistry : ActorRegistry() {
-    private val cluster: Cluster = ActorSystem.cluster as Cluster
+    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
 
     init {
         launchGlobal {

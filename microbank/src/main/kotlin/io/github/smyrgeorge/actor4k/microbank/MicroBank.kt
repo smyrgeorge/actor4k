@@ -5,10 +5,11 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
-import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.microbank.serde.Jackson
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.cluster.system.registry.ClusterActorRegistry
+import io.github.smyrgeorge.actor4k.cluster.system.stats.ClusterStats
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import org.http4k.core.Method
@@ -84,30 +85,31 @@ fun main() {
     val httpPort = System.getenv("ACTOR4K_NODE_HTTP_PORT")?.toInt() ?: 9000
     val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 61100
     val gossipPort = System.getenv("ACTOR4K_NODE_GOSSIP_PORT")?.toInt() ?: 61000
-    val seedMembers: List<Cluster.Conf.Node> =
+    val seedMembers: List<ClusterImpl.Conf.Node> =
         (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "$alias::localhost:$gossipPort")
             .split(",")
-            .map { Cluster.Conf.Node.from(it) }
+            .map { ClusterImpl.Conf.Node.from(it) }
 
-    val conf = Cluster.Conf
+    val conf = ClusterImpl.Conf
         .Builder()
         .alias(alias)
         .host(host)
         .namespace("actor4k")
         .grpcPort(grpcPort)
         .gossipPort(gossipPort)
-        .nodeManagement(Cluster.Conf.NodeManagement.STATIC)
+        .nodeManagement(ClusterImpl.Conf.NodeManagement.STATIC)
         .seedMembers(seedMembers)
         .build()
 
     log.info { conf }
 
-    val cluster = Cluster
+    val cluster = ClusterImpl
         .Builder()
         .conf(conf)
         .build()
 
     ActorSystem
+        .register(ClusterStats())
         .register(ClusterActorRegistry())
         .register(cluster)
         .start()

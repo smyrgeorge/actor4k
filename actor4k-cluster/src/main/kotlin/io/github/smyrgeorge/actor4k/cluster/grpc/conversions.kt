@@ -1,20 +1,20 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import com.google.protobuf.ByteString
-import io.github.smyrgeorge.actor4k.cluster.ICluster
-import io.github.smyrgeorge.actor4k.proto.Cluster
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.proto.ask
 import io.github.smyrgeorge.actor4k.proto.getActor
 import io.github.smyrgeorge.actor4k.proto.response
 import io.github.smyrgeorge.actor4k.proto.tell
+import io.github.smyrgeorge.actor4k.proto.Cluster as ClusterProto
 
-fun Cluster.Response.toResponse() =
+fun ClusterProto.Response.toResponse() =
     Envelope.Response(shard, payload.toByteArray(), payloadClass, error)
 
-fun Cluster.Response.Error.toError() =
-    ICluster.Error(ICluster.Error.Code.valueOf(code), message)
+fun ClusterProto.Response.Error.toError() =
+    Cluster.Error(Cluster.Error.Code.valueOf(code), message)
 
-fun Envelope.Ask.toProto(): Cluster.Ask {
+fun Envelope.Ask.toProto(): ClusterProto.Ask {
     val m = this
     return ask {
         shard = m.shard
@@ -25,7 +25,7 @@ fun Envelope.Ask.toProto(): Cluster.Ask {
     }
 }
 
-fun Envelope.Tell.toProto(): Cluster.Tell {
+fun Envelope.Tell.toProto(): ClusterProto.Tell {
     val m = this
     return tell {
         shard = m.shard
@@ -36,7 +36,7 @@ fun Envelope.Tell.toProto(): Cluster.Tell {
     }
 }
 
-fun Envelope.GetActor.toProto(): Cluster.GetActor {
+fun Envelope.GetActor.toProto(): ClusterProto.GetActor {
     val m = this
     return getActor {
         shard = m.shard
@@ -45,7 +45,7 @@ fun Envelope.GetActor.toProto(): Cluster.GetActor {
     }
 }
 
-fun Envelope.Response.toProto(): Cluster.Response {
+fun Envelope.Response.toProto(): ClusterProto.Response {
     val m = this
     return response {
         shard = m.shard
@@ -55,9 +55,9 @@ fun Envelope.Response.toProto(): Cluster.Response {
     }
 }
 
-fun ICluster.Error.toProto(): Cluster.Response.Error {
+fun Cluster.Error.toProto(): ClusterProto.Response.Error {
     val m = this
-    return Cluster.Response.Error.newBuilder()
+    return ClusterProto.Response.Error.newBuilder()
         .setCode(m.code.name)
         .setMessage(m.message)
         .build()

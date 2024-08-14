@@ -1,7 +1,8 @@
 package io.github.smyrgeorge.actor4k.examples
 
-import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.system.registry.ClusterActorRegistry
+import io.github.smyrgeorge.actor4k.cluster.system.stats.ClusterStats
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -16,12 +17,12 @@ fun main() {
     val alias = System.getenv("ACTOR4K_NODE_ID") ?: "node-1"
     val swimPort = System.getenv("ACTOR4K_NODE_SWIM_PORT")?.toInt() ?: 61100
     val grpcPort = System.getenv("ACTOR4K_NODE_GRPC_PORT")?.toInt() ?: 50051
-    val seedMembers: List<Cluster.Conf.Node> =
+    val seedMembers: List<ClusterImpl.Conf.Node> =
         (System.getenv("ACTOR4K_SEED_MEMBERS") ?: "$alias::localhost:$swimPort")
             .split(",")
-            .map { Cluster.Conf.Node.from(it) }
+            .map { ClusterImpl.Conf.Node.from(it) }
 
-    val conf = Cluster.Conf
+    val conf = ClusterImpl.Conf
         .Builder()
         .alias(alias)
         .namespace("actor4k")
@@ -29,13 +30,14 @@ fun main() {
         .seedMembers(seedMembers)
         .build()
 
-    val cluster = Cluster
+    val cluster = ClusterImpl
         .Builder()
         .conf(conf)
         .build()
 
     ActorSystem
         .register(cluster)
+        .register(ClusterStats())
         .register(ClusterActorRegistry())
         .start()
 

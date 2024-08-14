@@ -1,9 +1,9 @@
 package io.github.smyrgeorge.actor4k.cluster
 
-interface ICluster {
+interface Cluster {
     val serde: Serde
 
-    fun start(): ICluster
+    fun start(): Cluster
     fun registerShard(shard: String)
     fun unregisterShard(shard: String)
     fun shardIsLocked(shard: String): Error?

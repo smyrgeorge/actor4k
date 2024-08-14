@@ -1,11 +1,11 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
-import io.github.smyrgeorge.actor4k.cluster.ICluster
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.actor.ref.RemoteRef
-import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.serialization.Serializable
 import java.time.Instant
+import io.github.smyrgeorge.actor4k.proto.Cluster as ClusterProto
 
 sealed interface Envelope {
 
@@ -63,11 +63,11 @@ sealed interface Envelope {
         val error: Boolean
     ) : Envelope {
         fun <T> getOrThrow(): T =
-            if (error) Cluster.Response.Error.parseFrom(payload).toError().ex()
+            if (error) ClusterProto.Response.Error.parseFrom(payload).toError().ex()
             else ActorSystem.cluster.serde.decode(payloadClass, payload)
 
         companion object {
-            fun error(shard: String, error: ICluster.Error): Response =
+            fun error(shard: String, error: Cluster.Error): Response =
                 Response(
                     shard = shard,
                     payload = error.toProto().toByteArray(),

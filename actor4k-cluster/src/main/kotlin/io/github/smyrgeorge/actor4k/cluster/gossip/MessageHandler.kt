@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.gossip
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.launchGlobal
@@ -19,10 +19,10 @@ import java.io.Serializable
 import kotlin.system.exitProcess
 import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHandler
 
-class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHandler {
+class MessageHandler(private val conf: ClusterImpl.Conf) : ScaleCubeClusterMessageHandler {
 
     private val log = KotlinLogging.logger {}
-    private val cluster: Cluster = ActorSystem.cluster as Cluster
+    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
 
     private val rounds = ActorSystem.conf.initializationRounds
     private val delayPerRound = ActorSystem.conf.initializationDelayPerRound
@@ -30,7 +30,7 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
 
     @Suppress("unused")
     private val job: Job = launchGlobal {
-        if (conf.nodeManagement == Cluster.Conf.NodeManagement.STATIC) {
+        if (conf.nodeManagement == ClusterImpl.Conf.NodeManagement.STATIC) {
             log.info { "Starting cluster in STATIC mode. Any changes to the cluster will not be applied." }
             conf.seedMembers.forEach {
                 cluster.ring.add(ServerNode(it.alias, it.address.host(), it.address.port()))

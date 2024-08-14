@@ -5,6 +5,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
+import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
@@ -38,6 +39,7 @@ fun main() {
     runBlocking {
         // Start the actor system.
         ActorSystem
+            .register(SimpleStats())
             .register(SimpleActorRegistry())
             .start()
 

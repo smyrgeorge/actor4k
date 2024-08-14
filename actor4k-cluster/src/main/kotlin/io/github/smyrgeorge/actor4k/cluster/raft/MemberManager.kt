@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.launchGlobal
@@ -19,10 +19,12 @@ import kotlinx.coroutines.delay
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.util.*
 
-class MemberManager(private val conf: Cluster.Conf) {
+class MemberManager(
+    private val conf: ClusterImpl.Conf
+) {
 
     private val log = KotlinLogging.logger {}
-    private val cluster: Cluster = ActorSystem.cluster as Cluster
+    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
 
     private val protocol = Channel<RaftMessage>(capacity = Channel.UNLIMITED)
     private val mail = Channel<MessageHandler.Protocol.Targeted>(capacity = Channel.UNLIMITED)

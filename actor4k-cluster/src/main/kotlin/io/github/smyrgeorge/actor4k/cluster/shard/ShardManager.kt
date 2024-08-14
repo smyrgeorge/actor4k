@@ -1,8 +1,8 @@
 package io.github.smyrgeorge.actor4k.cluster.shard
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.Cluster
-import io.github.smyrgeorge.actor4k.cluster.ICluster
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.retryBlocking
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 class ShardManager {
 
     private val log = KotlinLogging.logger {}
-    private val cluster: Cluster = ActorSystem.cluster as Cluster
+    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
 
     private var status: Status = Status.OK
     private val shards = ConcurrentHashMap<String, Int>()
@@ -24,17 +24,17 @@ class ShardManager {
     private val shardsBeingMigrated: MutableSet<String> = mutableSetOf()
     private val closedShardsAfterSharadMigrationRequest: MutableSet<String> = mutableSetOf()
 
-    fun isLocked(shard: String): ICluster.Error? {
+    fun isLocked(shard: String): Cluster.Error? {
         if (shardsBeingMigrated.contains(shard)) {
-            return ICluster.Error(
-                code = ICluster.Error.Code.SHARD_ACCESS_ERROR,
+            return Cluster.Error(
+                code = Cluster.Error.Code.SHARD_ACCESS_ERROR,
                 message = "Cannot process message for shard='$shard', shard is locked due to cluster migration."
             )
         }
 
         if (cluster.nodeOf(shard).dc != cluster.conf.alias) {
-            return ICluster.Error(
-                code = ICluster.Error.Code.SHARD_ACCESS_ERROR,
+            return Cluster.Error(
+                code = Cluster.Error.Code.SHARD_ACCESS_ERROR,
                 message = "Message for requested shard='$shard' is not supported for node='${cluster.conf.alias}'."
             )
         }
@@ -196,7 +196,7 @@ class ShardManager {
 
     private fun getMigrationShardsForJoiningNode(node: ServerNode): Set<String> {
         val self = cluster.conf
-        val ring = Cluster.hashRingOf(self.namespace).apply {
+        val ring = ClusterImpl.hashRingOf(self.namespace).apply {
             // Add existing nodes.
             addAll(cluster.ring.nodes)
             // Add new node.
@@ -208,7 +208,7 @@ class ShardManager {
 
     private fun getMigrationShardsForLeavingNode(node: ServerNode): Set<String> {
         val self = cluster.conf
-        val ring = Cluster.hashRingOf(self.namespace).apply {
+        val ring = ClusterImpl.hashRingOf(self.namespace).apply {
             // Add existing nodes.
             addAll(cluster.ring.nodes)
             // Remove the leaving node.

@@ -26,14 +26,14 @@ import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
 import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
-class Cluster(
+class ClusterImpl(
     val conf: Conf,
     override val serde: Serde,
     val gossip: ScaleCubeCluster,
     val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
     private val grpcService: GrpcService
-) : ICluster {
+) : Cluster {
 
     private val log = KotlinLogging.logger {}
 
@@ -73,7 +73,7 @@ class Cluster(
         grpcClients.remove(alias)
     }
 
-    override fun shardIsLocked(shard: String): ICluster.Error? =
+    override fun shardIsLocked(shard: String): Cluster.Error? =
         shardManager.isLocked(shard)
 
     override fun registerShard(shard: String) {
@@ -84,13 +84,13 @@ class Cluster(
         shardManager.operation(ShardManager.Op.UNREGISTER, shard)
     }
 
-    override fun start(): Cluster {
+    override fun start(): io.github.smyrgeorge.actor4k.cluster.ClusterImpl {
         grpc.start()
         (gossip as ClusterImpl).startAwait()
         return this
     }
 
-    fun startRaft(initialGroupMembers: List<Endpoint>): Cluster {
+    fun startRaft(initialGroupMembers: List<Endpoint>): io.github.smyrgeorge.actor4k.cluster.ClusterImpl {
         log.info { "Starting raft, initialGroupMembers=$initialGroupMembers" }
 
         val endpoint = Endpoint(conf.alias, conf.host, conf.grpcPort)
@@ -135,7 +135,7 @@ class Cluster(
             return this
         }
 
-        fun build(): Cluster {
+        fun build(): io.github.smyrgeorge.actor4k.cluster.ClusterImpl {
             // Build cluster.
             val gossip: ScaleCubeCluster = ClusterImpl()
                 .transport { it.port(conf.gossipPort) }
@@ -159,7 +159,7 @@ class Cluster(
             val ring: ConsistentHash<ServerNode> = hashRingOf(conf.namespace)
 
             // Built cluster
-            val cluster = Cluster(conf, serde, gossip, ring, grpc, grpcService)
+            val cluster = ClusterImpl(conf, serde, gossip, ring, grpc, grpcService)
 
             return cluster
         }

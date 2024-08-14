@@ -1,6 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.system.stats
 
-import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.stats.Stats
 
@@ -9,7 +9,7 @@ data class ClusterStats(
     private var nodes: Int = 0,
     private var shards: Int = 0
 ) : Stats() {
-    private val cluster: Cluster = ActorSystem.cluster as Cluster
+    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
 
     override fun collect() {
         actors = ActorSystem.registry.count()

@@ -1,10 +1,10 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.ICluster
-import io.github.smyrgeorge.actor4k.proto.Cluster
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.github.smyrgeorge.actor4k.proto.Cluster as ClusterProto
 
 class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
@@ -18,7 +18,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
             is Envelope.Response -> error("Not a valid gRPC method found.")
         }
 
-    override suspend fun ask(request: Cluster.Ask): Cluster.Response {
+    override suspend fun ask(request: ClusterProto.Ask): ClusterProto.Response {
         return try {
             val actor = ActorSystem.registry.get(request.actorClazz, request.actorKey, request.shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
@@ -30,7 +30,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         }
     }
 
-    override suspend fun tell(request: Cluster.Tell): Cluster.Response {
+    override suspend fun tell(request: ClusterProto.Tell): ClusterProto.Response {
         return try {
             val actor = ActorSystem.registry.get(request.actorClazz, request.actorKey, request.shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
@@ -42,7 +42,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         }
     }
 
-    override suspend fun getActor(request: Cluster.GetActor): Cluster.Response {
+    override suspend fun getActor(request: ClusterProto.GetActor): ClusterProto.Response {
         return try {
             val actor = ActorSystem.registry.get(request.actorClazz, request.actorKey, request.shard)
             val res = Envelope.GetActor.Ref(request.shard, request.actorClazz, actor.name, actor.key)
@@ -53,9 +53,9 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         }
     }
 
-    private fun Exception.toResponse(shard: String): Cluster.Response {
-        val code = if (this is ICluster.Error.ClusterError) code else ICluster.Error.Code.UNKNOWN
-        val error = ICluster.Error(code, message ?: "")
+    private fun Exception.toResponse(shard: String): ClusterProto.Response {
+        val code = if (this is Cluster.Error.ClusterError) code else Cluster.Error.Code.UNKNOWN
+        val error = Cluster.Error(code, message ?: "")
         return Envelope.Response.error(shard, error).toProto()
     }
 }
