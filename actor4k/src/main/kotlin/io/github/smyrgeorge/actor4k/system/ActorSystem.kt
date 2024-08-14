@@ -2,7 +2,10 @@ package io.github.smyrgeorge.actor4k.system
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ICluster
+import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -25,7 +28,7 @@ object ActorSystem {
     var status: Status = Status.NOT_READY
     var stats: Stats = Stats.Simple()
 
-    lateinit var cluster: Cluster
+    lateinit var cluster: ICluster
     lateinit var registry: ActorRegistry
 
     init {
@@ -44,11 +47,16 @@ object ActorSystem {
         }
     }
 
-    suspend fun <A : Actor> get(actor: KClass<A>, key: String, shard: String = key): Actor.Ref =
+    suspend fun <A : Actor> get(actor: KClass<A>, key: String, shard: String = key): ActorRef =
         registry.get(actor.java, key, shard)
 
-    suspend fun <A : Actor> get(actor: Class<A>, key: String, shard: String = key): Actor.Ref =
+    suspend fun <A : Actor> get(actor: Class<A>, key: String, shard: String = key): ActorRef =
         registry.get(actor, key, shard)
+
+    fun register(registry: ActorRegistry): ActorSystem {
+        this.registry = registry
+        return this
+    }
 
     fun register(c: Cluster): ActorSystem {
         if (isCluster()) error("Cannot register a cluster while it's already registered.")
@@ -61,7 +69,6 @@ object ActorSystem {
     fun start(c: Conf = Conf()): ActorSystem {
         if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
         conf = c
-        registry = ActorRegistry()
         if (isCluster()) cluster.start()
         status = Status.READY
         return this

@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.cluster.gossip
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
-import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import io.github.smyrgeorge.actor4k.util.retryBlocking
@@ -23,6 +22,7 @@ import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHand
 class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHandler {
 
     private val log = KotlinLogging.logger {}
+    private val cluster: Cluster = ActorSystem.cluster as Cluster
 
     private val rounds = ActorSystem.conf.initializationRounds
     private val delayPerRound = ActorSystem.conf.initializationDelayPerRound
@@ -33,7 +33,7 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
         if (conf.nodeManagement == Cluster.Conf.NodeManagement.STATIC) {
             log.info { "Starting cluster in STATIC mode. Any changes to the cluster will not be applied." }
             conf.seedMembers.forEach {
-                ActorSystem.cluster.ring.add(ServerNode(it.alias, it.address.host(), it.address.port()))
+                cluster.ring.add(ServerNode(it.alias, it.address.host(), it.address.port()))
             }
             return@launchGlobal
         }
@@ -41,12 +41,12 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
         for (i in 1..rounds) {
             log.info { "Waiting for other nodes to appear... [$i/$rounds]" }
             delay(delayPerRound)
-            val nodes = ActorSystem.cluster.gossip.members()
+            val nodes = cluster.gossip.members()
             // If ore than one node found continue.
             if (nodes.size > 1) break
         }
 
-        val nodes = ActorSystem.cluster.gossip.members()
+        val nodes = cluster.gossip.members()
         log.info { "We are a group of ${nodes.size} nodes (at least)." }
 
         val initialGroupMembers = if (nodes.isEmpty()) {
@@ -57,12 +57,12 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
             listOf(Endpoint(conf.alias, conf.host, conf.grpcPort))
         } else {
             log.info { "Requesting initial group members form the network." }
-            val self = ActorSystem.cluster.gossip.member().address()
+            val self = cluster.gossip.member().address()
             val msg = Message.builder().data(Protocol.Gossip.ReqInitialGroupMembers).sender(self).build()
             for (i in 1..rounds) {
                 log.info { "Waiting for response... [$i/$rounds]" }
                 delay(delayPerRound)
-                ActorSystem.cluster.gossip.spreadGossip(msg).awaitFirstOrNull()
+                cluster.gossip.spreadGossip(msg).awaitFirstOrNull()
                 if (initialGroupMembers.isNotEmpty()) break
             }
             initialGroupMembers
@@ -78,7 +78,7 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
             log.info { "Waiting connection with all initial group members... [$i/$rounds]" }
             delay(delayPerRound)
             allConnected = initialGroupMembers.all { m ->
-                ActorSystem.cluster.gossip.members().any { m.alias == it.alias() }
+                cluster.gossip.members().any { m.alias == it.alias() }
             }
             if (allConnected) break
         }
@@ -88,7 +88,7 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
             exitProcess(1)
         }
 
-        ActorSystem.cluster.startRaft(initialGroupMembers)
+        cluster.startRaft(initialGroupMembers)
     }
 
 
@@ -99,20 +99,24 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
                 Protocol.Gossip.ReqInitialGroupMembers -> {
                     val members: List<Endpoint> = initialGroupMembers.ifEmpty {
                         log.info { "Raft is not started will send the members found from the gossip protocol." }
-                        ActorSystem.cluster.gossip.members().map {
+                        cluster.gossip.members().map {
                             val host = it.address().host()
-                            val port = ActorSystem.cluster.conf.grpcPort
+                            val port = cluster.conf.grpcPort
                             Endpoint(it.alias(), host, port)
                         }
                     }
                     val res = Protocol.Targeted.ResInitialGroupMembers(members)
                     val msg = Message.builder().data(res).build()
-                    runBlocking { ActorSystem.cluster.gossip.send(g.sender(), msg).awaitFirstOrNull() }
+                    runBlocking { cluster.gossip.send(g.sender(), msg).awaitFirstOrNull() }
                 }
 
-                is Protocol.Gossip.LockShardsForJoiningNode -> ShardManager.lockShardsForJoiningNode(g.sender(), d)
-                is Protocol.Gossip.LockShardsForLeavingNode -> ShardManager.lockShardsForLeavingNode(g.sender(), d)
-                Protocol.Gossip.UnlockShards -> ShardManager.unlockShards()
+                is Protocol.Gossip.LockShardsForJoiningNode ->
+                    cluster.shardManager.lockShardsForJoiningNode(g.sender(), d)
+
+                is Protocol.Gossip.LockShardsForLeavingNode ->
+                    cluster.shardManager.lockShardsForLeavingNode(g.sender(), d)
+
+                Protocol.Gossip.UnlockShards -> cluster.shardManager.unlockShards()
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -129,14 +133,14 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
 
                 is Protocol.Targeted.RaftProtocol -> {
                     try {
-                        ActorSystem.cluster.raft.handle(d.message)
+                        cluster.raft.handle(d.message)
                     } catch (e: UninitializedPropertyAccessException) {
                         log.debug { "Received message but the cluster is not yet initialized." }
                     }
                 }
 
-                is Protocol.Targeted.ShardsLocked -> runBlocking { ActorSystem.cluster.raftManager.send(d) }
-                is Protocol.Targeted.ShardedActorsFinished -> runBlocking { ActorSystem.cluster.raftManager.send(d) }
+                is Protocol.Targeted.ShardsLocked -> runBlocking { cluster.raftManager.send(d) }
+                is Protocol.Targeted.ShardedActorsFinished -> runBlocking { cluster.raftManager.send(d) }
             }
         } catch (e: Exception) {
             log.error(e) { e.message }
@@ -154,13 +158,13 @@ class MessageHandler(private val conf: Cluster.Conf) : ScaleCubeClusterMessageHa
                     .toInstance<Metadata>()
 
                 retryBlocking {
-                    ActorSystem.cluster.registerGrpcClientFor(m.alias(), m.address().host(), metadata.grpcPort)
+                    cluster.registerGrpcClientFor(m.alias(), m.address().host(), metadata.grpcPort)
                 }
             }
 
             MembershipEvent.Type.REMOVED -> {
                 log.info { "Node removed: ${e.member().alias()}" }
-                ActorSystem.cluster.unregisterGrpcClient(e.member().alias())
+                cluster.unregisterGrpcClient(e.member().alias())
             }
 
             MembershipEvent.Type.LEAVING -> log.info { "Node is leaving ${e.member().alias()}" }

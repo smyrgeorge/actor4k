@@ -1,6 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
-import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ref.RemoteRef
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.serialization.Serializable
@@ -44,7 +44,7 @@ sealed interface Envelope {
                 .plusSeconds(ActorSystem.conf.actorRemoteRefExpiration.inWholeSeconds)
                 .epochSecond
 
-            fun toRef(shard: String): Actor.Ref.Remote = Actor.Ref.Remote(
+            fun toRef(shard: String): RemoteRef = RemoteRef(
                 shard = shard,
                 name = name,
                 key = key,

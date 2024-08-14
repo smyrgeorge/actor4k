@@ -11,6 +11,7 @@ import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
 import io.github.smyrgeorge.actor4k.cluster.raft.MemberManager
 import io.github.smyrgeorge.actor4k.cluster.raft.StateMachine
 import io.github.smyrgeorge.actor4k.cluster.raft.Transport
+import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.grpc.netty.NettyServerBuilder
 import io.microraft.RaftConfig
 import io.microraft.RaftNode
@@ -28,20 +29,21 @@ import io.scalecube.cluster.Cluster as ScaleCubeCluster
 
 class Cluster(
     val conf: Conf,
-    val serde: Serde,
+    override val serde: Serde,
     val gossip: ScaleCubeCluster,
     val ring: ConsistentHash<ServerNode>,
     private val grpc: GrpcServer,
     private val grpcService: GrpcService
-) {
+) : ICluster {
 
     private val log = KotlinLogging.logger {}
 
     lateinit var raft: RaftNode
     lateinit var raftManager: MemberManager
+    val shardManager: ShardManager = ShardManager()
     private val grpcClients: ConcurrentHashMap<String, GrpcClient> = ConcurrentHashMap()
 
-    suspend fun shutdown() {
+    override fun shutdown() {
 //        raftManager.shutdown()
 //        raft.terminate()
         grpc.shutdown()
@@ -72,7 +74,18 @@ class Cluster(
         grpcClients.remove(alias)
     }
 
-    fun start(): Cluster {
+    override fun shardIsLocked(shard: String): Envelope.Response.Error?  =
+       shardManager.isLocked(shard)
+
+    override fun registerShard(shard: String) {
+        shardManager.operation(ShardManager.Op.REGISTER, shard)
+    }
+
+    override fun unregisterShard(shard: String) {
+        shardManager.operation(ShardManager.Op.UNREGISTER, shard)
+    }
+
+    override fun start(): Cluster {
         grpc.start()
         (gossip as ClusterImpl).startAwait()
         return this

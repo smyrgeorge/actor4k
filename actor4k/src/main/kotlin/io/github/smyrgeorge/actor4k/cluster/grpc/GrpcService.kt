@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.cluster.grpc
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.proto.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
-import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 
 class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {

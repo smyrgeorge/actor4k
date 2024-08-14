@@ -13,9 +13,10 @@ import kotlinx.coroutines.runBlocking
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
 import java.util.concurrent.ConcurrentHashMap
 
-object ShardManager {
+class ShardManager {
 
     private val log = KotlinLogging.logger {}
+    private val cluster: Cluster = ActorSystem.cluster as Cluster
 
     private var status: Status = Status.OK
     private val shards = ConcurrentHashMap<String, Int>()
@@ -31,10 +32,10 @@ object ShardManager {
             )
         }
 
-        if (ActorSystem.cluster.nodeOf(shard).dc != ActorSystem.cluster.conf.alias) {
+        if (cluster.nodeOf(shard).dc != cluster.conf.alias) {
             return Envelope.Response.Error(
                 code = Envelope.Response.Error.Code.SHARD_ACCESS_ERROR,
-                message = "Message for requested shard='$shard' is not supported for node='${ActorSystem.cluster.conf.alias}'."
+                message = "Message for requested shard='$shard' is not supported for node='${cluster.conf.alias}'."
             )
         }
 
@@ -70,7 +71,7 @@ object ShardManager {
                     closedShardsAfterSharadMigrationRequest.add(shard)
                     if (shardsBeingMigrated == closedShardsAfterSharadMigrationRequest) {
                         // Locked shards are empty at the level.
-                        val self = ActorSystem.cluster
+                        val self = cluster
                         self.raftManager.leader()?.let {
                             val data = MessageHandler.Protocol.Targeted.ShardedActorsFinished(self.conf.alias)
                             val message = Message.builder().data(data).build()
@@ -87,14 +88,14 @@ object ShardManager {
     }
 
     fun requestUnlockAShards() {
-        val self = ActorSystem.cluster
+        val self = cluster
 
         unlockShards()
 
         // Send the lock message to the other nodes.
         val data = MessageHandler.Protocol.Gossip.UnlockShards
         val message = Message.builder().sender(self.gossip.member().address()).data(data).build()
-        retryBlocking { ActorSystem.cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
+        retryBlocking { cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
     }
 
     fun unlockShards() {
@@ -107,7 +108,7 @@ object ShardManager {
         if (status == Status.SHARD_MIGRATION)
             error("Could request lock shards. A shard migration is already in progress.")
 
-        val self = ActorSystem.cluster
+        val self = cluster
 
         // The requester has to lock the shards immediately.
         val locked = lockShardsForJoiningNode(node)
@@ -122,14 +123,14 @@ object ShardManager {
         // Send the lock message to the other nodes.
         val data = MessageHandler.Protocol.Gossip.LockShardsForJoiningNode(node.dc, node.ip, node.port)
         val message = Message.builder().sender(self.gossip.member().address()).data(data).build()
-        retryBlocking { ActorSystem.cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
+        retryBlocking { cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
     }
 
     fun requestLockShardsForLeavingNode(node: ServerNode) {
         if (status == Status.SHARD_MIGRATION)
             error("Could request lock shards. A shard migration is already in progress.")
 
-        val self = ActorSystem.cluster
+        val self = cluster
 
         // The requester has to lock the shards immediately.
         val locked = lockShardsForLeavingNode(node)
@@ -144,11 +145,11 @@ object ShardManager {
         // Send the lock message to the other nodes.
         val data = MessageHandler.Protocol.Gossip.LockShardsForLeavingNode(node.dc, node.ip, node.port)
         val message = Message.builder().sender(self.gossip.member().address()).data(data).build()
-        retryBlocking { ActorSystem.cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
+        retryBlocking { cluster.gossip.spreadGossip(message).awaitFirstOrNull() }
     }
 
     fun lockShardsForJoiningNode(sender: Address, data: MessageHandler.Protocol.Gossip.LockShardsForJoiningNode) {
-        val self = ActorSystem.cluster
+        val self = cluster
 
         // Only respond if this node is part of the network.
         if (self.ring.nodes.none { it.dc == self.conf.alias }) return
@@ -161,7 +162,7 @@ object ShardManager {
     }
 
     fun lockShardsForLeavingNode(sender: Address, data: MessageHandler.Protocol.Gossip.LockShardsForLeavingNode) {
-        val self = ActorSystem.cluster
+        val self = cluster
 
         // Only respond if this node is part of the network.
         if (self.ring.nodes.none { it.dc == self.conf.alias }) return
@@ -194,10 +195,10 @@ object ShardManager {
     }
 
     private fun getMigrationShardsForJoiningNode(node: ServerNode): Set<String> {
-        val self = ActorSystem.cluster.conf
+        val self = cluster.conf
         val ring = Cluster.hashRingOf(self.namespace).apply {
             // Add existing nodes.
-            addAll(ActorSystem.cluster.ring.nodes)
+            addAll(cluster.ring.nodes)
             // Add new node.
             add(node)
         }
@@ -206,10 +207,10 @@ object ShardManager {
     }
 
     private fun getMigrationShardsForLeavingNode(node: ServerNode): Set<String> {
-        val self = ActorSystem.cluster.conf
+        val self = cluster.conf
         val ring = Cluster.hashRingOf(self.namespace).apply {
             // Add existing nodes.
-            addAll(ActorSystem.cluster.ring.nodes)
+            addAll(cluster.ring.nodes)
             // Remove the leaving node.
             remove(node)
         }
@@ -218,7 +219,7 @@ object ShardManager {
     }
 
     private fun informLeaderForTheLockedShards(sender: Address, locked: Int) {
-        val self = ActorSystem.cluster
+        val self = cluster
         val message = if (locked > 0) {
             Message.builder().data(MessageHandler.Protocol.Targeted.ShardsLocked(self.conf.alias)).build()
         } else {

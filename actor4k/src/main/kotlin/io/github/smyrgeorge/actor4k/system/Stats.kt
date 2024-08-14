@@ -1,6 +1,6 @@
 package io.github.smyrgeorge.actor4k.system
 
-import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
+import io.github.smyrgeorge.actor4k.cluster.Cluster as ClusterImpl
 
 abstract class Stats {
 
@@ -23,11 +23,13 @@ abstract class Stats {
         private var nodes: Int = 0,
         private var shards: Int = 0
     ) : Stats() {
+        private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
+
         override fun collect() {
             actors = ActorSystem.registry.count()
             // Set cluster members size.
-            nodes = ActorSystem.cluster.ring.size()
-            shards = ShardManager.count()
+            nodes = cluster.ring.size()
+            shards = cluster.shardManager.count()
         }
 
         override fun toString(): String =

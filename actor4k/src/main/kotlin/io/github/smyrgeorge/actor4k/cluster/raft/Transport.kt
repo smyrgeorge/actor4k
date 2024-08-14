@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.microraft.RaftEndpoint
@@ -16,23 +17,24 @@ import io.microraft.transport.Transport as RaftTransport
 class Transport(private val self: Endpoint) : RaftTransport {
 
     private val log = KotlinLogging.logger {}
+    private val cluster: Cluster = ActorSystem.cluster as Cluster
 
     override fun send(target: RaftEndpoint, message: RaftMessage) {
         target as Endpoint
 
         if (self.alias == target.alias) {
             log.warn { "Received message from myself (I wasn't expecting this)." }
-            runBlocking { ActorSystem.cluster.raftManager.send(message) }
+            runBlocking { cluster.raftManager.send(message) }
             return
         }
 
         runBlocking {
             launch(Dispatchers.IO) {
                 try {
-                    val member = ActorSystem.cluster.gossip.members().firstOrNull { it.alias() == target.id }
+                    val member = cluster.gossip.members().firstOrNull { it.alias() == target.id }
                     if (member != null) {
                         val msg = Message.builder().data(MessageHandler.Protocol.Targeted.RaftProtocol(message)).build()
-                        ActorSystem.cluster.gossip.send(member, msg).awaitFirstOrNull()
+                        cluster.gossip.send(member, msg).awaitFirstOrNull()
                     } else {
                         log.warn { "Could not send ${message::class.simpleName} to ${target.alias}. Seems offline." }
                     }
@@ -45,5 +47,5 @@ class Transport(private val self: Endpoint) : RaftTransport {
     }
 
     override fun isReachable(endpoint: RaftEndpoint): Boolean =
-        ActorSystem.cluster.gossip.members().any { it.alias() == endpoint.id }
+        cluster.gossip.members().any { it.alias() == endpoint.id }
 }

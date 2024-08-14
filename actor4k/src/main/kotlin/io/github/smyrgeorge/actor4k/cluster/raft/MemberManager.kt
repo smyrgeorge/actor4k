@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.cluster.raft
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
-import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import io.microraft.MembershipChangeMode
@@ -23,6 +22,7 @@ import java.util.*
 class MemberManager(private val conf: Cluster.Conf) {
 
     private val log = KotlinLogging.logger {}
+    private val cluster: Cluster = ActorSystem.cluster as Cluster
 
     private val protocol = Channel<RaftMessage>(capacity = Channel.UNLIMITED)
     private val mail = Channel<MessageHandler.Protocol.Targeted>(capacity = Channel.UNLIMITED)
@@ -33,7 +33,7 @@ class MemberManager(private val conf: Cluster.Conf) {
         launchGlobal { mail.consumeEach { handle(it) } }
     }
 
-    fun leader(): RaftEndpoint? = ActorSystem.cluster.raft.term.leaderEndpoint
+    fun leader(): RaftEndpoint? = cluster.raft.term.leaderEndpoint
     suspend fun send(m: RaftMessage) = protocol.send(m)
     suspend fun send(m: MessageHandler.Protocol.Targeted) = mail.send(m)
 
@@ -50,13 +50,13 @@ class MemberManager(private val conf: Cluster.Conf) {
     private fun shardsLocked(m: MessageHandler.Protocol.Targeted.ShardsLocked) {
         log.info { m }
         val req = StateMachine.Operation.ShardsLocked(m.alias)
-        ActorSystem.cluster.raft.replicate<Unit>(req)
+        cluster.raft.replicate<Unit>(req)
     }
 
     private fun shardedActorsFinished(m: MessageHandler.Protocol.Targeted.ShardedActorsFinished) {
         log.info { m }
         val req = StateMachine.Operation.ShardedActorsFinished(m.alias)
-        ActorSystem.cluster.raft.replicate<Unit>(req)
+        cluster.raft.replicate<Unit>(req)
     }
 
     private suspend fun loop() {
@@ -64,7 +64,7 @@ class MemberManager(private val conf: Cluster.Conf) {
             delay(ActorSystem.conf.memberManagerRoundDelay)
             try {
                 // We make changes every round.
-                val self: RaftNode = ActorSystem.cluster.raft
+                val self: RaftNode = cluster.raft
 
                 if (self.status == RaftNodeStatus.TERMINATED) {
                     log.info { "${conf.alias} (self) is in TERMINATED state but still UP, will shutdown." }
@@ -111,7 +111,7 @@ class MemberManager(private val conf: Cluster.Conf) {
                 if (readyToUnlockShards) {
                     self.replicate<Unit>(StateMachine.Operation.ShardMigrationCompleted)
                     try {
-                        ShardManager.requestUnlockAShards()
+                        cluster.shardManager.requestUnlockAShards()
                     } catch (e: Exception) {
                         log.error(e) { "Could not request unlock shards. Reason: ${e.message}" }
                     }
@@ -126,7 +126,7 @@ class MemberManager(private val conf: Cluster.Conf) {
                     val req = StateMachine.Operation.NodeIsLeaving(serverNode.dc)
                     val res = self.replicate<ServerNode>(req).join().result
                     try {
-                        ShardManager.requestLockShardsForLeavingNode(res)
+                        cluster.shardManager.requestLockShardsForLeavingNode(res)
                     } catch (e: Exception) {
                         log.error(e) { "Could not request lock shards. Reason: ${e.message}" }
                     }
@@ -149,7 +149,7 @@ class MemberManager(private val conf: Cluster.Conf) {
                     val req = StateMachine.Operation.NodeIsJoining(m.alias(), a.host(), a.port())
                     val res = self.replicate<ServerNode>(req).join().result
                     try {
-                        ShardManager.requestLockShardsForJoiningNode(res)
+                        cluster.shardManager.requestLockShardsForJoiningNode(res)
                     } catch (e: Exception) {
                         log.error(e) { "Could not request shard locking. Reason: ${e.message}" }
                     }
@@ -175,7 +175,7 @@ class MemberManager(private val conf: Cluster.Conf) {
     }
 
     private fun leaderIsNotSet(): Endpoint? {
-        val self: RaftNode = ActorSystem.cluster.raft
+        val self: RaftNode = cluster.raft
         val current = self.query<Endpoint>(
             /* operation = */ StateMachine.Operation.GetLeader,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
@@ -187,8 +187,8 @@ class MemberManager(private val conf: Cluster.Conf) {
     }
 
     private fun leaderNotInTheRing(): Pair<Member, Address>? {
-        val ring = ActorSystem.cluster.ring
-        val members = ActorSystem.cluster.gossip.members()
+        val ring = cluster.ring
+        val members = cluster.gossip.members()
         if (ring.nodes.none { it.dc == conf.alias }) {
             val member = members.first { it.alias() == conf.alias }
             return member to member.address()
@@ -203,9 +203,9 @@ class MemberManager(private val conf: Cluster.Conf) {
     }
 
     private fun anyOfflineCommittedInTheRing(): ServerNode? {
-        val self: RaftNode = ActorSystem.cluster.raft
-        val ring = ActorSystem.cluster.ring
-        val members = ActorSystem.cluster.gossip.members()
+        val self: RaftNode = cluster.raft
+        val ring = cluster.ring
+        val members = cluster.gossip.members()
         return ring.nodes.find { m ->
             members.none { m.dc == it.alias() }
                     && self.committedMembers.members.any { m.dc == it.id }
@@ -213,9 +213,9 @@ class MemberManager(private val conf: Cluster.Conf) {
     }
 
     private fun anyOfflineCommittedNotInTheRing(): Endpoint? {
-        val self: RaftNode = ActorSystem.cluster.raft
-        val ring = ActorSystem.cluster.ring
-        val members = ActorSystem.cluster.gossip.members()
+        val self: RaftNode = cluster.raft
+        val ring = cluster.ring
+        val members = cluster.gossip.members()
         return self.committedMembers.members.find { m ->
             members.none { m.id == it.alias() }
                     && ring.nodes.none { m.id == it.dc }
@@ -223,9 +223,9 @@ class MemberManager(private val conf: Cluster.Conf) {
     }
 
     private fun anyOnlineCommittedNotInTheRing(): Pair<Member, Address>? {
-        val self: RaftNode = ActorSystem.cluster.raft
-        val ring = ActorSystem.cluster.ring
-        val members = ActorSystem.cluster.gossip.members()
+        val self: RaftNode = cluster.raft
+        val ring = cluster.ring
+        val members = cluster.gossip.members()
         return members.find { m ->
             self.committedMembers.members.any { m.alias() == it.id }
                     && ring.nodes.none { m.alias() == it.dc }
@@ -233,15 +233,15 @@ class MemberManager(private val conf: Cluster.Conf) {
     }
 
     private fun anyOnlineUncommitted(): Pair<Member, Address>? {
-        val self: RaftNode = ActorSystem.cluster.raft
-        val members = ActorSystem.cluster.gossip.members()
+        val self: RaftNode = cluster.raft
+        val members = cluster.gossip.members()
         return members.find { m ->
             self.committedMembers.members.none { m.alias() == it.id }
         }?.let { it to it.address() }
     }
 
     private fun getStatus(): StateMachine.Status {
-        val self: RaftNode = ActorSystem.cluster.raft
+        val self: RaftNode = cluster.raft
         return self.query<StateMachine.Status>(
             /* operation = */ StateMachine.Operation.GetStatus,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
@@ -251,7 +251,7 @@ class MemberManager(private val conf: Cluster.Conf) {
     }
 
     private fun getNodesStillMigratingShardsSize(): Int {
-        val self: RaftNode = ActorSystem.cluster.raft
+        val self: RaftNode = cluster.raft
         return self.query<Int>(
             /* operation = */ StateMachine.Operation.GetNodesStillMigratingShardsSize,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
@@ -261,7 +261,7 @@ class MemberManager(private val conf: Cluster.Conf) {
     }
 
     private fun getHasJoiningNode(): Boolean {
-        val self: RaftNode = ActorSystem.cluster.raft
+        val self: RaftNode = cluster.raft
         return self.query<Boolean>(
             /* operation = */ StateMachine.Operation.HasJoiningNode,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
@@ -271,7 +271,7 @@ class MemberManager(private val conf: Cluster.Conf) {
     }
 
     private fun getHasLeavingNode(): Boolean {
-        val self: RaftNode = ActorSystem.cluster.raft
+        val self: RaftNode = cluster.raft
         return self.query<Boolean>(
             /* operation = */ StateMachine.Operation.HasLeavingNode,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,

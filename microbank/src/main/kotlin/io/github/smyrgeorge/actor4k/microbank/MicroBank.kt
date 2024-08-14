@@ -4,10 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.microbank.serde.Jackson
-import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.github.smyrgeorge.actor4k.system.registry.ClusterActorRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import org.http4k.core.Method
@@ -32,13 +33,13 @@ sealed interface Req {
     @Serializable
     data class ApplyTx(override val accountNo: String, val value: Int) : Req
 
-    class Builder(private val ref: Actor.Ref) {
+    class Builder(private val ref: ActorRef) {
         suspend fun getAccount(accountNo: String): Account = ref.ask(GetAccount(accountNo))
         suspend fun applyTx(cmd: ApplyTx): Account = ref.ask(cmd)
     }
 
     companion object {
-        fun to(ref: Actor.Ref): Builder = Builder(ref)
+        fun to(ref: ActorRef): Builder = Builder(ref)
         suspend fun to(key: String): Builder {
             val ref = ActorSystem.get(AccountActor::class, key)
             return Builder(ref)
@@ -107,6 +108,7 @@ fun main() {
         .build()
 
     ActorSystem
+        .register(ClusterActorRegistry())
         .register(cluster)
         .start()
 

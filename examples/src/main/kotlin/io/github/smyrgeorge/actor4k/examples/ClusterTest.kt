@@ -1,8 +1,8 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.cluster.Cluster
-import io.github.smyrgeorge.actor4k.system.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.github.smyrgeorge.actor4k.system.registry.ClusterActorRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -36,6 +36,7 @@ fun main() {
 
     ActorSystem
         .register(cluster)
+        .register(ClusterActorRegistry())
         .start()
 
     runBlocking {

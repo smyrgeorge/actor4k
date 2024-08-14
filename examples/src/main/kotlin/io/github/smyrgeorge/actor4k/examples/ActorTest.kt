@@ -1,8 +1,10 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.system.ActorRegistry
+import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
+import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
@@ -35,9 +37,11 @@ data class AccountActor(
 fun main() {
     runBlocking {
         // Start the actor system.
-        ActorSystem.start()
+        ActorSystem
+            .register(SimpleActorRegistry())
+            .start()
 
-        val a: Actor.Ref = ActorSystem.get(AccountActor::class, "ACC0010")
+        val a: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
 
         val req = Req(msg = "[tell] Hello World!")
         a.tell(req)
@@ -46,12 +50,12 @@ fun main() {
         val r = a.ask<Resp>(req2)
         println(r)
 
-        val a2: Actor.Ref.Local = ActorSystem.get(AccountActor::class, "ACC0010") as Actor.Ref.Local
+        val a2: LocalRef = ActorSystem.get(AccountActor::class, "ACC0010") as LocalRef
         println(a2.status())
         a2.stop()
         delay(1000)
 
-        val a3: Actor.Ref.Local = ActorSystem.get(AccountActor::class, "ACC0030") as Actor.Ref.Local
+        val a3: LocalRef = ActorSystem.get(AccountActor::class, "ACC0030") as LocalRef
 
         a2.tell(req) // Will re-create the actor.
     }

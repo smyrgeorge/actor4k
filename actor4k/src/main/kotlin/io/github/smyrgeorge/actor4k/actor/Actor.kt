@@ -1,11 +1,9 @@
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
-import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
-import io.github.smyrgeorge.actor4k.system.ActorRegistry
+import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.java.JRef
+import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -29,9 +27,9 @@ abstract class Actor(open val shard: String, open val key: String) {
     private lateinit var mail: Channel<Patterns>
 
     /**
-     * Is called by the [ActorRegistry].
+     * Is called by the [SimpleActorRegistry].
      * Is called before the [Actor] begins to consume [Message]s.
-     * In case of an error the [ActorRegistry] will deregister the newly created [Actor].
+     * In case of an error the [SimpleActorRegistry] will deregister the newly created [Actor].
      * You can use this hook to early initialise the [Actor]'s state.
      */
     open suspend fun onBeforeActivate() {}
@@ -174,7 +172,7 @@ abstract class Actor(open val shard: String, open val key: String) {
         mail.close()
     }
 
-    fun ref(): Ref.Local = Ref.Local(shard, name, key, this::class.java)
+    fun ref(): LocalRef = LocalRef(shard, name, key, this::class.java)
 
     private sealed interface Patterns {
         val msg: Any
@@ -199,61 +197,6 @@ abstract class Actor(open val shard: String, open val key: String) {
         FINISHED(false, true)
     }
 
-    sealed class Ref(
-        open val shard: String,
-        open val name: String,
-        open val key: String,
-        open val address: String
-    ) {
-        abstract suspend fun tell(msg: Any)
-        abstract suspend fun <R> ask(msg: Any): R
-
-        fun asJava(): JRef = JRef(this)
-
-        data class Local(
-            override val shard: String,
-            override val name: String,
-            override val key: String,
-            val actor: Class<out Actor>,
-            override val address: String = addressOf(name, key)
-        ) : Ref(shard, name, key, address) {
-            override suspend fun tell(msg: Any) {
-                // Check if the requested shard is locked.
-                if (ActorSystem.isCluster()) ShardManager.isLocked(shard)?.ex()
-                ActorSystem.registry.get(this).tell(msg)
-            }
-
-            override suspend fun <R> ask(msg: Any): R {
-                // Check if the requested shard is locked.
-                if (ActorSystem.isCluster()) ShardManager.isLocked(shard)?.ex()
-                return ActorSystem.registry.get(this).ask(msg)
-            }
-
-            suspend fun status(): Status = ActorSystem.registry.get(this).status
-            suspend fun stop() = ActorSystem.registry.get(this).shutdown()
-        }
-
-        data class Remote(
-            override val shard: String,
-            override val name: String,
-            override val key: String,
-            private val clazz: String,
-            val exp: Instant,
-            override val address: String = addressOf(name, key)
-        ) : Ref(shard, name, key, address) {
-            override suspend fun tell(msg: Any) {
-                val payload: ByteArray = ActorSystem.cluster.serde.encode(msg::class.java, msg)
-                val message = Envelope.Tell(shard, clazz, key, payload, msg::class.java.name)
-                ActorSystem.cluster.msg(message).getOrThrow<Unit>()
-            }
-
-            override suspend fun <R> ask(msg: Any): R {
-                val payload: ByteArray = ActorSystem.cluster.serde.encode(msg::class.java, msg)
-                val message = Envelope.Ask(shard, clazz, key, payload, msg::class.java.name)
-                return ActorSystem.cluster.msg(message).getOrThrow()
-            }
-        }
-    }
 
     data class Stats(
         var last: Instant = Instant.now(),
@@ -279,6 +222,6 @@ abstract class Actor(open val shard: String, open val key: String) {
     companion object {
         private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"
         fun <A : Actor> addressOf(actor: Class<A>, key: String): String = addressOf(nameOf(actor), key)
-        private fun addressOf(actor: String, key: String): String = "$actor-$key"
+        fun addressOf(actor: String, key: String): String = "$actor-$key"
     }
 }
