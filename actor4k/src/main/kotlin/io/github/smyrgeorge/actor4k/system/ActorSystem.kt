@@ -47,7 +47,7 @@ object ActorSystem {
     }
 
     fun register(c: Cluster): ActorSystem {
-        if (isCluster()) error("Cannot register a cluster while it is registered")
+        if (isCluster()) error("Cannot register a cluster while it's already registered.")
         type = Type.CLUSTER
         stats = Stats.Cluster()
         cluster = c
@@ -55,6 +55,7 @@ object ActorSystem {
     }
 
     fun start(c: Conf = Conf()): ActorSystem {
+        if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
         conf = c
         if (isCluster()) cluster.start()
         status = Status.READY

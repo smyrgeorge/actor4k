@@ -51,11 +51,11 @@ object ActorRegistry {
         key: String,
         shard: String = key
     ): Actor.Ref {
-        if (ActorSystem.status != ActorSystem.Status.READY)
-            error("Cannot get/create actor, cluster is ${ActorSystem.status}.")
-
         // Calculate the actor address.
         val address: String = Actor.addressOf(actor, key)
+
+        if (ActorSystem.status != ActorSystem.Status.READY)
+            error("Cannot get/create $address, cluster is ${ActorSystem.status}.")
 
         // Limit the concurrent access to one at a time.
         // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
@@ -104,16 +104,16 @@ object ActorRegistry {
                 actor.callSuspend(it, "activate")
             } catch (e: InvocationTargetException) {
                 log.error { "Could not activate ${it.address()}. Reason: ${e.targetException.message}" }
-                deregister(actor = actor, key = key, force = true)
+                unregister(actor = actor, key = key, force = true)
                 throw e
             } catch (e: Exception) {
                 log.error { "Could not activate ${it.address()}." }
-                deregister(actor = actor, key = key, force = true)
+                unregister(actor = actor, key = key, force = true)
                 throw e
             }
         }
 
-        log.debug { "Actor $ref created." }
+        log.debug { "Actor $address created and activated successfully." }
         return ref
     }
 
@@ -129,35 +129,35 @@ object ActorRegistry {
     suspend fun get(ref: Actor.Ref.Local): Actor =
         local[ref.address] ?: get(ref.actor, ref.key).let { local[ref.address]!! }
 
-    suspend fun deregister(actor: Actor): Unit =
-        deregister(actor::class.java, actor.key)
+    suspend fun unregister(actor: Actor): Unit =
+        unregister(actor::class.java, actor.key)
 
-    suspend fun <A : Actor> deregister(actor: Class<A>, key: String, force: Boolean = false) {
+    suspend fun <A : Actor> unregister(actor: Class<A>, key: String, force: Boolean = false) {
         val address = Actor.addressOf(actor, key)
         mutex.withLock {
             local[address]?.let {
                 if (!force && it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
                 local.remove(address)
                 ShardManager.operation(ShardManager.Op.UNREGISTER, it.shard)
-                log.debug { "Unregistered actor $address." }
+                log.info { "Unregistered actor $address." }
             }
         }
     }
 
     suspend fun stopAll(): Unit = mutex.withLock {
-        log.debug { "Stopping all local actors. Total: ${local.size}" }
+        log.debug { "Stopping all local actors." }
         local.values.chunked(local.size, 4).forEachParallel { l ->
             l.forEach { it.shutdown() }
         }
     }
 
     private suspend fun stopLocalExpired(): Unit = mutex.withLock {
-        log.debug { "Stopping all local expired actors. Total: ${local.size}" }
+        log.debug { "Stopping all local expired actors." }
         local.values.chunked(local.size, 4).forEachParallel { l ->
             l.forEach {
                 val df = Instant.now().epochSecond - it.stats().last.epochSecond
                 if (df > ActorSystem.conf.actorExpiration.inWholeSeconds) {
-                    log.debug { "Closing ${it.address()}, ${it.stats()} (expired)." }
+                    log.info { "Closing ${it.address()}, ${it.stats()} (expired)." }
                     it.shutdown()
                 }
             }
@@ -165,7 +165,7 @@ object ActorRegistry {
     }
 
     private suspend fun removeRemoteExpired(): Unit = mutex.withLock {
-        log.debug { "Removing all remote expired actors. Total: ${remote.size}" }
+        log.debug { "Removing all remote expired actors." }
         remote.values.chunked(remote.size, 4).forEachParallel { l ->
             l.forEach { if (Instant.now().isAfter(it.exp)) remote.remove(it.address) }
         }
