@@ -8,7 +8,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.microbank.serde.Jackson
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.system.registry.ClusterActorRegistry
+import io.github.smyrgeorge.actor4k.cluster.system.registry.ClusterActorRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import org.http4k.core.Method

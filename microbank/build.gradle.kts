@@ -25,7 +25,7 @@ val grpcVersion: String by rootProject.extra
 
 dependencies {
     // Internal dependencies.
-    implementation(project(":actor4k"))
+    implementation(project(":actor4k-cluster"))
 
     // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf/kotlinx.serialization.protobuf/
     api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")
