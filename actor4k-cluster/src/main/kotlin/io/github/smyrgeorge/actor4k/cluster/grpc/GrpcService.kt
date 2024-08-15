@@ -1,6 +1,8 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -20,7 +22,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun ask(request: ClusterProto.Ask): ClusterProto.Response {
         return try {
-            val actor = ActorSystem.registry.get(request.actorClazz, request.actorKey, request.shard)
+            val actor = actorRefOf(request.actorClazz, request.actorKey, request.shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
             val res = actor.ask<Any>(msg)
             Envelope.Response.ok(request.shard, res).toProto()
@@ -32,7 +34,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun tell(request: ClusterProto.Tell): ClusterProto.Response {
         return try {
-            val actor = ActorSystem.registry.get(request.actorClazz, request.actorKey, request.shard)
+            val actor = actorRefOf(request.actorClazz, request.actorKey, request.shard)
             val msg = ActorSystem.cluster.serde.decode<Any>(request.payloadClass, request.payload.toByteArray())
             actor.tell(msg)
             Envelope.Response.ok(request.shard, ".").toProto()
@@ -44,7 +46,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     override suspend fun getActor(request: ClusterProto.GetActor): ClusterProto.Response {
         return try {
-            val actor = ActorSystem.registry.get(request.actorClazz, request.actorKey, request.shard)
+            val actor = actorRefOf(request.actorClazz, request.actorKey, request.shard)
             val res = Envelope.GetActor.Ref(request.shard, request.actorClazz, actor.name, actor.key)
             Envelope.Response.ok(request.shard, res).toProto()
         } catch (e: Exception) {
@@ -53,8 +55,15 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
         }
     }
 
+    private suspend fun actorRefOf(clazz: String, key: String, shard: String): ActorRef {
+        @Suppress("UNCHECKED_CAST")
+        val actor = Class.forName(clazz) as? Class<Actor>
+            ?: error("Could not find requested actor class='$clazz'.")
+        return ActorSystem.get(actor, key, shard)
+    }
+
     private fun Exception.toResponse(shard: String): ClusterProto.Response {
-        val code = if (this is Cluster.Error.ClusterError) code else Cluster.Error.Code.UNKNOWN
+        val code = if (this is Cluster.Error.ClusterException) code else Cluster.Error.Code.UNKNOWN
         val error = Cluster.Error(code, message ?: "")
         return Envelope.Response.error(shard, error).toProto()
     }

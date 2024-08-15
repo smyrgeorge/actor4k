@@ -18,7 +18,7 @@ interface Cluster {
             UNKNOWN
         }
 
-        fun ex(): Nothing = throw ClusterError(code, message)
-        data class ClusterError(val code: Code, override val message: String) : RuntimeException(message)
+        fun ex(): Nothing = throw ClusterException(code, message)
+        data class ClusterException(val code: Code, override val message: String) : RuntimeException(message)
     }
 }

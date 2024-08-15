@@ -35,26 +35,22 @@ abstract class ActorRegistry {
         }
     }
 
-    suspend fun <A : Actor> get(actor: KClass<A>, key: String, shard: String = key): ActorRef =
-        get(actor.java, key, shard)
-
-    abstract suspend fun <A : Actor> get(actor: Class<A>, key: String, shard: String = key): ActorRef
-
-    suspend fun get(clazz: String, key: String, shard: String): ActorRef {
-        @Suppress("UNCHECKED_CAST")
-        val actor = Class.forName(clazz) as? Class<Actor>
-            ?: error("Could not find requested actor class='$clazz'.")
-
-        val address = Actor.addressOf(actor, key)
-        return local[address]?.ref() ?: get(actor, key, shard)
-    }
-
     suspend fun get(ref: LocalRef): Actor =
         local[ref.address] ?: get(ref.actor, ref.key).let { local[ref.address]!! }
 
-    suspend fun unregister(actor: Actor): Unit =
-        unregister(actor::class.java, actor.key)
+    suspend fun <A : Actor> get(
+        actor: KClass<A>,
+        key: String,
+        shard: String = key
+    ): ActorRef = get(actor.java, key, shard)
 
+    abstract suspend fun <A : Actor> get(
+        actor: Class<A>,
+        key: String,
+        shard: String = key
+    ): ActorRef
+
+    suspend fun unregister(actor: Actor): Unit = unregister(actor::class.java, actor.key)
     abstract suspend fun <A : Actor> unregister(actor: Class<A>, key: String, force: Boolean = false)
 
     suspend fun stopAll(): Unit = mutex.withLock {

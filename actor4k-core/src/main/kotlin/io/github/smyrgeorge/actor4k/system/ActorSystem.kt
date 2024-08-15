@@ -18,7 +18,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-@Suppress("MemberVisibilityCanBePrivate")
 object ActorSystem {
 
     private val log = KotlinLogging.logger {}
@@ -42,16 +41,30 @@ object ActorSystem {
         launchGlobal {
             while (true) {
                 delay(conf.clusterLogStats)
-                stats()
+                // Log [Stats].
+                log.info { stats }
             }
         }
     }
 
-    suspend fun <A : Actor> get(actor: KClass<A>, key: String, shard: String = key): ActorRef =
-        registry.get(actor.java, key, shard)
+    fun isCluster(): Boolean = type == Type.CLUSTER
 
-    suspend fun <A : Actor> get(actor: Class<A>, key: String, shard: String = key): ActorRef =
-        registry.get(actor, key, shard)
+    suspend fun <A : Actor> get(
+        actor: KClass<A>,
+        key: String,
+        shard: String = key
+    ): ActorRef = registry.get(actor.java, key, shard)
+
+    suspend fun <A : Actor> get(
+        actor: Class<A>,
+        key: String,
+        shard: String = key
+    ): ActorRef = registry.get(actor, key, shard)
+
+    fun conf(conf: Conf): ActorSystem {
+        this.conf = conf
+        return this
+    }
 
     fun register(stats: Stats): ActorSystem {
         this.stats = stats
@@ -70,9 +83,10 @@ object ActorSystem {
         return this
     }
 
-    fun start(c: Conf = Conf()): ActorSystem {
+    fun start(): ActorSystem {
+        if (!this::stats.isInitialized) error("Please register a stats collector.")
+        if (!this::registry.isInitialized) error("Please register an actor registry.")
         if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
-        conf = c
         if (isCluster()) cluster.start()
         status = Status.READY
         return this
@@ -103,7 +117,9 @@ object ActorSystem {
 
     @Suppress("unused")
     private val hook = Runtime.getRuntime().addShutdownHook(
-        thread(start = false) { runBlocking(Dispatchers.IO) { Shutdown.shutdown(Shutdown.Trigger.EXTERNAL) } }
+        thread(start = false) {
+            runBlocking(Dispatchers.IO) { Shutdown.shutdown(Shutdown.Trigger.EXTERNAL) }
+        }
     )
 
     object Shutdown {
@@ -138,12 +154,5 @@ object ActorSystem {
             SELF_ERROR,
             EXTERNAL
         }
-    }
-
-    fun isCluster(): Boolean = type == Type.CLUSTER
-
-    fun stats() {
-        // Log [Stats].
-        log.info { stats }
     }
 }
