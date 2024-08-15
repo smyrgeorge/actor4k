@@ -1,5 +1,5 @@
 group = "io.github.smyrgeorge"
-version = "0.6.0"
+version = "0.6.2"
 
 // https://mvnrepository.com/artifact/io.grpc/grpc-api
 val grpcVersion: String by extra { "1.65.1" }

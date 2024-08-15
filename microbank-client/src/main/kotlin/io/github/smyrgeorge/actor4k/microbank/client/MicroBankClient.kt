@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.microbank.client
 
-import arrow.core.fold
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.microbank.client.serde.Jackson
@@ -66,8 +65,8 @@ fun main(args: Array<String>) {
     }
     log.info { "Finished sending transactions." }
 
-    val accounts = getAccounts()
-    val total: Int = accounts.fold(0) { acc, e ->
+    val accounts: Map<Int, Account> = getAccounts()
+    val total: Int = accounts.entries.fold(0) { acc, e ->
         val new = acc + e.value.balance
         new
     }

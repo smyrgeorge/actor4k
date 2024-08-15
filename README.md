@@ -1,7 +1,7 @@
 # actor4k
 
 ![Build](https://github.com/smyrgeorge/actor4k/actions/workflows/ci.yml/badge.svg)
-![Maven Central](https://img.shields.io/maven-central/v/io.github.smyrgeorge/actor4k)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.smyrgeorge/actor4k-core)
 ![GitHub License](https://img.shields.io/github/license/smyrgeorge/actor4k)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/smyrgeorge/actor4k)
 ![GitHub issues](https://img.shields.io/github/issues/smyrgeorge/actor4k)

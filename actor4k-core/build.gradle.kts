@@ -18,8 +18,8 @@ repositories {
 }
 
 dependencies {
-    api(kotlin("reflect"))
     // Kotlin
+    implementation(kotlin("reflect"))
     // https://github.com/Kotlin/kotlinx.coroutines
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.8.1")
@@ -27,11 +27,6 @@ dependencies {
     // Logging
     // https://github.com/oshai/kotlin-logging
     api("io.github.oshai:kotlin-logging-jvm:7.0.0")
-
-    // Arrow
-    // https://github.com/arrow-kt/arrow
-    api("io.arrow-kt:arrow-core:1.2.4")
-    api("io.arrow-kt:arrow-fx-coroutines:1.2.4")
 
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
