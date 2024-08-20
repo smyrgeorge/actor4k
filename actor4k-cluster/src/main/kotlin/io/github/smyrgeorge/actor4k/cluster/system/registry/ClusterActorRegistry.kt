@@ -2,8 +2,10 @@ package io.github.smyrgeorge.actor4k.cluster.system.registry
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
+import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
-import io.github.smyrgeorge.actor4k.cluster.actor.ref.RemoteRef
+import io.github.smyrgeorge.actor4k.cluster.actor.ref.ClusterLocalRef
+import io.github.smyrgeorge.actor4k.cluster.actor.ref.ClusterRemoteRef
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
@@ -29,7 +31,7 @@ class ClusterActorRegistry : ActorRegistry() {
     }
 
     // Stores [Actor.Ref.Remote].
-    private val remote: MutableMap<String, RemoteRef> = mutableMapOf()
+    private val remote: MutableMap<String, ClusterRemoteRef> = mutableMapOf()
 
     override suspend fun <A : Actor> get(actor: Class<A>, key: String, shard: String): ActorRef {
         // Calculate the actor address.
@@ -71,9 +73,9 @@ class ClusterActorRegistry : ActorRegistry() {
                 local[address] = a
 
                 // Declare shard to the [ShardManager]
-                ActorSystem.cluster.registerShard(shard)
+                cluster.registerShard(shard)
 
-                a.ref() to a
+                a.ref().toClusterLocalRef() to a
             }
         }
 
@@ -103,7 +105,7 @@ class ClusterActorRegistry : ActorRegistry() {
             local[address]?.let {
                 if (!force && it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
                 local.remove(address)
-                ActorSystem.cluster.unregisterShard(it.shard)
+                cluster.unregisterShard(it.shard)
                 log.info { "Unregistered actor $address." }
             }
         }
@@ -115,4 +117,7 @@ class ClusterActorRegistry : ActorRegistry() {
             l.forEach { if (Instant.now().isAfter(it.exp)) remote.remove(it.address) }
         }
     }
+
+    private fun LocalRef.toClusterLocalRef(): ClusterLocalRef =
+        ClusterLocalRef(shard, name, key, actor, address)
 }

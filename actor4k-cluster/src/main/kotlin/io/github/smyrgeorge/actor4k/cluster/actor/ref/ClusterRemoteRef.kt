@@ -7,7 +7,7 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import java.time.Instant
 
-data class RemoteRef(
+data class ClusterRemoteRef(
     override val shard: String,
     override val name: String,
     override val key: String,

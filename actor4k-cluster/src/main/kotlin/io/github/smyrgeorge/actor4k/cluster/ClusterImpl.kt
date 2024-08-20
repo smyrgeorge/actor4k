@@ -14,7 +14,6 @@ import io.github.smyrgeorge.actor4k.cluster.shard.ShardManager
 import io.grpc.netty.NettyServerBuilder
 import io.microraft.RaftConfig
 import io.microraft.RaftNode
-import io.scalecube.cluster.ClusterImpl
 import io.scalecube.net.Address
 import io.scalecube.transport.netty.tcp.TcpTransportFactory
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
@@ -25,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
 import io.scalecube.cluster.Cluster as ScaleCubeCluster
+import io.scalecube.cluster.ClusterImpl as ScaleCubeClusterImpl
 
 class ClusterImpl(
     val conf: Conf,
@@ -73,24 +73,24 @@ class ClusterImpl(
         grpcClients.remove(alias)
     }
 
-    override fun shardIsLocked(shard: String): Cluster.Error? =
+    fun shardIsLocked(shard: String): Error? =
         shardManager.isLocked(shard)
 
-    override fun registerShard(shard: String) {
+    fun registerShard(shard: String) {
         shardManager.operation(ShardManager.Op.REGISTER, shard)
     }
 
-    override fun unregisterShard(shard: String) {
+    fun unregisterShard(shard: String) {
         shardManager.operation(ShardManager.Op.UNREGISTER, shard)
     }
 
-    override fun start(): io.github.smyrgeorge.actor4k.cluster.ClusterImpl {
+    override fun start(): ClusterImpl {
         grpc.start()
-        (gossip as ClusterImpl).startAwait()
+        (gossip as ScaleCubeClusterImpl).startAwait()
         return this
     }
 
-    fun startRaft(initialGroupMembers: List<Endpoint>): io.github.smyrgeorge.actor4k.cluster.ClusterImpl {
+    fun startRaft(initialGroupMembers: List<Endpoint>): ClusterImpl {
         log.info { "Starting raft, initialGroupMembers=$initialGroupMembers" }
 
         val endpoint = Endpoint(conf.alias, conf.host, conf.grpcPort)
@@ -135,9 +135,9 @@ class ClusterImpl(
             return this
         }
 
-        fun build(): io.github.smyrgeorge.actor4k.cluster.ClusterImpl {
+        fun build(): ClusterImpl {
             // Build cluster.
-            val gossip: ScaleCubeCluster = ClusterImpl()
+            val gossip: ScaleCubeCluster = ScaleCubeClusterImpl()
                 .transport { it.port(conf.gossipPort) }
                 .config { it.memberAlias(conf.alias) }
                 .config { it.metadata(Metadata(conf.grpcPort)) }
@@ -244,6 +244,19 @@ class ClusterImpl(
                 seedMembers = seedMembers
             )
         }
+    }
+
+    data class Error(
+        val code: Code,
+        val message: String
+    ) {
+        enum class Code {
+            SHARD_ACCESS_ERROR,
+            UNKNOWN
+        }
+
+        fun ex(): Nothing = throw ClusterException(code, message)
+        data class ClusterException(val code: Code, override val message: String) : RuntimeException(message)
     }
 
     companion object {

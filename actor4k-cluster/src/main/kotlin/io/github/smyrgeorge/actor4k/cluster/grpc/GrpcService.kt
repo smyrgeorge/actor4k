@@ -3,7 +3,7 @@ package io.github.smyrgeorge.actor4k.cluster.grpc
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
-import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.proto.Cluster as ClusterProto
@@ -63,8 +63,8 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
     }
 
     private fun Exception.toResponse(shard: String): ClusterProto.Response {
-        val code = if (this is Cluster.Error.ClusterException) code else Cluster.Error.Code.UNKNOWN
-        val error = Cluster.Error(code, message ?: "")
+        val code = if (this is ClusterImpl.Error.ClusterException) code else ClusterImpl.Error.Code.UNKNOWN
+        val error = ClusterImpl.Error(code, message ?: "")
         return Envelope.Response.error(shard, error).toProto()
     }
 }

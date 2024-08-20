@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
 import com.google.protobuf.ByteString
-import io.github.smyrgeorge.actor4k.cluster.Cluster
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.proto.ask
 import io.github.smyrgeorge.actor4k.proto.getActor
 import io.github.smyrgeorge.actor4k.proto.response
@@ -12,7 +12,7 @@ fun ClusterProto.Response.toResponse() =
     Envelope.Response(shard, payload.toByteArray(), payloadClass, error)
 
 fun ClusterProto.Response.Error.toError() =
-    Cluster.Error(Cluster.Error.Code.valueOf(code), message)
+    ClusterImpl.Error(ClusterImpl.Error.Code.valueOf(code), message)
 
 fun Envelope.Ask.toProto(): ClusterProto.Ask {
     val m = this
@@ -55,7 +55,7 @@ fun Envelope.Response.toProto(): ClusterProto.Response {
     }
 }
 
-fun Cluster.Error.toProto(): ClusterProto.Response.Error {
+fun ClusterImpl.Error.toProto(): ClusterProto.Response.Error {
     val m = this
     return ClusterProto.Response.Error.newBuilder()
         .setCode(m.code.name)

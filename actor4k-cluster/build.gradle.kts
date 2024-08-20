@@ -25,7 +25,7 @@ val protobufVersion: String by rootProject.extra
 val grpcKotlinVersion: String by rootProject.extra
 
 dependencies {
-    api(project(":actor4k-core"))
+    api(project(":actor4k"))
 
     // https://central.sonatype.com/artifact/io.scalecube/scalecube-cluster
     implementation("io.scalecube:scalecube-cluster:2.6.17")

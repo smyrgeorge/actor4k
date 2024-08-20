@@ -13,4 +13,3 @@ abstract class ActorRef(
 
     fun asJava(): JRef = JRef(this)
 }
-

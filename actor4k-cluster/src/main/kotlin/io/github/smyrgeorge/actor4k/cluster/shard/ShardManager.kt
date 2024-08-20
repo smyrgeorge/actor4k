@@ -2,7 +2,6 @@ package io.github.smyrgeorge.actor4k.cluster.shard
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
-import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.retryBlocking
@@ -24,17 +23,17 @@ class ShardManager {
     private val shardsBeingMigrated: MutableSet<String> = mutableSetOf()
     private val closedShardsAfterSharadMigrationRequest: MutableSet<String> = mutableSetOf()
 
-    fun isLocked(shard: String): Cluster.Error? {
+    fun isLocked(shard: String): ClusterImpl.Error? {
         if (shardsBeingMigrated.contains(shard)) {
-            return Cluster.Error(
-                code = Cluster.Error.Code.SHARD_ACCESS_ERROR,
+            return ClusterImpl.Error(
+                code = ClusterImpl.Error.Code.SHARD_ACCESS_ERROR,
                 message = "Cannot process message for shard='$shard', shard is locked due to cluster migration."
             )
         }
 
         if (cluster.nodeOf(shard).dc != cluster.conf.alias) {
-            return Cluster.Error(
-                code = Cluster.Error.Code.SHARD_ACCESS_ERROR,
+            return ClusterImpl.Error(
+                code = ClusterImpl.Error.Code.SHARD_ACCESS_ERROR,
                 message = "Message for requested shard='$shard' is not supported for node='${cluster.conf.alias}'."
             )
         }

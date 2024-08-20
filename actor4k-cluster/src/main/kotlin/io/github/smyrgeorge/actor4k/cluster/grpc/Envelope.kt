@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
-import io.github.smyrgeorge.actor4k.cluster.Cluster
-import io.github.smyrgeorge.actor4k.cluster.actor.ref.RemoteRef
+import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
+import io.github.smyrgeorge.actor4k.cluster.actor.ref.ClusterRemoteRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -45,7 +45,7 @@ sealed interface Envelope {
                 .plusSeconds(ActorSystem.conf.actorRemoteRefExpiration.inWholeSeconds)
                 .epochSecond
 
-            fun toRef(shard: String): RemoteRef = RemoteRef(
+            fun toRef(shard: String): ClusterRemoteRef = ClusterRemoteRef(
                 shard = shard,
                 name = name,
                 key = key,
@@ -67,7 +67,7 @@ sealed interface Envelope {
             else ActorSystem.cluster.serde.decode(payloadClass, payload)
 
         companion object {
-            fun error(shard: String, error: Cluster.Error): Response =
+            fun error(shard: String, error: ClusterImpl.Error): Response =
                 Response(
                     shard = shard,
                     payload = error.toProto().toByteArray(),
