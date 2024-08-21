@@ -73,6 +73,7 @@ abstract class ActorRegistry {
         }
     }
 
-    fun count(): Int = local.count()
+    fun count(): Int = local.size
+    fun totalMessages(): Long = local.map { it.value.stats().messages }.sum()
     fun asJava(): JActorRegistry = JActorRegistry
 }
