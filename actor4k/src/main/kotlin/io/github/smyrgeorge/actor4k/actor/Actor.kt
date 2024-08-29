@@ -6,6 +6,7 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -87,9 +88,12 @@ abstract class Actor(open val shard: String, open val key: String) {
                         log.error { "[$address] Failed to activate, will shutdown (${e.message ?: ""})" }
                         if (it is Patterns.Ask) {
                             try {
-                                it.replyTo.send(Result.failure(e))
+                                // We should be able to reply immediately.
+                                withTimeout(2.seconds) {
+                                    it.replyTo.send(Result.failure(e))
+                                }
                             } catch (e: Exception) {
-                                log.debug { "Could not send reply to the client." }
+                                log.debug { "Could not send reply to the client. ${e.message}" }
                             }
                         }
                         shutdown()
@@ -106,7 +110,12 @@ abstract class Actor(open val shard: String, open val key: String) {
                             val r: Result<Any> =
                                 if (reply.isSuccess) Result.success(reply.getOrThrow().value)
                                 else Result.failure(reply.exceptionOrNull()!!)
-                            it.replyTo.send(r)
+                            // We should be able to reply immediately.
+                            withTimeout(2.seconds) {
+                                it.replyTo.send(r)
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            log.debug { "[consume] Could not send reply in time. ${e.message}" }
                         } catch (e: ClosedSendChannelException) {
                             log.warn { "[consume] Did not manage to reply in time (although the message was processed). $it" }
                         } catch (e: Exception) {
@@ -141,12 +150,24 @@ abstract class Actor(open val shard: String, open val key: String) {
         }
     }
 
+    /**
+     * Sends a message to the actor.
+     *
+     * @param msg the message to be sent
+     */
     suspend fun <C> tell(msg: C) {
         if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
         val tell = Patterns.Tell(msg as Any)
         mail.send(tell)
     }
 
+    /**
+     * Sends a message to the actor and waits for a response.
+     *
+     * @param msg the message to be sent
+     * @param timeout the timeout duration for waiting for a response (default is 30 seconds)
+     * @return the response from the actor
+     */
     suspend fun <C, R> ask(msg: C, timeout: Duration = 30.seconds): R {
         if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
         val ask = Patterns.Ask(msg as Any)
@@ -221,7 +242,23 @@ abstract class Actor(open val shard: String, open val key: String) {
 
     companion object {
         private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"
+
+        /**
+         * Calculates the address of an actor by concatenating the actor name with the given key.
+         *
+         * @param actor the class type of the actor
+         * @param key the key used to generate the address
+         * @return the address of the actor
+         */
         fun <A : Actor> addressOf(actor: Class<A>, key: String): String = addressOf(nameOf(actor), key)
+
+        /**
+         * Calculates the address of an actor by concatenating the actor name with the given key.
+         *
+         * @param actor the actor's name
+         * @param key the key used to generate the address
+         * @return the address of the actor
+         */
         fun addressOf(actor: String, key: String): String = "$actor-$key"
     }
 }
