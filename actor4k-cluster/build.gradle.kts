@@ -26,6 +26,9 @@ val grpcKotlinVersion: String by rootProject.extra
 
 dependencies {
     api(project(":actor4k"))
+    
+    // https://github.com/oshai/kotlin-logging
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
     // https://central.sonatype.com/artifact/io.scalecube/scalecube-cluster
     implementation("io.scalecube:scalecube-cluster:2.6.17")
