@@ -26,7 +26,7 @@ dependencies {
 
     // Logging
     // https://github.com/oshai/kotlin-logging
-    api("io.github.oshai:kotlin-logging-jvm:7.0.0")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
     // Test dependencies
     // https://github.com/mockito/mockito-kotlin
