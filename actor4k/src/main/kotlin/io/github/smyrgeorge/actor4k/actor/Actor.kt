@@ -16,6 +16,13 @@ import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * Abstract class representing an actor with basic functionality for message handling,
+ * activation, and status management.
+ *
+ * @property shard the shard identifier for the actor.
+ * @property key the key identifying the actor.
+ */
 abstract class Actor(open val shard: String, open val key: String) {
     protected val log = KotlinLogging.logger {}
 

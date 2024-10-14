@@ -18,6 +18,11 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * Represents the Actor System which manages the lifecycle, registration, and configuration
+ * of actors and clusters. It is responsible for maintaining the status of actors, collecting
+ * statistics, and handling cluster operations.
+ */
 object ActorSystem {
 
     private val log = KotlinLogging.logger {}

@@ -6,10 +6,10 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
-import io.github.smyrgeorge.actor4k.microbank.serde.Jackson
-import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.cluster.system.registry.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.system.stats.ClusterStats
+import io.github.smyrgeorge.actor4k.microbank.serde.Jackson
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import org.http4k.core.Method
@@ -40,7 +40,6 @@ sealed interface Req {
     }
 
     companion object {
-        fun to(ref: ActorRef): Builder = Builder(ref)
         suspend fun to(key: String): Builder {
             val ref = ActorSystem.get(AccountActor::class, key)
             return Builder(ref)
@@ -58,11 +57,12 @@ data class AccountActor(
 
     private val account = Account(key, Int.MIN_VALUE)
 
-    override suspend fun onBeforeActivate() {
+    override suspend fun onActivate(m: Message) {
         // Initialize the account balance here.
         // E.g. fetch the data from the DB.
         // In this case we will assume that the balance is equal to '0'.
         account.balance = 0
+        log.info { "Activated: $account" }
     }
 
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {

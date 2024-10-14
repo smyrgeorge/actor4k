@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.cluster.system.registry
 
-import arrow.fx.coroutines.parMap
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
@@ -13,6 +12,7 @@ import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.util.callSuspend
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.lang.reflect.InvocationTargetException
 import java.time.Instant
@@ -33,6 +33,7 @@ class ClusterActorRegistry : ActorRegistry() {
 
     // Stores [Actor.Ref.Remote].
     private val remote: MutableMap<String, ClusterRemoteRef> = mutableMapOf()
+    private val remoteMutex = Mutex()
 
     override suspend fun <A : Actor> get(actor: Class<A>, key: String, shard: String): ActorRef {
         // Calculate the actor address.
@@ -41,17 +42,16 @@ class ClusterActorRegistry : ActorRegistry() {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create $address, cluster is ${ActorSystem.status}.")
 
-        // Limit the concurrent access to one at a time.
-        // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
-        val (ref: ActorRef, actorInstance: Actor?) = mutex.withLock {
-            // Check if the actor already exists in the local storage.
-            local[address]?.let { return it.ref() }
-
+        val (ref: ActorRef, actorInstance: Actor?) =
             // Create Local/Remote actor.
-            if (ActorSystem.isCluster() && cluster.nodeOf(shard).dc != cluster.conf.alias) {
-                val existing = remote[address]
-                if (existing != null && Instant.now().isBefore(existing.exp)) return existing
-                else remote.remove(address)
+            if (cluster.nodeOf(shard).dc != cluster.conf.alias) {
+                // Limit the concurrent access to one at a time.
+                // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
+                remoteMutex.withLock {
+                    val existing = remote[address]
+                    if (existing != null && Instant.now().isBefore(existing.exp)) return existing
+                    else remote.remove(address)
+                }
 
                 // Case Remote.
                 // Forward the [Envelope.Spawn] message to the correct cluster node.
@@ -60,25 +60,34 @@ class ClusterActorRegistry : ActorRegistry() {
                     .msg(msg)
                     .getOrThrow<Envelope.GetActor.Ref>()
                     .toRef(shard)
-                    .also { remote[address] = it }
-
+                    .also {
+                        remoteMutex.withLock {
+                            remote[address] = it
+                        }
+                    }
                 ref to null
             } else {
-                // Case Local.
-                // Spawn the actor.
-                val a: Actor = actor
-                    .getConstructor(String::class.java, String::class.java)
-                    .newInstance(shard, key)
+                // Limit the concurrent access to one at a time.
+                // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
+                mutex.withLock {
+                    // Check if the actor already exists in the local storage.
+                    local[address]?.let { return it.ref() }
 
-                // Store [Actor.Ref] to the local storage.
-                local[address] = a
+                    // Case Local.
+                    // Spawn the actor.
+                    val a: Actor = actor
+                        .getConstructor(String::class.java, String::class.java)
+                        .newInstance(shard, key)
 
-                // Declare shard to the [ShardManager]
-                cluster.registerShard(shard)
+                    // Store [Actor.Ref] to the local storage.
+                    local[address] = a
 
-                a.ref().toClusterLocalRef() to a
+                    // Declare shard to the [ShardManager]
+                    cluster.registerShard(shard)
+
+                    a.ref().toClusterLocalRef() to a
+                }
             }
-        }
 
         // Invoke activate (initialization) method.
         @Suppress("DuplicatedCode")
@@ -112,9 +121,9 @@ class ClusterActorRegistry : ActorRegistry() {
         }
     }
 
-    private suspend fun removeRemoteExpired(): Unit = mutex.withLock {
+    private suspend fun removeRemoteExpired(): Unit = remoteMutex.withLock {
         log.debug { "Removing all remote expired actors." }
-        remote.values.parMap(concurrency = 4) {
+        remote.values.forEach {
             if (Instant.now().isAfter(it.exp)) remote.remove(it.address)
         }
     }

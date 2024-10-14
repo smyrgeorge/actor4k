@@ -52,6 +52,7 @@ class ClusterImpl(
     suspend fun msg(message: Envelope): Envelope.Response {
         val target = nodeOf(message.shard)
         return if (target.dc == conf.alias) {
+            println("NOOOOOOOOOOOO")
             // Shortcut in case we need to send a message to self (same node).
             grpcService.request(message)
         } else {
