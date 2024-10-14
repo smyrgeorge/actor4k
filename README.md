@@ -11,6 +11,13 @@ It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.corou
 
 The primary objective is to create a minimal actor system capable of functioning in cluster mode.
 
+> [!IMPORTANT]  
+> The project is in a very early stage; thus, breaking changes should be expected.
+
+📖 [Documentation](https://smyrgeorge.github.io/actor4k/)
+
+🏠 [Homepage](https://smyrgeorge.github.io/) (under construction)
+
 ### Work in progress
 
 The project is currently under development.
