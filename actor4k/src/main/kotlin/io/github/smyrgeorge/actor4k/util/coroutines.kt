@@ -16,14 +16,6 @@ fun launchGlobal(f: suspend () -> Unit): Job =
 suspend fun <T> io(f: suspend () -> T): T =
     withContext(Dispatchers.IO) { f() }
 
-suspend fun <T> retryCatching(
-    times: Int = 3,
-    initialDelay: Long = 100, // 0.1 second
-    maxDelay: Long = 1000,    // 1 second
-    factor: Double = 2.0,
-    block: suspend () -> T
-): Result<T> = runCatching { retry(times, initialDelay, maxDelay, factor, block) }
-
 suspend fun <T> retry(
     times: Int = 3,
     initialDelay: Long = 100, // 0.1 second

@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.system.registry
 
+import arrow.fx.coroutines.parMap
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
@@ -10,8 +11,6 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.util.callSuspend
-import io.github.smyrgeorge.actor4k.util.chunked
-import io.github.smyrgeorge.actor4k.util.forEachParallel
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.withLock
@@ -113,8 +112,8 @@ class ClusterActorRegistry : ActorRegistry() {
 
     private suspend fun removeRemoteExpired(): Unit = mutex.withLock {
         log.debug { "Removing all remote expired actors." }
-        remote.values.chunked(remote.size, 4).forEachParallel { l ->
-            l.forEach { if (Instant.now().isAfter(it.exp)) remote.remove(it.address) }
+        remote.values.parMap(concurrency = 4) {
+            if (Instant.now().isAfter(it.exp)) remote.remove(it.address)
         }
     }
 

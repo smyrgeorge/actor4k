@@ -1,11 +1,9 @@
 package io.github.smyrgeorge.actor4k.microbank.client
 
+import arrow.fx.coroutines.parMap
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.microbank.client.serde.Jackson
-import io.github.smyrgeorge.actor4k.util.chunked
-import io.github.smyrgeorge.actor4k.util.forEachParallel
-import io.github.smyrgeorge.actor4k.util.mapParallel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -32,16 +30,13 @@ fun main(args: Array<String>) {
 
     fun getAccounts() = runBlocking {
         (1..noOfAccounts)
-            .chunked(noOfAccounts, concurrency)
-            .mapParallel { l ->
+            .parMap { id ->
                 withContext(Dispatchers.IO) {
-                    l.map { id ->
-                        val req = Request(Method.GET, "http://localhost:9000/api/account/ACC-$id")
-                        val res = client(req)
-                        id to om.readValue<Account>(res.body.stream)
-                    }
+                    val req = Request(Method.GET, "http://localhost:9000/api/account/ACC-$id")
+                    val res = client(req)
+                    id to om.readValue<Account>(res.body.stream)
                 }
-            }.flatten()
+            }
     }.toMap()
 
     log.info { "Creating accounts..." }
@@ -51,7 +46,7 @@ fun main(args: Array<String>) {
     log.info { "Sending ${concurrency * transactionsPerWorker} transactions using $concurrency workers..." }
     runBlocking {
         (1..concurrency)
-            .forEachParallel {
+            .parMap {
                 (1..transactionsPerWorker).forEach { _ ->
                     val sign = if (it % 2 == 0) 1 else -1
                     val accountId = Random.nextInt(1, noOfAccounts)

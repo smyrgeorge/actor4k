@@ -14,6 +14,8 @@ dependencies {
     implementation(kotlin("reflect"))
     api(libs.kotlinx.coroutines.core)
     api(libs.kotlinx.coroutines.reactive)
+    api(libs.arrow.core)
+    api(libs.arrow.fx.coroutines)
 
     // Logging
     // https://github.com/oshai/kotlin-logging

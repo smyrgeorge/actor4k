@@ -1,6 +1,6 @@
 package io.github.smyrgeorge.actor4k.system.stats
 
-abstract class Stats {
-    abstract var actors: Int
-    abstract fun collect()
+interface Stats {
+    var actors: Int
+    fun collect()
 }

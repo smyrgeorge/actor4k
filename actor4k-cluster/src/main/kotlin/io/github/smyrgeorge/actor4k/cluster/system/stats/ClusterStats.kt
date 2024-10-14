@@ -8,7 +8,7 @@ data class ClusterStats(
     override var actors: Int = 0,
     private var nodes: Int = 0,
     private var shards: Int = 0
-) : Stats() {
+) : Stats {
     private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
 
     override fun collect() {

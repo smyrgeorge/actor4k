@@ -6,7 +6,7 @@ import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import io.github.smyrgeorge.actor4k.util.retryBlocking
-import io.github.smyrgeorge.actor4k.util.toInstance
+import io.github.smyrgeorge.actor4k.cluster.util.toInstance
 import io.microraft.model.message.RaftMessage
 import io.scalecube.cluster.membership.MembershipEvent
 import io.scalecube.cluster.transport.api.Message

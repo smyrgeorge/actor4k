@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.util
+package io.github.smyrgeorge.actor4k.cluster.util
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream

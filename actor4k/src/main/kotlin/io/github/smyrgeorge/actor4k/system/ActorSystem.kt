@@ -6,6 +6,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.Stats
+import io.github.smyrgeorge.actor4k.util.freeMemory
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -23,6 +24,7 @@ object ActorSystem {
     private val log = KotlinLogging.logger {}
 
     var conf = Conf()
+    @Suppress("MemberVisibilityCanBePrivate")
     var type: Type = Type.SIMPLE
     var status: Status = Status.NOT_READY
 
@@ -34,6 +36,10 @@ object ActorSystem {
         launchGlobal {
             while (true) {
                 delay(conf.clusterCollectStats)
+                val free = freeMemory()
+                if (free < conf.lowMemoryThresholdMd) {
+                    log.warn { "Low memory detected ($free MB), threshold is ${conf.lowMemoryThresholdMd} MB." }
+                }
                 stats.collect()
             }
         }
@@ -108,11 +114,12 @@ object ActorSystem {
         val initializationRounds: Int = 10,
         val initializationDelayPerRound: Duration = 5.seconds,
         val clusterLogStats: Duration = 30.seconds,
-        val clusterCollectStats: Duration = 10.seconds,
+        val clusterCollectStats: Duration = 5.seconds,
         val registryCleanup: Duration = 30.seconds,
         val actorExpiration: Duration = 15.minutes,
         val actorRemoteRefExpiration: Duration = 2.minutes,
-        val memberManagerRoundDelay: Duration = 2.seconds
+        val memberManagerRoundDelay: Duration = 2.seconds,
+        val lowMemoryThresholdMd: Int = 50
     )
 
     @Suppress("unused")
