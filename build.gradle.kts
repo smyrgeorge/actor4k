@@ -1,5 +1,5 @@
 group = "io.github.smyrgeorge"
-version = "0.6.8"
+version = "0.10.0"
 
 // https://mvnrepository.com/artifact/io.grpc/grpc-api
 val grpcVersion: String by extra { "1.65.1" }
@@ -10,10 +10,31 @@ val grpcKotlinVersion: String by extra { "1.4.1" }
 
 // Common plugin versions here.
 plugins {
-    // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.jvm
-    kotlin("jvm") version "1.9.25" apply false
-    // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
-    kotlin("plugin.serialization") version "1.9.25" apply false
-    // https://github.com/vanniktech/gradle-maven-publish-plugin
-    id("com.vanniktech.maven.publish") version "0.29.0" apply false
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.pubhish) apply false
+}
+
+repositories {
+    mavenCentral()
+}
+
+subprojects {
+    group = rootProject.group
+    version = rootProject.version
+
+    repositories {
+        mavenCentral()
+        // IMPORTANT: must be last.
+        mavenLocal()
+    }
+
+    // Dokka config
+    run {
+        // Exclude microbank.
+        if (!project.name.startsWith("actor4k")) return@run
+        // Run with ./gradlew :dokkaHtmlMultiModule
+        apply(plugin = "org.jetbrains.dokka")
+    }
 }

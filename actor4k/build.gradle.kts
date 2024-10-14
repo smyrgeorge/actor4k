@@ -3,40 +3,24 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm")
-    id("com.vanniktech.maven.publish")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.pubhish)
 }
 
-group = rootProject.group
-version = rootProject.version
 java.sourceCompatibility = JavaVersion.VERSION_17
-
-repositories {
-    mavenCentral()
-    // IMPORTANT: must be last.
-    mavenLocal()
-}
 
 dependencies {
     // Kotlin
     implementation(kotlin("reflect"))
-    // https://github.com/Kotlin/kotlinx.coroutines
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.8.1")
+    api(libs.kotlinx.coroutines.core)
+    api(libs.kotlinx.coroutines.reactive)
 
     // Logging
     // https://github.com/oshai/kotlin-logging
     api("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
     // Test dependencies
-    // https://github.com/mockito/mockito-kotlin
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
-}
-
-
-// Disable this task, because the protobuf plugin generates too many warnings.
-tasks.withType<Javadoc> {
-    enabled = false
+    testImplementation(libs.mockito)
 }
 
 mavenPublishing {

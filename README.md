@@ -5,7 +5,7 @@
 ![GitHub License](https://img.shields.io/github/license/smyrgeorge/actor4k)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/smyrgeorge/actor4k)
 ![GitHub issues](https://img.shields.io/github/issues/smyrgeorge/actor4k)
-[![Kotlin](https://img.shields.io/badge/kotlin-1.9.24-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.0.21-blue.svg?logo=kotlin)](http://kotlinlang.org)
 
 It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.coroutines).
 
@@ -169,15 +169,11 @@ A lot of things need to be done, so sit tight…
     - [x] Use gRPC for sending messages from an actor to another (in the case of different nodes)
     - [x] Use protobuf for actor messages (kotlinx protobuf)
 - [x] Java compatibility
-- [ ] Logging (in progress)
-    - [x] Configure log4j/slf4j
-    - [ ] Disable unnecessary messages
 - [ ] Benchmark (in progress)
     - [x] GET a single account (JMeter) (
       see [microbank :: get single account.jmx](microbank-bench%2Fsrc%2Fjmeter%2Fmicrobank%20%3A%3A%20get%20single%20account.jmx)).
       Managed 16.6k req/sec with 3 nodes in a Macbook Pro with M1 Max
     - [ ] Deploy `microbank` to a kubernetes cluster.
-    - [ ] Load test with gatling (in progress)
 - [ ] Testing
 - [ ] Native Kotlin support (in progress)
 - [ ] Metrics/Stats (in progress)

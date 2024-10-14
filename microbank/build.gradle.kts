@@ -5,21 +5,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     java
     application
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-    // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.shadow)
 }
 
-group = rootProject.group
-version = rootProject.version
 java.sourceCompatibility = JavaVersion.VERSION_17
-
-repositories {
-    mavenCentral()
-    // IMPORTANT: must be last.
-    mavenLocal()
-}
 
 val grpcVersion: String by rootProject.extra
 
@@ -27,20 +18,15 @@ dependencies {
     // Internal dependencies.
     implementation(project(":actor4k-cluster"))
 
-    // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf/kotlinx.serialization.protobuf/
-    api("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")
+    api(libs.kotlinx.serialization.protobuf)
+    implementation(libs.slf4j.api)
+    implementation(libs.slf4j.reload4j)
 
-    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    implementation("org.slf4j:slf4j-api:2.0.13")
-    implementation("org.slf4j:slf4j-reload4j:2.0.13")
+    implementation(libs.jackson.core)
+    implementation(libs.jackson.module.kotlin)
+    implementation(libs.jackson.datatype.jsr310)
 
-    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    implementation("com.fasterxml.jackson.core:jackson-core:2.17.2")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
-
-    // https://github.com/http4k/http4k
-    implementation(platform("org.http4k:http4k-bom:5.26.0.0"))
+    implementation(platform(libs.http4k.bom))
     implementation("org.http4k:http4k-core")
     implementation("org.http4k:http4k-server-netty")
 }

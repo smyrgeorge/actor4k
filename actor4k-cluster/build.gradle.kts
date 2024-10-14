@@ -3,22 +3,13 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-    // https://plugins.gradle.org/plugin/com.google.protobuf
-    id("com.google.protobuf") version "0.9.4"
-    id("com.vanniktech.maven.publish")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.pubhish)
+    alias(libs.plugins.protobuf)
 }
 
-group = rootProject.group
-version = rootProject.version
 java.sourceCompatibility = JavaVersion.VERSION_17
-
-repositories {
-    mavenCentral()
-    // IMPORTANT: must be last.
-    mavenLocal()
-}
 
 val grpcVersion: String by rootProject.extra
 val protobufVersion: String by rootProject.extra
@@ -40,16 +31,13 @@ dependencies {
     implementation("io.grpc:grpc-protobuf:$grpcVersion")
     implementation("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
     implementation("com.google.protobuf:protobuf-kotlin:$protobufVersion")
-    // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-protobuf
-    // https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-protobuf/kotlinx.serialization.protobuf/
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")
+    implementation(libs.kotlinx.serialization.protobuf)
 
     // https://github.com/MicroRaft/MicroRaft
     implementation("io.microraft:microraft:0.7")
 
     // Test dependencies
-    // https://github.com/mockito/mockito-kotlin
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    testImplementation(libs.mockito)
 }
 
 

@@ -1,0 +1,55 @@
+[versions]
+# https://plugins.gradle.org/plugin/org.jetbrains.kotlin.jvm
+kotlin = "2.0.21"
+# https://github.com/Kotlin/kotlinx-datetime
+kotlinx-datetime = "0.6.1"
+# https://github.com/Kotlin/kotlinx.coroutines
+kotlinx-coroutines = "1.9.0"
+# https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-protobuf
+kotlinx-serialization-protobuf = "1.7.3"
+# https://github.com/vanniktech/gradle-maven-publish-plugin
+publish = "0.30.0"
+# https://github.com/Kotlin/dokka
+dokka = "1.9.20"
+# https://github.com/willowtreeapps/assertk
+assertk = "0.28.1"
+# https://github.com/google/ksp/releases
+ksp = "2.0.21-1.0.25"
+# https://github.com/mockito/mockito-kotlin
+mockito = "5.4.0"
+# https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
+shadow = "8.1.1"
+# https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+slf4j = "2.0.16"
+# https://github.com/http4k/http4k
+http4k = "5.32.4.0"
+# https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
+jackson = "2.18.0"
+
+[libraries]
+gradle-kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+gradle-publish-plugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "publish" }
+ksp = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinx-serialization-protobuf" }
+assertk = { module = "com.willowtreeapps.assertk:assertk", version.ref = "assertk" }
+mockito = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-reload4j = { module = "org.slf4j:slf4j-reload4j", version.ref = "slf4j" }
+http4k-bom = { module = "org.http4k:http4k-bom", version.ref = "http4k" }
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
+jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+pubhish = { id = "com.vanniktech.maven.publish", version.ref = "publish" }
+# https://plugins.gradle.org/plugin/com.google.protobuf
+protobuf = { id = "com.google.protobuf", version = "0.9.4" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
