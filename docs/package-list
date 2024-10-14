@@ -19,3 +19,4 @@ io.github.smyrgeorge.actor4k.cluster.raft
 io.github.smyrgeorge.actor4k.cluster.shard
 io.github.smyrgeorge.actor4k.cluster.system.registry
 io.github.smyrgeorge.actor4k.cluster.system.stats
+io.github.smyrgeorge.actor4k.cluster.util
