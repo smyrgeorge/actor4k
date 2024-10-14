@@ -7,7 +7,7 @@
 ![GitHub issues](https://img.shields.io/github/issues/smyrgeorge/actor4k)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.21-blue.svg?logo=kotlin)](http://kotlinlang.org)
 
-It Is a small and simple actor system using Kotlin and Coroutines (kotlinx.coroutines).
+A small actor system written in kotlin using Coroutines.
 
 The primary objective is to create a minimal actor system capable of functioning in cluster mode.
 
