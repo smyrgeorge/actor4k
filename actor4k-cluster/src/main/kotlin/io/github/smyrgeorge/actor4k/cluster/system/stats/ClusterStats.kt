@@ -9,7 +9,9 @@ data class ClusterStats(
     private var nodes: Int = 0,
     private var shards: Int = 0
 ) : Stats {
-    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
+    private val cluster: ClusterImpl by lazy {
+        ActorSystem.cluster as ClusterImpl
+    }
 
     override fun collect() {
         actors = ActorSystem.registry.count()

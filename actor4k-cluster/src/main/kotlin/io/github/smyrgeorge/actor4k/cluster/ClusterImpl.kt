@@ -34,7 +34,6 @@ class ClusterImpl(
     private val grpc: GrpcServer,
     private val grpcService: GrpcService
 ) : Cluster {
-
     private val log = KotlinLogging.logger {}
 
     lateinit var raft: RaftNode

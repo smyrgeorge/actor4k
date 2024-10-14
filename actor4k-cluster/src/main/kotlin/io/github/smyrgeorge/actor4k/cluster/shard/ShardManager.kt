@@ -15,7 +15,9 @@ import java.util.concurrent.ConcurrentHashMap
 class ShardManager {
 
     private val log = KotlinLogging.logger {}
-    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
+    private val cluster: ClusterImpl by lazy {
+        ActorSystem.cluster as ClusterImpl
+    }
 
     private var status: Status = Status.OK
     private val shards = ConcurrentHashMap<String, Int>()

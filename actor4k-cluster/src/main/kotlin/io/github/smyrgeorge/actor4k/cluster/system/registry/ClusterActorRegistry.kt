@@ -18,7 +18,9 @@ import java.lang.reflect.InvocationTargetException
 import java.time.Instant
 
 class ClusterActorRegistry : ActorRegistry() {
-    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
+    private val cluster: ClusterImpl by lazy {
+        ActorSystem.cluster as ClusterImpl
+    }
 
     init {
         launchGlobal {

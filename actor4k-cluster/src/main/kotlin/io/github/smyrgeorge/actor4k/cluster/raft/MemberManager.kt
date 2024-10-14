@@ -22,10 +22,10 @@ import java.util.*
 class MemberManager(
     private val conf: ClusterImpl.Conf
 ) {
-
     private val log = KotlinLogging.logger {}
-    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
-
+    private val cluster: ClusterImpl by lazy {
+        ActorSystem.cluster as ClusterImpl
+    }
     private val protocol = Channel<RaftMessage>(capacity = Channel.UNLIMITED)
     private val mail = Channel<MessageHandler.Protocol.Targeted>(capacity = Channel.UNLIMITED)
 

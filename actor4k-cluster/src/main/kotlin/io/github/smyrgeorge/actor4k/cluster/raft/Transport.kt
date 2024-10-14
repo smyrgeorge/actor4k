@@ -14,9 +14,10 @@ import kotlinx.coroutines.runBlocking
 import io.microraft.transport.Transport as RaftTransport
 
 class Transport(private val self: Endpoint) : RaftTransport {
-
     private val log = KotlinLogging.logger {}
-    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
+    private val cluster: ClusterImpl by lazy {
+        ActorSystem.cluster as ClusterImpl
+    }
 
     override fun send(target: RaftEndpoint, message: RaftMessage) {
         target as Endpoint

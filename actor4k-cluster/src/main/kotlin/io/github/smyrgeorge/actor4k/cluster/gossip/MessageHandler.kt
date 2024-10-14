@@ -22,7 +22,9 @@ import io.scalecube.cluster.ClusterMessageHandler as ScaleCubeClusterMessageHand
 class MessageHandler(private val conf: ClusterImpl.Conf) : ScaleCubeClusterMessageHandler {
 
     private val log = KotlinLogging.logger {}
-    private val cluster: ClusterImpl = ActorSystem.cluster as ClusterImpl
+    private val cluster: ClusterImpl by lazy {
+        ActorSystem.cluster as ClusterImpl
+    }
 
     private val rounds = ActorSystem.conf.initializationRounds
     private val delayPerRound = ActorSystem.conf.initializationDelayPerRound

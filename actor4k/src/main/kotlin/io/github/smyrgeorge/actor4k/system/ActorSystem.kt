@@ -6,7 +6,6 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.Stats
-import io.github.smyrgeorge.actor4k.util.freeMemory
 import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -36,10 +35,6 @@ object ActorSystem {
         launchGlobal {
             while (true) {
                 delay(conf.clusterCollectStats)
-                val free = freeMemory()
-                if (free < conf.lowMemoryThresholdMd) {
-                    log.warn { "Low memory detected ($free MB), threshold is ${conf.lowMemoryThresholdMd} MB." }
-                }
                 stats.collect()
             }
         }
