@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.system.registry
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
@@ -10,6 +9,8 @@ import io.github.smyrgeorge.actor4k.util.launchGlobal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import kotlin.reflect.KClass
 
@@ -63,7 +64,7 @@ import kotlin.reflect.KClass
 @Suppress("MemberVisibilityCanBePrivate")
 abstract class ActorRegistry {
 
-    val log = KotlinLogging.logger {}
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     // Mutex for the create operation.
     val mutex = Mutex()
@@ -99,16 +100,16 @@ abstract class ActorRegistry {
     abstract suspend fun <A : Actor> unregister(actor: Class<A>, key: String, force: Boolean = false)
 
     suspend fun stopAll(): Unit = mutex.withLock {
-        log.debug { "Stopping all local actors." }
+        log.debug("Stopping all local actors.")
         local.values.forEach { it.shutdown() }
     }
 
     private suspend fun stopLocalExpired(): Unit = mutex.withLock {
-        log.debug { "Stopping all local expired actors." }
+        log.debug("Stopping all local expired actors.")
         local.values.forEach {
             val df = Instant.now().epochSecond - it.stats().last.epochSecond
             if (df > ActorSystem.conf.actorExpiration.inWholeSeconds) {
-                log.info { "Closing ${it.address()}, ${it.stats()} (expired)." }
+                log.info("Closing ${it.address()}, ${it.stats()} (expired).")
                 it.shutdown()
             }
         }

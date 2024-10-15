@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -17,12 +16,13 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
+import org.slf4j.LoggerFactory
 import java.util.*
 
 class MemberManager(
     private val conf: ClusterImpl.Conf
 ) {
-    private val log = KotlinLogging.logger {}
+    private val log = LoggerFactory.getLogger(this::class.java)
     private val cluster: ClusterImpl by lazy {
         ActorSystem.cluster as ClusterImpl
     }
@@ -50,13 +50,13 @@ class MemberManager(
     }
 
     private fun shardsLocked(m: MessageHandler.Protocol.Targeted.ShardsLocked) {
-        log.info { m }
+        log.info(m.toString())
         val req = StateMachine.Operation.ShardsLocked(m.alias)
         cluster.raft.replicate<Unit>(req)
     }
 
     private fun shardedActorsFinished(m: MessageHandler.Protocol.Targeted.ShardedActorsFinished) {
-        log.info { m }
+        log.info(m.toString())
         val req = StateMachine.Operation.ShardedActorsFinished(m.alias)
         cluster.raft.replicate<Unit>(req)
     }
@@ -69,7 +69,7 @@ class MemberManager(
                 val self: RaftNode = cluster.raft
 
                 if (self.status == RaftNodeStatus.TERMINATED) {
-                    log.info { "${conf.alias} (self) is in TERMINATED state but still UP, will shutdown." }
+                    log.info("${conf.alias} (self) is in TERMINATED state but still UP, will shutdown.")
                     ActorSystem.Shutdown.shutdown(ActorSystem.Shutdown.Trigger.SELF_ERROR)
                     continue
                 }
@@ -91,7 +91,7 @@ class MemberManager(
                 var member = leaderNotInTheRing()
                 if (member != null) {
                     val (m, a) = member
-                    log.info { "${m.alias()} (leader) will be added to the hash-ring." }
+                    log.info("${m.alias()} (leader) will be added to the hash-ring.")
                     val req = StateMachine.Operation.LeaderJoined(m.alias(), a.host(), a.port())
                     self.replicate<Unit>(req)
                     continue
@@ -115,7 +115,7 @@ class MemberManager(
                     try {
                         cluster.shardManager.requestUnlockAShards()
                     } catch (e: Exception) {
-                        log.error(e) { "Could not request unlock shards. Reason: ${e.message}" }
+                        log.error("Could not request unlock shards. Reason: ${e.message}", e)
                     }
                     continue
                 }
@@ -124,20 +124,20 @@ class MemberManager(
 
                 val serverNode = anyOfflineCommittedInTheRing()
                 if (serverNode != null) {
-                    log.info { "$serverNode (follower) will start leave flow." }
+                    log.info("$serverNode (follower) will start leave flow.")
                     val req = StateMachine.Operation.NodeIsLeaving(serverNode.dc)
                     val res = self.replicate<ServerNode>(req).join().result
                     try {
                         cluster.shardManager.requestLockShardsForLeavingNode(res)
                     } catch (e: Exception) {
-                        log.error(e) { "Could not request lock shards. Reason: ${e.message}" }
+                        log.error("Could not request lock shards. Reason: ${e.message}", e)
                     }
                     continue
                 }
 
                 endpoint = anyOfflineCommittedNotInTheRing()
                 if (endpoint != null) {
-                    log.info { "$endpoint (follower) will be removed." }
+                    log.info("$endpoint (follower) will be removed.")
                     val mode = MembershipChangeMode.REMOVE_MEMBER
                     val logIndex = self.committedMembers.logIndex
                     self.changeMembership(endpoint, mode, logIndex)
@@ -147,13 +147,13 @@ class MemberManager(
                 member = anyOnlineCommittedNotInTheRing()
                 if (member != null) {
                     val (m, a) = member
-                    log.info { "${m.alias()} (follower) will start join flow." }
+                    log.info("${m.alias()} (follower) will start join flow.")
                     val req = StateMachine.Operation.NodeIsJoining(m.alias(), a.host(), a.port())
                     val res = self.replicate<ServerNode>(req).join().result
                     try {
                         cluster.shardManager.requestLockShardsForJoiningNode(res)
                     } catch (e: Exception) {
-                        log.error(e) { "Could not request shard locking. Reason: ${e.message}" }
+                        log.error("Could not request shard locking. Reason: ${e.message}", e)
                     }
                     continue
                 }
@@ -161,7 +161,7 @@ class MemberManager(
                 member = anyOnlineUncommitted()
                 if (member != null) {
                     val (m, a) = member
-                    log.info { "${m.alias()} (learner) will be promoted to follower." }
+                    log.info("${m.alias()} (learner) will be promoted to follower.")
                     @Suppress("NAME_SHADOWING")
                     val endpoint = Endpoint(m.alias(), a.host(), a.port())
                     val mode = MembershipChangeMode.ADD_OR_PROMOTE_TO_FOLLOWER
@@ -171,13 +171,15 @@ class MemberManager(
                 }
 
             } catch (e: Exception) {
-                log.error { e.message }
+                log.error(e.message)
             }
         }
     }
 
     private fun leaderIsNotSet(): Endpoint? {
         val self: RaftNode = cluster.raft
+
+        @Suppress("InconsistentCommentForJavaParameter")
         val current = self.query<Endpoint>(
             /* operation = */ StateMachine.Operation.GetLeader,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
@@ -244,6 +246,7 @@ class MemberManager(
 
     private fun getStatus(): StateMachine.Status {
         val self: RaftNode = cluster.raft
+        @Suppress("InconsistentCommentForJavaParameter")
         return self.query<StateMachine.Status>(
             /* operation = */ StateMachine.Operation.GetStatus,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
@@ -254,6 +257,7 @@ class MemberManager(
 
     private fun getNodesStillMigratingShardsSize(): Int {
         val self: RaftNode = cluster.raft
+        @Suppress("InconsistentCommentForJavaParameter")
         return self.query<Int>(
             /* operation = */ StateMachine.Operation.GetNodesStillMigratingShardsSize,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
@@ -264,6 +268,7 @@ class MemberManager(
 
     private fun getHasJoiningNode(): Boolean {
         val self: RaftNode = cluster.raft
+        @Suppress("InconsistentCommentForJavaParameter")
         return self.query<Boolean>(
             /* operation = */ StateMachine.Operation.HasJoiningNode,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,
@@ -274,6 +279,7 @@ class MemberManager(
 
     private fun getHasLeavingNode(): Boolean {
         val self: RaftNode = cluster.raft
+        @Suppress("InconsistentCommentForJavaParameter")
         return self.query<Boolean>(
             /* operation = */ StateMachine.Operation.HasLeavingNode,
             /* queryPolicy = */ QueryPolicy.EVENTUAL_CONSISTENCY,

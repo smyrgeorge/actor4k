@@ -2,7 +2,6 @@ package io.github.smyrgeorge.actor4k.microbank
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
@@ -21,6 +20,7 @@ import org.http4k.routing.path
 import org.http4k.routing.routes
 import org.http4k.server.Netty
 import org.http4k.server.asServer
+import org.slf4j.LoggerFactory
 
 class MicroBank
 
@@ -62,7 +62,7 @@ data class AccountActor(
         // E.g. fetch the data from the DB.
         // In this case we will assume that the balance is equal to '0'.
         account.balance = 0
-        log.info { "Activated: $account" }
+        log.info("Activated: $account")
     }
 
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {
@@ -78,7 +78,7 @@ data class AccountActor(
 }
 
 fun main() {
-    val log = KotlinLogging.logger {}
+    val log = LoggerFactory.getLogger("microbank")
 
     val alias = System.getenv("ACTOR4K_NODE_ID") ?: "bank-1"
     val host = System.getenv("ACTOR4K_NODE_HOST") ?: alias
@@ -101,7 +101,7 @@ fun main() {
         .seedMembers(seedMembers)
         .build()
 
-    log.info { conf }
+    log.info(conf.toString())
 
     val cluster = ClusterImpl
         .Builder()

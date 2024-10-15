@@ -1,12 +1,14 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.Serializable
 import java.util.function.Consumer
 import io.microraft.statemachine.StateMachine as RaftStateMachine
 
+@Suppress("LoggingSimilarMessage")
 class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMachine {
 
     private var status = Status.OK
@@ -17,7 +19,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
     private val waitingShardLockFrom = mutableSetOf<String>()
     private val waitingShardedActorsToFinishFrom = mutableSetOf<String>()
 
-    private val log = KotlinLogging.logger {}
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     override fun runOperation(commitIndex: Long, operation: Any): Any {
         // Store the operation result here.
@@ -27,17 +29,17 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
             Operation.Periodic -> Unit
             Operation.LeaderElected -> Unit
             is Operation.SetLeader -> {
-                log.info { "Received ($commitIndex): $operation" }
+                log.info("Received ($commitIndex): $operation")
                 leader = op.endpoint
             }
 
             is Operation.LeaderJoined -> {
-                log.info { "Received ($commitIndex): $operation" }
+                log.info("Received ($commitIndex): $operation")
                 ring.add(op.toServerNode())
             }
 
             is Operation.NodeIsJoining -> {
-                log.info { "Received ($commitIndex): $operation" }
+                log.info("Received ($commitIndex): $operation")
                 status = Status.A_NODE_IS_JOINING
                 joiningNode = op.toServerNode()
                 waitingShardLockFrom.addAll(ring.nodes.map { it.dc })
@@ -46,7 +48,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
             }
 
             is Operation.NodeIsLeaving -> {
-                log.info { "Received ($commitIndex): $operation" }
+                log.info("Received ($commitIndex): $operation")
                 status = Status.A_NODE_IS_LEAVING
                 leavingNode = ring.nodes.first { it.dc == op.alias }
                 waitingShardLockFrom.addAll(ring.nodes.filter { it.dc != op.alias }.map { it.dc })
@@ -55,30 +57,30 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
             }
 
             is Operation.NodeJoined -> {
-                log.info { "Received ($commitIndex): $operation" }
+                log.info("Received ($commitIndex): $operation")
                 ring.add(joiningNode!!)
                 joiningNode = null
             }
 
             is Operation.NodeLeft -> {
-                log.info { "Received ($commitIndex): $operation" }
+                log.info("Received ($commitIndex): $operation")
                 ring.remove(leavingNode!!)
                 leavingNode = null
             }
 
             is Operation.ShardsLocked -> {
-                log.info { "Received ($commitIndex): $operation" }
+                log.info("Received ($commitIndex): $operation")
                 waitingShardLockFrom.remove(op.alias)
             }
 
             is Operation.ShardedActorsFinished -> {
-                log.info { "Received ($commitIndex): $operation" }
+                log.info("Received ($commitIndex): $operation")
                 waitingShardLockFrom.remove(op.alias)
                 waitingShardedActorsToFinishFrom.remove(op.alias)
             }
 
             Operation.ShardMigrationCompleted -> {
-                log.info { "Received ($commitIndex): $operation" }
+                log.info("Received ($commitIndex): $operation")
                 status = Status.OK
             }
 
@@ -92,7 +94,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
         // We do not log all the operations to the state.
         if (operation.doNotLog) return result
 
-        log.info {
+        log.info(
             buildString {
                 append("\n")
                 append("New cluster state (commitIndex: $commitIndex):")
@@ -110,12 +112,12 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
                     append("\n        Waiting sharded actors to finish from: $waitingShardedActorsToFinishFrom")
                 }
             }
-        }
+        )
         return result
     }
 
     override fun takeSnapshot(commitIndex: Long, snapshotChunkConsumer: Consumer<Any>) {
-        log.debug { "TAKING SNAPSHOT $commitIndex" }
+        log.debug("TAKING SNAPSHOT $commitIndex")
         val snapshot = Snapshot(
             commitIndex = commitIndex,
             status = status,
@@ -128,7 +130,7 @@ class StateMachine(private val ring: ConsistentHash<ServerNode>) : RaftStateMach
     }
 
     override fun installSnapshot(commitIndex: Long, snapshotChunks: List<Any>) {
-        log.info { "INSTALLING SNAPSHOT $commitIndex, $snapshotChunks" }
+        log.info("INSTALLING SNAPSHOT $commitIndex, $snapshotChunks")
         if (snapshotChunks.isEmpty()) return
 
         @Suppress("UNCHECKED_CAST")

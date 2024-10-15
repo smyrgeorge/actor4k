@@ -37,16 +37,16 @@ class SimpleActorRegistry : ActorRegistry() {
         try {
             actor.callSuspend(actorInstance, "activate")
         } catch (e: InvocationTargetException) {
-            log.error { "Could not activate ${actorInstance.address()}. Reason: ${e.targetException.message}" }
+            log.error("Could not activate ${actorInstance.address()}. Reason: ${e.targetException.message}")
             unregister(actor = actor, key = key, force = true)
             throw e
         } catch (e: Exception) {
-            log.error { "Could not activate ${actorInstance.address()}." }
+            log.error("Could not activate ${actorInstance.address()}.")
             unregister(actor = actor, key = key, force = true)
             throw e
         }
 
-        log.debug { "Actor $address created and activated successfully." }
+        log.debug("Actor $address created and activated successfully.")
         return ref
     }
 
@@ -56,7 +56,7 @@ class SimpleActorRegistry : ActorRegistry() {
             local[address]?.let {
                 if (!force && it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
                 local.remove(address)
-                log.info { "Unregistered actor $address." }
+                log.info("Unregistered actor $address.")
             }
         }
     }

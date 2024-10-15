@@ -1,16 +1,16 @@
 package io.github.smyrgeorge.actor4k.cluster.grpc
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.proto.NodeServiceGrpcKt
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import org.slf4j.LoggerFactory
 import io.github.smyrgeorge.actor4k.proto.Cluster as ClusterProto
 
 class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
-    private val log = KotlinLogging.logger {}
+    private val log = LoggerFactory.getLogger(this::class.java)
 
     suspend fun request(m: Envelope): Envelope.Response =
         when (m) {
@@ -27,7 +27,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
             val res = actor.ask<Any>(msg)
             Envelope.Response.ok(request.shard, res).toProto()
         } catch (e: Exception) {
-            log.error(e) { e.message }
+            log.error(e.message, e)
             e.toResponse(request.shard)
         }
     }
@@ -39,7 +39,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
             actor.tell(msg)
             Envelope.Response.ok(request.shard, ".").toProto()
         } catch (e: Exception) {
-            log.error(e) { e.message }
+            log.error(e.message, e)
             e.toResponse(request.shard)
         }
     }
@@ -50,7 +50,7 @@ class GrpcService : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
             val res = Envelope.GetActor.Ref(request.shard, request.actorClazz, actor.name, actor.key)
             Envelope.Response.ok(request.shard, res).toProto()
         } catch (e: Exception) {
-            log.error(e) { e.message }
+            log.error(e.message, e)
             e.toResponse(request.shard)
         }
     }

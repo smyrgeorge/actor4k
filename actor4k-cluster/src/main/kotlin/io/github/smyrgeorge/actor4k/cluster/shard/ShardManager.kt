@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.cluster.shard
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -10,11 +9,14 @@ import io.scalecube.net.Address
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.runBlocking
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
+@Suppress("LoggingSimilarMessage")
 class ShardManager {
 
-    private val log = KotlinLogging.logger {}
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
     private val cluster: ClusterImpl by lazy {
         ActorSystem.cluster as ClusterImpl
     }
@@ -181,7 +183,7 @@ class ShardManager {
         closedShardsAfterSharadMigrationRequest.clear()
         val shards = getMigrationShardsForJoiningNode(node)
         shardsBeingMigrated.addAll(shards)
-        log.info { "Locked ${shardsBeingMigrated.size} shards." }
+        log.info("Locked ${shardsBeingMigrated.size} shards.")
         return shardsBeingMigrated.size
     }
 
@@ -191,7 +193,7 @@ class ShardManager {
         closedShardsAfterSharadMigrationRequest.clear()
         val shards = getMigrationShardsForLeavingNode(node)
         shardsBeingMigrated.addAll(shards)
-        log.info { "Locked ${shardsBeingMigrated.size} shards." }
+        log.info("Locked ${shardsBeingMigrated.size} shards.")
         return shardsBeingMigrated.size
     }
 

@@ -15,17 +15,12 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 val grpcVersion: String by rootProject.extra
 
 dependencies {
-    // Internal dependencies.
     implementation(project(":actor4k-cluster"))
-
     api(libs.kotlinx.serialization.protobuf)
-    implementation(libs.slf4j.api)
     implementation(libs.slf4j.reload4j)
-
     implementation(libs.jackson.core)
     implementation(libs.jackson.module.kotlin)
     implementation(libs.jackson.datatype.jsr310)
-
     implementation(platform(libs.http4k.bom))
     implementation("org.http4k:http4k-core")
     implementation("org.http4k:http4k-server-netty")

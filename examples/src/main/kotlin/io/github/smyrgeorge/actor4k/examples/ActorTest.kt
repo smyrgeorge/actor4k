@@ -1,8 +1,8 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
+import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
@@ -20,16 +20,16 @@ data class AccountActor(
 ) : Actor(shard, key) {
 
     override suspend fun onBeforeActivate() {
-        log.info { "[${address()}] before-activate" }
+        log.info("[${address()}] before-activate")
     }
 
     override suspend fun onActivate(m: Message) {
-        log.info { "[${address()}] activate ($m)" }
+        log.info("[${address()}] activate ($m)")
     }
 
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {
         val msg = m.cast<Req>()
-        log.info { "[${address()}] Received message: $msg" }
+        log.info("[${address()}] Received message: $msg")
         val res = Resp("Pong!")
         return r.value(res).build()
     }

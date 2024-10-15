@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.system
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
@@ -11,6 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import kotlin.concurrent.thread
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
@@ -25,9 +26,10 @@ import kotlin.time.Duration.Companion.seconds
  */
 object ActorSystem {
 
-    private val log = KotlinLogging.logger {}
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     var conf = Conf()
+
     @Suppress("MemberVisibilityCanBePrivate")
     var type: Type = Type.SIMPLE
     var status: Status = Status.NOT_READY
@@ -48,7 +50,7 @@ object ActorSystem {
             while (true) {
                 delay(conf.clusterLogStats)
                 // Log [Stats].
-                log.info { stats }
+                log.info(stats.toString())
             }
         }
     }
@@ -132,20 +134,20 @@ object ActorSystem {
     object Shutdown {
 
         suspend fun shutdown(triggeredBy: Trigger) {
-            log.info { "Received shutdown signal by $triggeredBy.." }
+            log.info("Received shutdown signal by $triggeredBy..")
             status = Status.SHUTTING_DOWN
 
-            log.info { "Closing ${registry.count()} actors.." }
+            log.info("Closing ${registry.count()} actors..")
             registry.stopAll()
 
             if (isCluster()) {
-                log.info { "Informing cluster that we are about to leave.." }
+                log.info("Informing cluster that we are about to leave..")
                 cluster.shutdown()
             }
 
             // Wait for all actors to finish.
             while (registry.count() > 0) {
-                log.info { "Waiting ${registry.count()} actors to finish." }
+                log.info("Waiting ${registry.count()} actors to finish.")
                 delay(1000)
             }
 

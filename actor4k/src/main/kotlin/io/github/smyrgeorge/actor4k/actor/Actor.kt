@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.actor
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
@@ -12,6 +11,8 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.withTimeout
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -24,7 +25,7 @@ import kotlin.time.Duration.Companion.seconds
  * @property key the key identifying the actor.
  */
 abstract class Actor(open val shard: String, open val key: String) {
-    protected val log = KotlinLogging.logger {}
+    protected val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     private var status = Status.INITIALISING
     private var initializedAt: Instant? = null
@@ -72,7 +73,7 @@ abstract class Actor(open val shard: String, open val key: String) {
                             val e = IllegalStateException("Actor is prematurely closed (could not be initialized).")
                             it.replyTo.send(Result.failure(e))
                         } catch (e: Exception) {
-                            log.debug { "Could not send reply to the client." }
+                            log.debug("Could not send reply to the client.")
                         }
                     }
                     return@consumeEach
@@ -92,7 +93,7 @@ abstract class Actor(open val shard: String, open val key: String) {
                         initializedAt = Instant.now()
                     } catch (e: Exception) {
                         // In case of an error we need to close the [Actor] immediately.
-                        log.error { "[$address] Failed to activate, will shutdown (${e.message ?: ""})" }
+                        log.error("[$address] Failed to activate, will shutdown (${e.message ?: ""})")
                         if (it is Patterns.Ask) {
                             try {
                                 // We should be able to reply immediately.
@@ -100,7 +101,7 @@ abstract class Actor(open val shard: String, open val key: String) {
                                     it.replyTo.send(Result.failure(e))
                                 }
                             } catch (e: Exception) {
-                                log.debug { "Could not send reply to the client. ${e.message}" }
+                                log.debug("Could not send reply to the client. ${e.message}")
                             }
                         }
                         shutdown()
@@ -122,11 +123,11 @@ abstract class Actor(open val shard: String, open val key: String) {
                                 it.replyTo.send(r)
                             }
                         } catch (e: TimeoutCancellationException) {
-                            log.debug { "[consume] Could not send reply in time. ${e.message}" }
+                            log.debug("[consume] Could not send reply in time. ${e.message}")
                         } catch (e: ClosedSendChannelException) {
-                            log.warn { "[consume] Did not manage to reply in time (although the message was processed). $it" }
+                            log.warn("[consume] Did not manage to reply in time (although the message was processed). $it")
                         } catch (e: Exception) {
-                            log.error { "[consume] An error occurred while processing $it" }
+                            log.error("[consume] An error occurred while processing $it")
                         }
                     }
                 }
@@ -238,7 +239,7 @@ abstract class Actor(open val shard: String, open val key: String) {
                 try {
                     action(e)
                 } catch (e: Exception) {
-                    log.warn { "[$address] An error occurred while processing. ${e.message ?: ""}" }
+                    log.warn("[$address] An error occurred while processing. ${e.message ?: ""}")
                 }
             }
             if (isClosedForReceive) {

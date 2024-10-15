@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.cluster.raft
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -11,10 +10,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.runBlocking
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import io.microraft.transport.Transport as RaftTransport
 
 class Transport(private val self: Endpoint) : RaftTransport {
-    private val log = KotlinLogging.logger {}
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
     private val cluster: ClusterImpl by lazy {
         ActorSystem.cluster as ClusterImpl
     }
@@ -23,7 +24,7 @@ class Transport(private val self: Endpoint) : RaftTransport {
         target as Endpoint
 
         if (self.alias == target.alias) {
-            log.warn { "Received message from myself (I wasn't expecting this)." }
+            log.warn("Received message from myself (I wasn't expecting this).")
             runBlocking { cluster.raftManager.send(message) }
             return
         }
@@ -36,11 +37,11 @@ class Transport(private val self: Endpoint) : RaftTransport {
                         val msg = Message.builder().data(MessageHandler.Protocol.Targeted.RaftProtocol(message)).build()
                         cluster.gossip.send(member, msg).awaitFirstOrNull()
                     } else {
-                        log.warn { "Could not send ${message::class.simpleName} to ${target.alias}. Seems offline." }
+                        log.warn("Could not send ${message::class.simpleName} to ${target.alias}. Seems offline.")
                     }
 
                 } catch (e: Exception) {
-                    log.warn { "Could not send ${message::class.simpleName} to ${target.alias}. Reason: ${e.message}" }
+                    log.warn("Could not send ${message::class.simpleName} to ${target.alias}. Reason: ${e.message}")
                 }
             }
         }

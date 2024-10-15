@@ -95,17 +95,17 @@ class ClusterActorRegistry : ActorRegistry() {
             try {
                 actor.callSuspend(it, "activate")
             } catch (e: InvocationTargetException) {
-                log.error { "Could not activate ${it.address()}. Reason: ${e.targetException.message}" }
+                log.error("Could not activate ${it.address()}. Reason: ${e.targetException.message}")
                 unregister(actor = actor, key = key, force = true)
                 throw e
             } catch (e: Exception) {
-                log.error { "Could not activate ${it.address()}." }
+                log.error("Could not activate ${it.address()}.")
                 unregister(actor = actor, key = key, force = true)
                 throw e
             }
         }
 
-        log.debug { "Actor $address created and activated successfully." }
+        log.debug("Actor $address created and activated successfully.")
         return ref
     }
 
@@ -116,13 +116,13 @@ class ClusterActorRegistry : ActorRegistry() {
                 if (!force && it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
                 local.remove(address)
                 cluster.unregisterShard(it.shard)
-                log.info { "Unregistered actor $address." }
+                log.info("Unregistered actor $address.")
             }
         }
     }
 
     private suspend fun removeRemoteExpired(): Unit = remoteMutex.withLock {
-        log.debug { "Removing all remote expired actors." }
+        log.debug("Removing all remote expired actors.")
         remote.values.forEach {
             if (Instant.now().isAfter(it.exp)) remote.remove(it.address)
         }

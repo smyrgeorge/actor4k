@@ -10,16 +10,12 @@ plugins {
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 dependencies {
-    // Kotlin
     implementation(kotlin("reflect"))
     api(libs.kotlinx.coroutines.core)
     api(libs.kotlinx.coroutines.reactive)
     api(libs.arrow.core)
     api(libs.arrow.fx.coroutines)
-
-    // Logging
-    // https://github.com/oshai/kotlin-logging
-    api("io.github.oshai:kotlin-logging-jvm:7.0.0")
+    api(libs.slf4j.api)
 
     // Test dependencies
     testImplementation(libs.mockito)

@@ -2,7 +2,6 @@ package io.github.smyrgeorge.actor4k.microbank.client
 
 import arrow.fx.coroutines.parMap
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.microbank.client.serde.Jackson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -10,6 +9,8 @@ import kotlinx.coroutines.withContext
 import org.http4k.client.ApacheClient
 import org.http4k.core.Method
 import org.http4k.core.Request
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import kotlin.random.Random
 import kotlin.time.measureTime
 
@@ -19,7 +20,7 @@ data class ApplyTx(val accountNo: String, val value: Int)
 data class Account(val accountNo: String, var balance: Int)
 
 fun main() {
-    val log = KotlinLogging.logger {}
+    val log: Logger = LoggerFactory.getLogger("microbank-client")
 
     val om = Jackson.create()
     val client = ApacheClient()
@@ -40,11 +41,11 @@ fun main() {
             }
     }.toMap()
 
-    log.info { "Creating accounts..." }
+    log.info("Creating accounts...")
     getAccounts()
-    log.info { "Created $noOfAccounts accounts." }
+    log.info("Created $noOfAccounts accounts.")
 
-    log.info { "Sending ${concurrency * transactionsPerWorker} transactions using $concurrency workers..." }
+    log.info("Sending ${concurrency * transactionsPerWorker} transactions using $concurrency workers...")
     val time = measureTime {
         runBlocking {
             (1..concurrency)
@@ -61,7 +62,7 @@ fun main() {
                 }
         }
     }
-    log.info { "Finished sending transactions in $time. (~${concurrency * transactionsPerWorker / time.inWholeSeconds}tx/sec)" }
+    log.info("Finished sending transactions in $time. (~${concurrency * transactionsPerWorker / time.inWholeSeconds}tx/sec)")
 
     val accounts: Map<Int, Account> = getAccounts()
     val total: Int = accounts.entries.fold(0) { acc, e ->

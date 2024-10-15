@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.cluster
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.cluster.gossip.Metadata
 import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
@@ -20,6 +19,8 @@ import org.ishugaliy.allgood.consistent.hash.ConsistentHash
 import org.ishugaliy.allgood.consistent.hash.HashRing
 import org.ishugaliy.allgood.consistent.hash.hasher.DefaultHasher
 import org.ishugaliy.allgood.consistent.hash.node.ServerNode
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.optionals.getOrNull
 import io.grpc.Server as GrpcServer
@@ -34,7 +35,7 @@ class ClusterImpl(
     private val grpc: GrpcServer,
     private val grpcService: GrpcService
 ) : Cluster {
-    private val log = KotlinLogging.logger {}
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     lateinit var raft: RaftNode
     lateinit var raftManager: MemberManager
@@ -90,7 +91,7 @@ class ClusterImpl(
     }
 
     fun startRaft(initialGroupMembers: List<Endpoint>): ClusterImpl {
-        log.info { "Starting raft, initialGroupMembers=$initialGroupMembers" }
+        log.info("Starting raft, initialGroupMembers=$initialGroupMembers")
 
         val endpoint = Endpoint(conf.alias, conf.host, conf.grpcPort)
         val config: RaftConfig = RaftConfig
