@@ -24,7 +24,7 @@ slf4j = "2.0.16"
 # https://github.com/http4k/http4k
 http4k = "5.33.1.0"
 # https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-jackson = "2.18.0"
+jackson = "2.18.1"
 # https://github.com/arrow-kt/arrow
 arrow = "1.2.4"
 
