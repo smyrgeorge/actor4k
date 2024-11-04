@@ -1,8 +1,6 @@
 package io.github.smyrgeorge.actor4k.system.stats
 
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.freeMemory
-import io.github.smyrgeorge.actor4k.util.maxMemory
 
 data class SimpleStats(
     var totalMessages: Long = 0,
@@ -13,6 +11,7 @@ data class SimpleStats(
         actors = ActorSystem.registry.count()
         val totalMessages = ActorSystem.registry.totalMessages()
         lastCollectPeriodMessages = totalMessages - this.totalMessages
+        if (lastCollectPeriodMessages < 0) lastCollectPeriodMessages = 0
         this.totalMessages = totalMessages
     }
 
@@ -26,10 +25,6 @@ data class SimpleStats(
             append(lastCollectPeriodMessages)
             append(", total=")
             append(totalMessages)
-            append(", maxMemory(mb)=")
-            append(maxMemory())
-            append(", freeMemory(mb)=")
-            append(freeMemory())
             append("]")
         }
 }
