@@ -3,7 +3,7 @@ package io.github.smyrgeorge.actor4k.actor
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
-import io.github.smyrgeorge.actor4k.util.launchGlobal
+import io.github.smyrgeorge.actor4k.util.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
@@ -62,7 +62,7 @@ abstract class Actor(open val shard: String, open val key: String) {
         mail = Channel(capacity = ActorSystem.conf.actorQueueSize)
 
         // Start the mail consumer.
-        launchGlobal {
+        launch {
             mail.consumeEach {
                 // Case that initialization flow failed and we still have messages to consume.
                 // If we get a shutdown event and the actor never initialized successfully,

@@ -1,17 +1,23 @@
 package io.github.smyrgeorge.actor4k.util
 
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
-@OptIn(DelicateCoroutinesApi::class)
-fun launchGlobal(f: suspend () -> Unit): Job =
-    GlobalScope.launch(Dispatchers.IO) { f() }
+private object EmptyScope : CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = EmptyCoroutineContext
+}
+
+fun launch(f: suspend () -> Unit): Job {
+    return EmptyScope.launch(Dispatchers.IO) { f() }
+}
 
 suspend fun <T> io(f: suspend () -> T): T =
     withContext(Dispatchers.IO) { f() }

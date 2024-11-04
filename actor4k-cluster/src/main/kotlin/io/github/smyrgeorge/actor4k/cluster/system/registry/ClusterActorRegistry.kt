@@ -10,7 +10,7 @@ import io.github.smyrgeorge.actor4k.cluster.grpc.Envelope
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.util.callSuspend
-import io.github.smyrgeorge.actor4k.util.launchGlobal
+import io.github.smyrgeorge.actor4k.util.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -23,7 +23,7 @@ class ClusterActorRegistry : ActorRegistry() {
     }
 
     init {
-        launchGlobal {
+        launch {
             while (true) {
                 delay(ActorSystem.conf.registryCleanup)
                 removeRemoteExpired()

@@ -4,7 +4,7 @@ import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.raft.Endpoint
 import io.github.smyrgeorge.actor4k.cluster.util.toInstance
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.launchGlobal
+import io.github.smyrgeorge.actor4k.util.launch
 import io.github.smyrgeorge.actor4k.util.retryBlocking
 import io.microraft.model.message.RaftMessage
 import io.scalecube.cluster.membership.MembershipEvent
@@ -32,13 +32,13 @@ class MessageHandler(private val conf: ClusterImpl.Conf) : ScaleCubeClusterMessa
     private var initialGroupMembers = emptyList<Endpoint>()
 
     @Suppress("unused")
-    private val job: Job = launchGlobal {
+    private val job: Job = launch {
         if (conf.nodeManagement == ClusterImpl.Conf.NodeManagement.STATIC) {
             log.info("Starting cluster in STATIC mode. Any changes to the cluster will not be applied.")
             conf.seedMembers.forEach {
                 cluster.ring.add(ServerNode(it.alias, it.address.host(), it.address.port()))
             }
-            return@launchGlobal
+            return@launch
         }
 
         for (i in 1..rounds) {

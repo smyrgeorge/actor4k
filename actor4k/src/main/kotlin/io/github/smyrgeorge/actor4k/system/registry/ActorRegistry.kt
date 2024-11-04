@@ -5,7 +5,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.java.JActorRegistry
-import io.github.smyrgeorge.actor4k.util.launchGlobal
+import io.github.smyrgeorge.actor4k.util.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -73,7 +73,7 @@ abstract class ActorRegistry {
     val local: MutableMap<String, Actor> = mutableMapOf()
 
     init {
-        launchGlobal {
+        launch {
             while (true) {
                 delay(ActorSystem.conf.registryCleanup)
                 stopLocalExpired()

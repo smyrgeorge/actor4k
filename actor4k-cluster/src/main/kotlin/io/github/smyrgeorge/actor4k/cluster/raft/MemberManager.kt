@@ -3,7 +3,7 @@ package io.github.smyrgeorge.actor4k.cluster.raft
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.gossip.MessageHandler
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.launchGlobal
+import io.github.smyrgeorge.actor4k.util.launch
 import io.microraft.MembershipChangeMode
 import io.microraft.QueryPolicy
 import io.microraft.RaftEndpoint
@@ -31,8 +31,8 @@ class MemberManager(
 
     init {
         // Start the main loop.
-        launchGlobal { loop() }
-        launchGlobal { mail.consumeEach { handle(it) } }
+        launch { loop() }
+        launch { mail.consumeEach { handle(it) } }
     }
 
     fun leader(): RaftEndpoint? = cluster.raft.term.leaderEndpoint

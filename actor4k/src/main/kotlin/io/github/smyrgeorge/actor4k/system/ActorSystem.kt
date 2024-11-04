@@ -5,7 +5,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.Stats
-import io.github.smyrgeorge.actor4k.util.launchGlobal
+import io.github.smyrgeorge.actor4k.util.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -39,14 +39,14 @@ object ActorSystem {
     lateinit var registry: ActorRegistry
 
     init {
-        launchGlobal {
+        launch {
             while (true) {
                 delay(conf.clusterCollectStats)
                 stats.collect()
             }
         }
 
-        launchGlobal {
+        launch {
             while (true) {
                 delay(conf.clusterLogStats)
                 // Log [Stats].
