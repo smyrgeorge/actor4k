@@ -33,7 +33,7 @@ abstract class Actor(open val shard: String, open val key: String) {
     private val address: String by lazy { addressOf(this::class.java, key) }
 
     private val stats: Stats = Stats()
-    private lateinit var mail: Channel<Patterns>
+    private val mail: Channel<Patterns> = Channel(capacity = ActorSystem.conf.actorQueueSize)
 
     /**
      * Is called by the [SimpleActorRegistry].
@@ -57,9 +57,6 @@ abstract class Actor(open val shard: String, open val key: String) {
     @Suppress("unused")
     suspend fun activate() {
         onBeforeActivate()
-
-        // If activate success, initialise the receive channel.
-        mail = Channel(capacity = ActorSystem.conf.actorQueueSize)
 
         // Start the mail consumer.
         launch {
