@@ -26,7 +26,7 @@ http4k = "5.41.0.0"
 # https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
 jackson = "2.18.2"
 # https://github.com/arrow-kt/arrow
-arrow = "1.2.4"
+arrow = "2.0.0"
 
 [libraries]
 gradle-kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
