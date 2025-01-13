@@ -22,7 +22,7 @@ shadow = "8.1.1"
 # https://mvnrepository.com/artifact/org.slf4j/slf4j-api
 slf4j = "2.0.16"
 # https://github.com/http4k/http4k
-http4k = "5.44.2.0"
+http4k = "5.45.1.0"
 # https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
 jackson = "2.18.2"
 # https://github.com/arrow-kt/arrow
