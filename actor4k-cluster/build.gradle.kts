@@ -20,7 +20,7 @@ dependencies {
 
     // https://central.sonatype.com/artifact/io.scalecube/scalecube-cluster
     implementation("io.scalecube:scalecube-cluster:2.6.17")
-    implementation("io.scalecube:scalecube-transport-netty:2.6.17")
+    implementation("io.scalecube:scalecube-transport-netty:2.7.1")
 
     // https://mvnrepository.com/artifact/com.github.ishugaliy/allgood-consistent-hash
     implementation("com.github.ishugaliy:allgood-consistent-hash:1.0.0")
