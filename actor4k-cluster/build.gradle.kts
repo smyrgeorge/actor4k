@@ -19,7 +19,7 @@ dependencies {
     api(project(":actor4k"))
 
     // https://central.sonatype.com/artifact/io.scalecube/scalecube-cluster
-    implementation("io.scalecube:scalecube-cluster:2.6.17")
+    implementation("io.scalecube:scalecube-cluster:2.7.1")
     implementation("io.scalecube:scalecube-transport-netty:2.6.17")
 
     // https://mvnrepository.com/artifact/com.github.ishugaliy/allgood-consistent-hash
