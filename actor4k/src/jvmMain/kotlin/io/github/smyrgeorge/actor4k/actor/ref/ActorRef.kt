@@ -12,6 +12,7 @@ import io.github.smyrgeorge.actor4k.util.java.JRef
  * @property key The unique key associated with the actor.
  * @property address The address of the actor.
  */
+@Suppress("unused")
 abstract class ActorRef(
     open val shard: String,
     open val name: String,

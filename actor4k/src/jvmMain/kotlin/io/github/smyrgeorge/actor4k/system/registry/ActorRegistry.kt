@@ -61,7 +61,7 @@ import kotlin.reflect.KClass
  * - `fun asJava(): JActorRegistry`:
  *   Converts the current registry to a Java-compatible `JActorRegistry` instance.
  */
-@Suppress("MemberVisibilityCanBePrivate")
+@Suppress("unused")
 abstract class ActorRegistry {
 
     val log: Logger = LoggerFactory.getLogger(this::class.java)

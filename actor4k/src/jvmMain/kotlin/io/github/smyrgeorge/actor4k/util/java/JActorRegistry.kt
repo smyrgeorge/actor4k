@@ -7,6 +7,7 @@ import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.CompletableFuture
 
+@Suppress("unused")
 object JActorRegistry {
     fun <A : Actor> get(
         actor: Class<A>,

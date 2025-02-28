@@ -5,6 +5,7 @@ import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.CompletableFuture
 
+@Suppress("unused")
 data class JRef(val ref: ActorRef) {
     fun tell(msg: Any): CompletableFuture<Unit> =
         runBlocking { future { ref.tell(msg) } }

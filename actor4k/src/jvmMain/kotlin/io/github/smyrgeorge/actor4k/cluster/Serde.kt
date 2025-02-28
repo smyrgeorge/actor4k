@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster
 
+@Suppress("unused")
 interface Serde {
     fun <T : Any> encode(clazz: Class<T>, value: Any): ByteArray
     fun <T : Any> decode(clazz: Class<T>, bytes: ByteArray): T

@@ -24,6 +24,7 @@ import kotlin.time.Duration.Companion.seconds
  * of actors and clusters. It is responsible for maintaining the status of actors, collecting
  * statistics, and handling cluster operations.
  */
+@Suppress("unused")
 object ActorSystem {
 
     private val log: Logger = LoggerFactory.getLogger(this::class.java)

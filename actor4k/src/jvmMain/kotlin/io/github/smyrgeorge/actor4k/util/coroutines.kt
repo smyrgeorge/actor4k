@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package io.github.smyrgeorge.actor4k.util
 
 import kotlinx.coroutines.CoroutineScope
