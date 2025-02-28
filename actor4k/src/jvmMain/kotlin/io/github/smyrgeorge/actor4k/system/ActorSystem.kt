@@ -125,7 +125,6 @@ object ActorSystem {
         val lowMemoryThresholdMd: Int = 50
     )
 
-    @Suppress("unused")
     private val hook = Runtime.getRuntime().addShutdownHook(
         thread(start = false) {
             runBlocking(Dispatchers.IO) { Shutdown.shutdown(Shutdown.Trigger.EXTERNAL) }
