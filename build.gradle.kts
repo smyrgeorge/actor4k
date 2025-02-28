@@ -32,7 +32,6 @@ subprojects {
 
     // Dokka config
     run {
-        // Exclude microbank.
         if (!project.name.startsWith("actor4k")) return@run
         // Run with ./gradlew :dokkaHtmlMultiModule
         apply(plugin = "org.jetbrains.dokka")

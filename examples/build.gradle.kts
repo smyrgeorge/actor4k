@@ -1,24 +1,23 @@
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
 }
 
-java.sourceCompatibility = JavaVersion.VERSION_17
-
-val grpcVersion: String by rootProject.extra
+java.sourceCompatibility = JavaVersion.VERSION_21
 
 dependencies {
-    implementation(project(":actor4k-cluster"))
+    implementation(project(":actor4k"))
     implementation(libs.slf4j.reload4j)
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions {
+    compilerOptions {
         // Use "-Xcontext-receivers" to enable context receivers.
-        freeCompilerArgs = listOf("-Xjsr305=strict")
-        jvmTarget = "17"
+        freeCompilerArgs.set(listOf("-Xjsr305=strict"))
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 
@@ -46,4 +45,3 @@ tasks.withType<Test> {
         }
     })
 }
-
