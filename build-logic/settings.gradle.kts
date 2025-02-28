@@ -17,3 +17,5 @@ dependencyResolutionManagement {
         }
     }
 }
+
+include("plugins")
