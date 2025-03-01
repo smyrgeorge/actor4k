@@ -1,5 +1,5 @@
 plugins {
-    id("io.github.smyrgeorge.actor4k.multiplatform.jvm")
+    id("io.github.smyrgeorge.actor4k.multiplatform")
 }
 
 kotlin {

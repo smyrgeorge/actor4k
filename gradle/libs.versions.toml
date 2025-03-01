@@ -7,6 +7,8 @@ kotlinx-coroutines = "1.10.1"
 publish = "0.30.0"
 # https://github.com/Kotlin/dokka
 dokka = "2.0.0"
+# https://github.com/smyrgeorge/log4k
+log4k = "0.31.0"
 # https://mvnrepository.com/artifact/org.slf4j/slf4j-api
 slf4j = "2.0.16"
 # https://github.com/Kotlin/kotlinx-datetime
@@ -17,6 +19,7 @@ gradle-kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 gradle-publish-plugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "publish" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+log4k = { module = "io.github.smyrgeorge:log4k", version.ref = "log4k" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-reload4j = { module = "org.slf4j:slf4j-reload4j", version.ref = "slf4j" }
 

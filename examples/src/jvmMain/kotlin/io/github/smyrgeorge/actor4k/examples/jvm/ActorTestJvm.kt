@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.examples
+package io.github.smyrgeorge.actor4k.examples.jvm
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
@@ -10,7 +10,7 @@ import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
-class ActorTestKotlin
+class ActorTestJvm
 
 data class Req(val msg: String)
 data class Resp(val msg: String)
