@@ -12,7 +12,6 @@ import java.util.concurrent.CompletableFuture
  * `JActorRegistry` provides utility methods to lookup or retrieve existing actor references
  * as `CompletableFuture` instances using the actor class, a key, and optionally a shard identifier.
  */
-@Suppress("unused")
 object JActorRegistry {
     fun <A : Actor> get(actor: Class<A>, key: String): CompletableFuture<ActorRef> =
         runBlocking { future { ActorSystem.get(actor.kotlin, key) } }

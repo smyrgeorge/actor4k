@@ -4,6 +4,10 @@ plugins {
 
 gradlePlugin {
     plugins {
+        create("multiplatform") {
+            id = "io.github.smyrgeorge.actor4k.multiplatform"
+            implementationClass = "io.github.smyrgeorge.actor4k.multiplatform.MultiplatformConventions"
+        }
         create("multiplatform.jvm") {
             id = "io.github.smyrgeorge.actor4k.multiplatform.jvm"
             implementationClass = "io.github.smyrgeorge.actor4k.multiplatform.MultiplatformJvmConventions"

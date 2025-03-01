@@ -1,5 +1,5 @@
 plugins {
-    id("io.github.smyrgeorge.actor4k.multiplatform.jvm")
+    id("io.github.smyrgeorge.actor4k.multiplatform")
     id("io.github.smyrgeorge.actor4k.publish")
 }
 
@@ -9,13 +9,10 @@ kotlin {
             languageSettings.progressiveMode = true
         }
         @Suppress("unused")
-        val jvmMain by getting {
+        val commonMain by getting {
             dependencies {
-                implementation(kotlin("reflect"))
+                api(libs.kotlinx.datetime)
                 api(libs.kotlinx.coroutines.core)
-                api(libs.kotlinx.coroutines.reactive)
-                api(libs.arrow.core)
-                api(libs.arrow.fx.coroutines)
             }
         }
     }

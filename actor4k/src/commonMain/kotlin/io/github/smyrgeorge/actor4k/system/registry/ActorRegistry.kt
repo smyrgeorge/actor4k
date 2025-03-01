@@ -5,11 +5,12 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
-import io.github.smyrgeorge.actor4k.util.launch
+import io.github.smyrgeorge.actor4k.util.extentions.ActorFactory
+import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.time.Instant
+import kotlinx.datetime.Clock
 import kotlin.reflect.KClass
 
 /**
@@ -19,14 +20,16 @@ import kotlin.reflect.KClass
  */
 abstract class ActorRegistry {
 
-    val log: Logger = try {
-        ActorSystem.loggerFactory.getLogger(this::class)
-    } catch (_: UninitializedPropertyAccessException) {
-        error("Please register first a Logger.Factory to the ActorSystem.")
+    val log: Logger by lazy {
+        try {
+            ActorSystem.loggerFactory.getLogger(this::class)
+        } catch (_: Exception) {
+            error("Please register first a Logger.Factory to the ActorSystem.")
+        }
     }
 
     // Mutex for the create operation.
-    val mutex = Mutex()
+    private val mutex = Mutex()
 
     /**
      * Represents a registry for storing locally managed `Actor` instances.
@@ -43,7 +46,17 @@ abstract class ActorRegistry {
      * Operations on this map should be synchronized or externally controlled to ensure
      * thread safety, as it may be accessed by multiple coroutines or concurrent processes.
      */
-    val local: MutableMap<String, Actor> = mutableMapOf()
+    val registry: MutableMap<String, Actor> = mutableMapOf()
+
+    /**
+     * A registry of factory functions used to create instances of different `Actor` types.
+     * Each factory function is associated with a unique string identifier corresponding to an actor type.
+     *
+     * This map serves as the internal storage for registering and retrieving actor factory functions.
+     * Factory functions are registered via the `register` method and retrieved through the `factory` method.
+     * It is used to manage the creation of actor instances dynamically within the `ActorRegistry`.
+     */
+    private val factories: MutableMap<String, (key: String) -> Actor> = mutableMapOf()
 
     init {
         launch {
@@ -65,7 +78,7 @@ abstract class ActorRegistry {
      * @return The `Actor` instance associated with the given `LocalRef`.
      */
     suspend fun get(ref: LocalRef): Actor =
-        local[ref.address] ?: get(ref.actor, ref.key).let { local[ref.address]!! }
+        registry[ref.address] ?: get(ref.actor, ref.key).let { registry[ref.address]!! }
 
     /**
      * Retrieves an `ActorRef` for the specified actor type and key.
@@ -95,10 +108,10 @@ abstract class ActorRegistry {
      */
     suspend fun <A : Actor> unregister(actor: KClass<A>, key: String, force: Boolean = false) {
         val address = Actor.addressOf(actor, key)
-        withLock {
-            local[address]?.let {
+        lock {
+            registry[address]?.let {
                 if (!force && it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
-                local.remove(address)
+                registry.remove(address)
                 log.info("Unregistered actor $address.")
             }
         }
@@ -113,9 +126,9 @@ abstract class ActorRegistry {
      *
      * @return Unit A coroutine completion indicating that all local actors have been successfully shut down.
      */
-    suspend fun shutdown(): Unit = withLock {
+    suspend fun shutdown(): Unit = lock {
         log.debug("Stopping all local actors.")
-        local.values.forEach { it.shutdown() }
+        registry.values.forEach { it.shutdown() }
     }
 
     /**
@@ -123,25 +136,38 @@ abstract class ActorRegistry {
      *
      * @return The total number of actors in the local registry.
      */
-    fun count(): Int = local.size
+    fun count(): Int = registry.size
 
     /**
      * Calculates the total number of messages processed by all actors in the local registry.
      *
      * @return The total count of messages processed by all actors.
      */
-    fun totalMessages(): Long = local.map { it.value.stats().messages }.sum()
+    fun totalMessages(): Long = registry.map { it.value.stats().messages }.sum()
 
-    private suspend fun stopLocalExpired(): Unit = withLock {
-        log.debug("Stopping all local expired actors.")
-        local.values.forEach {
-            val df = Instant.now().epochSecond - it.stats().last.epochSecond
-            if (df > ActorSystem.conf.actorExpiration.inWholeSeconds) {
-                log.info("Closing ${it.address()}, ${it.stats()} (expired).")
-                it.shutdown()
-            }
-        }
+    /**
+     * Registers a factory function for creating instances of a specific actor type within the ActorRegistry.
+     *
+     * @param actor The class of the actor to be registered.
+     * @param factory A lambda function that takes a string key as a parameter and returns an instance of the actor.
+     * @return The updated ActorRegistry instance.
+     */
+    fun register(actor: KClass<out Actor>, factory: ActorFactory): ActorRegistry {
+        if (ActorSystem.status == ActorSystem.Status.READY) error("Cannot register a factory while the system is ready.")
+        this.factories[actor.qualifiedName!!] = factory
+        return this
     }
+
+    /**
+     * Retrieves a factory function for creating instances of a specific actor type.
+     * The factory function takes a string key as a parameter and returns an instance of the actor.
+     *
+     * @param actor The class of the actor for which the factory function is requested.
+     * @return A lambda function that takes a string key and returns an instance of the specified actor type.
+     * @throws IllegalStateException if no factory is registered for the provided actor type.
+     */
+    fun factory(actor: KClass<out Actor>): ActorFactory =
+        factories[actor.qualifiedName!!] ?: error("No factory registered for ${actor.qualifiedName!!}.")
 
     /**
      * Acquires a lock before executing the provided suspend function.
@@ -149,5 +175,27 @@ abstract class ActorRegistry {
      * @param f The suspend function to be executed within the lock.
      * @return Unit
      */
-    suspend fun <T> withLock(f: suspend () -> T): T = mutex.withLock { f() }
+    suspend fun <T> lock(f: suspend () -> T): T = mutex.withLock { f() }
+
+    /**
+     * Stops and removes all locally registered actors that have exceeded their expiration time.
+     *
+     * This method iterates through all actors in the local registry, calculates their
+     * inactivity duration since the last recorded activity, and shuts down actors whose
+     * durations exceed the configured expiration threshold. The operation is performed
+     * within a lock to ensure thread safety and prevent concurrent modifications to the
+     * registry.
+     *
+     * @return Unit A coroutine completion indicating the operation has finished.
+     */
+    private suspend fun stopLocalExpired(): Unit = lock {
+        log.debug("Stopping all local expired actors.")
+        registry.values.forEach {
+            val df = (Clock.System.now() - it.stats().last).inWholeSeconds
+            if (df > ActorSystem.conf.actorExpiration.inWholeSeconds) {
+                log.info("Closing ${it.address()}, ${it.stats()} (expired).")
+                it.shutdown()
+            }
+        }
+    }
 }

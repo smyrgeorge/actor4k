@@ -7,6 +7,14 @@
 ![GitHub issues](https://img.shields.io/github/issues/smyrgeorge/actor4k)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.1.10-blue.svg?logo=kotlin)](http://kotlinlang.org)
 
+![](https://img.shields.io/static/v1?label=&message=Platforms&color=grey)
+![](https://img.shields.io/static/v1?label=&message=Jvm&color=blue)
+![](https://img.shields.io/static/v1?label=&message=Linux&color=blue)
+![](https://img.shields.io/static/v1?label=&message=macOS&color=blue)
+![](https://img.shields.io/static/v1?label=&message=Windows&color=blue)
+![](https://img.shields.io/static/v1?label=&message=iOS&color=blue)
+![](https://img.shields.io/static/v1?label=&message=Android&color=blue)
+
 A small actor system written in kotlin using Coroutines.
 
 > [!IMPORTANT]  
@@ -22,6 +30,24 @@ A small actor system written in kotlin using Coroutines.
 implementation("io.github.smyrgeorge:actor4k:x.y.z")
 ```
 
+### Start up the Actor System
+
+`actor4k` tries to be multiplatform compatible, which means there is no support for reflection. Therefore, we must pass
+the factories to the registry for each Actor class in our project (see the example below).
+
+```kotlin
+// Create the Actor Registry.
+val registry = SimpleActorRegistry()
+    .register(AccountActor::class) { AccountActor(it) }
+
+// Start the actor system.
+ActorSystem
+    .register(JLoggerFactory()) // The Logger factory, for the internal use.
+    .register(SimpleStats())
+    .register(registry)
+    .start()
+```
+
 ### Let's create an Actor!
 
 ```kotlin
@@ -29,20 +55,20 @@ data class Req(val msg: String)
 data class Resp(val msg: String)
 
 data class AccountActor(
-    override val shard: String,
     override val key: String
-) : Actor(shard, key) {
+) : Actor(key) {
+
     override suspend fun onBeforeActivate() {
-        log.info { "[${address()}] before-activate" }
+        log.info("[${address()}] before-activate")
     }
 
     override suspend fun onActivate(m: Message) {
-        log.info { "[${address()}] activate ($m)" }
+        log.info("[${address()}] activate ($m)")
     }
 
-    override fun onReceive(m: Message, r: Response.Builder): Response {
+    override suspend fun onReceive(m: Message, r: Response.Builder): Response {
         val msg = m.cast<Req>()
-        log.info { "[$name] Received message: $msg" }
+        log.info("[${address()}] Received message: $msg")
         val res = Resp("Pong!")
         return r.value(res).build()
     }

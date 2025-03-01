@@ -3,10 +3,7 @@ package io.github.smyrgeorge.actor4k.system.registry
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import kotlinx.coroutines.sync.withLock
 import kotlin.reflect.KClass
-import kotlin.reflect.full.callSuspend
-import kotlin.reflect.full.primaryConstructor
 
 class SimpleActorRegistry : ActorRegistry() {
     override suspend fun <A : Actor> get(actor: KClass<A>, key: String): ActorRef {
@@ -18,23 +15,21 @@ class SimpleActorRegistry : ActorRegistry() {
 
         // Limit the concurrent access to one at a time.
         // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
-        val actorInstance: Actor = mutex.withLock {
+        val actorInstance: Actor = lock {
             // Check if the actor already exists in the local storage.
-            local[address]?.let { return it.ref() }
+            registry[address]?.let { return@lock it }
 
             // Spawn the actor.
-            val a: Actor = actor
-                .primaryConstructor!!
-                .callSuspend(key)
+            val a: Actor = factory(actor)(key)
 
-            // Store [Actor.Ref] to the local storage.
-            local[address] = a
+            // Store the [Actor] to the local storage.
+            registry[address] = a
 
             a
         }
 
-        // Invoke activate (initialization) method.
         try {
+            // Invoke activate (initialization) method of the Actor.
             actorInstance.activate()
         } catch (e: Exception) {
             log.error("Could not activate ${actorInstance.address()}.")
@@ -42,7 +37,7 @@ class SimpleActorRegistry : ActorRegistry() {
             throw e
         }
 
-        log.debug("Actor $address created and activated successfully.")
+        log.debug("Actor {} created and activated successfully.", address)
         return actorInstance.ref()
     }
 }

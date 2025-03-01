@@ -7,14 +7,11 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem.conf
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.Stats
 import io.github.smyrgeorge.actor4k.util.Logger
-import io.github.smyrgeorge.actor4k.util.launch
-import kotlinx.coroutines.Dispatchers
+import io.github.smyrgeorge.actor4k.util.extentions.launch
+import io.github.smyrgeorge.actor4k.util.extentions.registerShutdownHook
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
-import kotlin.concurrent.thread
 import kotlin.reflect.KClass
-import kotlin.system.exitProcess
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -38,6 +35,8 @@ object ActorSystem {
     lateinit var registry: ActorRegistry
 
     init {
+        registerShutdownHook()
+
         launch {
             while (true) {
                 runCatching {
@@ -160,6 +159,37 @@ object ActorSystem {
         return this
     }
 
+    /**
+     * Initiates the shutdown process for the system.
+     *
+     * The shutdown process includes:
+     * - Logging the shutdown initiation and updating the status to `SHUTTING_DOWN`.
+     * - Initiating the shutdown of all locally registered actors within the registry.
+     * - If the system is part of a cluster, informing the cluster of the shutdown process and triggering cluster-specific shutdown tasks.
+     * - Periodically checking and logging the remaining number of active actors until all have finished their shutdown processes.
+     *
+     * This method ensures an orderly and safe termination of the system, completing all necessary cleanup tasks.
+     * It is designed to handle local and clustered environments appropriately.
+     */
+    suspend fun shutdown() {
+        log.info("Received shutdown signal, will shutdown...")
+        status = Status.SHUTTING_DOWN
+
+        log.info("Closing ${registry.count()} actors..")
+        registry.shutdown()
+
+        if (isCluster()) {
+            log.info("Informing cluster that we are about to leave..")
+            cluster.shutdown()
+        }
+
+        // Wait for all actors to finish.
+        while (registry.count() > 0) {
+            log.info("Waiting ${registry.count()} actors to finish.")
+            delay(1000)
+        }
+    }
+
     enum class Status {
         NOT_READY,
         READY,
@@ -183,44 +213,4 @@ object ActorSystem {
         val memberManagerRoundDelay: Duration = 2.seconds,
         val lowMemoryThresholdMd: Int = 50
     )
-
-    private val hook = Runtime.getRuntime().addShutdownHook(
-        thread(start = false) {
-            runBlocking(Dispatchers.IO) { Shutdown.shutdown(Shutdown.Trigger.EXTERNAL) }
-        }
-    )
-
-    object Shutdown {
-
-        suspend fun shutdown(triggeredBy: Trigger) {
-            log.info("Received shutdown signal by $triggeredBy..")
-            status = Status.SHUTTING_DOWN
-
-            log.info("Closing ${registry.count()} actors..")
-            registry.shutdown()
-
-            if (isCluster()) {
-                log.info("Informing cluster that we are about to leave..")
-                cluster.shutdown()
-            }
-
-            // Wait for all actors to finish.
-            while (registry.count() > 0) {
-                log.info("Waiting ${registry.count()} actors to finish.")
-                delay(1000)
-            }
-
-            when (triggeredBy) {
-                Trigger.SELF -> exitProcess(0)
-                Trigger.SELF_ERROR -> exitProcess(1)
-                Trigger.EXTERNAL -> Unit
-            }
-        }
-
-        enum class Trigger {
-            SELF,
-            SELF_ERROR,
-            EXTERNAL
-        }
-    }
 }

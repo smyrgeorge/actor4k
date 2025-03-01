@@ -4,7 +4,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.util.Logger
-import io.github.smyrgeorge.actor4k.util.launch
+import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
@@ -12,7 +12,8 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.withTimeout
-import java.time.Instant
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -74,7 +75,7 @@ abstract class Actor(open val key: String) {
                     return@consumeEach
                 }
 
-                stats.last = Instant.now()
+                stats.last = Clock.System.now()
                 stats.messages += 1
 
                 val msg = Message(stats.messages, it.msg)
@@ -85,7 +86,7 @@ abstract class Actor(open val key: String) {
                         onActivate(msg)
                         // Set 'READY' status.
                         status = Status.READY
-                        initializedAt = Instant.now()
+                        initializedAt = Clock.System.now()
                     } catch (e: Exception) {
                         // In case of an error we need to close the [Actor] immediately.
                         log.error("[$address] Failed to activate, will shutdown (${e.message ?: ""})")
@@ -319,7 +320,7 @@ abstract class Actor(open val key: String) {
      * @property messages The total number of messages processed.
      */
     data class Stats(
-        var last: Instant = Instant.now(),
+        var last: Instant = Clock.System.now(),
         var messages: Long = 0
     )
 

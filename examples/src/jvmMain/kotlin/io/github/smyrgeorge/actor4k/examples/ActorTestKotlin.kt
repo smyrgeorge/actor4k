@@ -10,7 +10,7 @@ import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
-class ActorTest
+class ActorTestKotlin
 
 data class Req(val msg: String)
 data class Resp(val msg: String)
@@ -33,31 +33,32 @@ data class AccountActor(override val key: String) : Actor(key) {
     }
 }
 
-fun main() {
-    runBlocking {
-        // Start the actor system.
-        ActorSystem
-            .register(JLoggerFactory())
-            .register(SimpleStats())
-            .register(SimpleActorRegistry())
-            .start()
+fun main() = runBlocking {
+    val registry = SimpleActorRegistry()
+        .register(AccountActor::class) { AccountActor(it) }
 
-        val a: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
+    // Start the actor system.
+    ActorSystem
+        .register(JLoggerFactory())
+        .register(SimpleStats())
+        .register(registry)
+        .start()
 
-        val req = Req(msg = "[tell] Hello World!")
-        a.tell(req)
+    val a: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
 
-        val req2 = Req(msg = "[ask] Ping!")
-        val r = a.ask<Resp>(req2)
-        println(r)
+    val req = Req(msg = "[tell] Hello World!")
+    a.tell(req)
 
-        val a2: LocalRef = ActorSystem.get(AccountActor::class, "ACC0010") as LocalRef
-        println(a2.status())
-        a2.stop()
-        delay(1000)
+    val req2 = Req(msg = "[ask] Ping!")
+    val r = a.ask<Resp>(req2)
+    println(r)
 
-        val a3: LocalRef = ActorSystem.get(AccountActor::class, "ACC0030") as LocalRef
+    val a2: LocalRef = ActorSystem.get(AccountActor::class, "ACC0010") as LocalRef
+    println(a2.status())
+    a2.stop()
+    delay(1000)
 
-        a2.tell(req) // Will re-create the actor.
-    }
+    val a3: LocalRef = ActorSystem.get(AccountActor::class, "ACC0030") as LocalRef
+
+    a2.tell(req) // Will re-create the actor.
 }
