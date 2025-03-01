@@ -2,13 +2,14 @@ package io.github.smyrgeorge.actor4k.system.registry
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
+import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlin.reflect.KClass
 
 class SimpleActorRegistry : ActorRegistry() {
     override suspend fun <A : Actor> get(actor: KClass<A>, key: String): ActorRef {
         // Calculate the actor address.
-        val address: String = Actor.addressOf(actor, key)
+        val address: Address = Actor.addressOf(actor, key)
 
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Cannot get/create $address, system is ${ActorSystem.status}.")

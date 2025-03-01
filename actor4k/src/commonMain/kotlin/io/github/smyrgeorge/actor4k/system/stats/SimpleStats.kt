@@ -8,7 +8,7 @@ data class SimpleStats(
     var lastCollectPeriodMessages: Long = 0,
 ) : Stats {
     override fun collect() {
-        actors = ActorSystem.registry.count()
+        actors = ActorSystem.registry.size()
         val totalMessages = ActorSystem.registry.totalMessages()
         lastCollectPeriodMessages = totalMessages - this.totalMessages
         if (lastCollectPeriodMessages < 0) lastCollectPeriodMessages = 0

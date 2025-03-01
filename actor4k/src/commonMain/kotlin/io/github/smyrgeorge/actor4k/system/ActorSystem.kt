@@ -58,11 +58,13 @@ object ActorSystem {
     }
 
     /**
-     * Determines whether the current system type is a cluster.
+     * Determines whether the current actor system is configured as a cluster.
      *
-     * This method checks if the current system configuration is set to `Type.CLUSTER`.
+     * This method checks if the `type` of the actor system is `CLUSTER`, indicating
+     * that the system is operating in a distributed cluster mode with cluster-specific
+     * functionalities enabled.
      *
-     * @return `true` if the system type is `Type.CLUSTER`, otherwise `false`.
+     * @return `true` if the actor system is configured as a cluster, `false` otherwise.
      */
     fun isCluster(): Boolean = type == Type.CLUSTER
 
@@ -175,7 +177,7 @@ object ActorSystem {
         log.info("Received shutdown signal, will shutdown...")
         status = Status.SHUTTING_DOWN
 
-        log.info("Closing ${registry.count()} actors..")
+        log.info("Closing ${registry.size()} actors..")
         registry.shutdown()
 
         if (isCluster()) {
@@ -184,25 +186,65 @@ object ActorSystem {
         }
 
         // Wait for all actors to finish.
-        while (registry.count() > 0) {
-            log.info("Waiting ${registry.count()} actors to finish.")
+        while (registry.size() > 0) {
+            log.info("Waiting ${registry.size()} actors to finish.")
             delay(1000)
         }
     }
 
+    /**
+     * Represents the various states of an actor system during its lifecycle.
+     *
+     * This enum is used to monitor and manage the status of the system through different phases:
+     *
+     * - `NOT_READY`: Indicates that the system is not yet initialized and cannot perform operations.
+     * - `READY`: Denotes that the system is fully initialized and operational.
+     * - `SHUTTING_DOWN`: Represents the state where the system is in the process of shutting down,
+     *   ensuring safe termination and cleanup of resources.
+     *
+     * These statuses are integral to ensuring the smooth functioning of the system and are typically
+     * checked before executing certain operations or transitioning between system states.
+     */
     enum class Status {
         NOT_READY,
         READY,
         SHUTTING_DOWN
     }
 
+    /**
+     * Represents the types of actor system configurations.
+     *
+     * This enum defines the operational mode of an actor system, which can be either:
+     * - `SIMPLE`: A basic configuration without cluster capabilities.
+     * - `CLUSTER`: A distributed configuration that enables cluster-based functionalities.
+     *
+     * The type determines the behavior and capabilities of the actor system,
+     * including whether it supports distributed clustering features.
+     */
     enum class Type {
         SIMPLE,
         CLUSTER
     }
 
+    /**
+     * Represents the configuration settings for an actor-based system.
+     * This data class allows customization of various parameters related to
+     * system performance, initialization processes, resource management,
+     * and behavior under specific circumstances.
+     *
+     * @property actorQueueSize Specifies the size of the actor's queue. It determines how many messages can be queued before the sender is suspended. Defaults to an unlimited capacity.
+     * @property initializationRounds The number of rounds for the initialization process. This can affect the readiness and preparation of system components.
+     * @property initializationDelayPerRound The delay applied between each initialization round.
+     * @property clusterLogStats The interval duration for cluster logging activities.
+     * @property clusterCollectStats The frequency at which cluster statistics are collected.
+     * @property registryCleanup The frequency of clean-up processes for the registry.
+     * @property actorExpiration Duration after which unused actors are considered expired and subject to resource cleanup.
+     * @property actorRemoteRefExpiration The expiration time for remote actor references.
+     * @property memberManagerRoundDelay The delay between rounds of the member management process.
+     * @property lowMemoryThresholdMd Memory threshold in megabytes below which the system may trigger memory warnings or adapt to lower resource conditions.
+     */
     data class Conf(
-        val actorQueueSize: Int = Channel.UNLIMITED, // Will suspend the senders if the mailbox is full.
+        val actorQueueSize: Int = Channel.UNLIMITED,
         val initializationRounds: Int = 10,
         val initializationDelayPerRound: Duration = 5.seconds,
         val clusterLogStats: Duration = 30.seconds,

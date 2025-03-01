@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.system.registry
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
+import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
@@ -46,7 +47,7 @@ abstract class ActorRegistry {
      * Operations on this map should be synchronized or externally controlled to ensure
      * thread safety, as it may be accessed by multiple coroutines or concurrent processes.
      */
-    val registry: MutableMap<String, Actor> = mutableMapOf()
+    val registry: MutableMap<Address, Actor> = mutableMapOf()
 
     /**
      * A registry of factory functions used to create instances of different `Actor` types.
@@ -78,7 +79,7 @@ abstract class ActorRegistry {
      * @return The `Actor` instance associated with the given `LocalRef`.
      */
     suspend fun get(ref: LocalRef): Actor =
-        registry[ref.address] ?: get(ref.actor, ref.key).let { registry[ref.address]!! }
+        registry[ref.address] ?: get(ref.actor, ref.address.key).let { registry[ref.address]!! }
 
     /**
      * Retrieves an `ActorRef` for the specified actor type and key.
@@ -136,7 +137,7 @@ abstract class ActorRegistry {
      *
      * @return The total number of actors in the local registry.
      */
-    fun count(): Int = registry.size
+    fun size(): Int = registry.size
 
     /**
      * Calculates the total number of messages processed by all actors in the local registry.

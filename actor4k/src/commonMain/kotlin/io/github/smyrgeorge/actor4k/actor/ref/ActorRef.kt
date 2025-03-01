@@ -5,14 +5,10 @@ package io.github.smyrgeorge.actor4k.actor.ref
  * Contains basic information about the actor and defines methods
  * for interacting with it.
  *
- * @property name The name of the actor.
- * @property key The unique key associated with the actor.
  * @property address The address of the actor.
  */
 abstract class ActorRef(
-    open val name: String,
-    open val key: String,
-    open val address: String
+    open val address: Address
 ) {
     /**
      * Send a message to the actor referenced by this `ActorRef`.

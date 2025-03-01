@@ -1,26 +1,20 @@
 package io.github.smyrgeorge.actor4k.actor.ref
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.actor.Actor.Companion.addressOf
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlin.reflect.KClass
 
 /**
- * `LocalRef` is a data class that represents a reference to a local actor in the `ActorSystem`.
- * It extends `ActorRef` and provides additional functionalities like sending messages,
- * querying status, and stopping the actor.
+ * A reference to a local actor in the actor system. This class extends `ActorRef` and provides
+ * functionality to interact with an actor hosted locally within the system.
  *
- * @property name The name of the actor.
- * @property key The key associated with the actor.
- * @property actor The class type of the actor.
- * @property address The address of the actor, defaulting to a computed address using the actor's name and key.
+ * @property address The unique address identifying the actor.
+ * @property actor The `KClass` of the actor associated with this reference.
  */
 data class LocalRef(
-    override val name: String,
-    override val key: String,
+    override val address: Address,
     val actor: KClass<out Actor>,
-    override val address: String = addressOf(name, key)
-) : ActorRef(name, key, address) {
+) : ActorRef(address) {
     /**
      * Sends a message to the actor associated with this `LocalRef`.
      *
@@ -44,7 +38,8 @@ data class LocalRef(
      *
      * @return the current status of the actor.
      */
-    suspend fun status(): Actor.Status = ActorSystem.registry.get(this).status()
+    suspend fun status(): Actor.Status =
+        ActorSystem.registry.get(this).status()
 
     /**
      * Stops the actor associated with this `LocalRef`.
@@ -54,5 +49,6 @@ data class LocalRef(
      *
      * @return Unit
      */
-    suspend fun stop() = ActorSystem.registry.get(this).shutdown()
+    suspend fun stop() =
+        ActorSystem.registry.get(this).shutdown()
 }

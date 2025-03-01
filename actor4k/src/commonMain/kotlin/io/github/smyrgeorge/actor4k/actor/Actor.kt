@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.actor
 
+import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
@@ -30,7 +31,7 @@ abstract class Actor(open val key: String) {
     private var status = Status.INITIALISING
     private var initializedAt: Instant? = null
     private val name: String = nameOf(this::class)
-    private val address: String by lazy { addressOf(this::class, key) }
+    private val address: Address by lazy { addressOf(this::class, key) }
 
     private val stats: Stats = Stats()
     private val mail: Channel<Patterns> = Channel(capacity = ActorSystem.conf.actorQueueSize)
@@ -213,9 +214,9 @@ abstract class Actor(open val key: String) {
     /**
      * Retrieves the address of the actor.
      *
-     * @return the address of the actor as a [String].
+     * @return the address of the actor as a [Address].
      */
-    fun address(): String = address
+    fun address(): Address = address
 
     /**
      * Initiates the shutdown process for the actor.
@@ -237,7 +238,7 @@ abstract class Actor(open val key: String) {
      *
      * @return a [LocalRef] representing the reference to the current actor.
      */
-    fun ref(): LocalRef = LocalRef(name = name, key = key, actor = this::class)
+    fun ref(): LocalRef = LocalRef(address = address, actor = this::class)
 
     /**
      * Represents message patterns used by the `Actor` for communication and message handling.
@@ -341,24 +342,21 @@ abstract class Actor(open val key: String) {
         }
 
     companion object {
+        /**
+         * Retrieves the name of the given actor class.
+         *
+         * @param actor The class of the actor whose name is to be retrieved.
+         * @return The simple name of the actor's class, or "Anonymous" if the name is not available.
+         */
         private fun <A : Actor> nameOf(actor: KClass<A>): String = actor.simpleName ?: "Anonymous"
 
         /**
-         * Calculates the address of an actor by concatenating the actor name with the given key.
+         * Computes the address of an actor based on its class type and a unique key.
          *
-         * @param actor the class type of the actor
-         * @param key the key used to generate the address
-         * @return the address of the actor
+         * @param actor The class type of the actor.
+         * @param key A unique key that identifies the actor.
+         * @return The computed address of the actor as an [Address] object.
          */
-        fun <A : Actor> addressOf(actor: KClass<A>, key: String): String = addressOf(nameOf(actor), key)
-
-        /**
-         * Calculates the address of an actor by concatenating the actor name with the given key.
-         *
-         * @param actor the actor's name
-         * @param key the key used to generate the address
-         * @return the address of the actor
-         */
-        fun addressOf(actor: String, key: String): String = "$actor-$key"
+        fun <A : Actor> addressOf(actor: KClass<A>, key: String): Address = Address(nameOf(actor), key)
     }
 }
