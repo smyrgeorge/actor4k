@@ -15,5 +15,17 @@ kotlin {
                 api(libs.kotlinx.coroutines.core)
             }
         }
+        @Suppress("unused")
+        val jvmMain by getting {
+            dependencies {
+                api(libs.slf4j.api)
+            }
+        }
+        @Suppress("unused")
+        val nativeMain by getting {
+            dependencies {
+                api(libs.log4k)
+            }
+        }
     }
 }
