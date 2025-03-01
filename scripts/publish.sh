@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-./gradlew clean build
+./gradlew clean build -Ptargets=all
 
 ./gradlew :dokkaHtmlMultiModule
 rm -rf ./docs/*
@@ -15,5 +15,5 @@ git tag "$version" -f
 git push --tags -f
 
 cat local.properties >> gradle.properties
-./gradlew publishAllPublicationsToMavenCentralRepository
+./gradlew publishAllPublicationsToMavenCentralRepository -Ptargets=all
 git checkout .
