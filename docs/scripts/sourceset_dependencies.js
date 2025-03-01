@@ -1,1 +1,1 @@
-sourceset_dependencies = '{":actor4k-cluster:dokkaHtmlPartial/main":[],":actor4k:dokkaHtmlPartial/main":[]}'
+sourceset_dependencies = '{":actor4k-java:dokkaHtmlPartial/commonMain":[],":actor4k-java:dokkaHtmlPartial/jvmMain":[":actor4k-java:dokkaHtmlPartial/commonMain"],":actor4k:dokkaHtmlPartial/commonMain":[],":actor4k:dokkaHtmlPartial/jvmMain":[":actor4k:dokkaHtmlPartial/commonMain"]}'
