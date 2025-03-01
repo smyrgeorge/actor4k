@@ -2,7 +2,6 @@ package io.github.smyrgeorge.actor4k.system.stats
 
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 
-@Suppress("unused")
 data class SimpleStats(
     var totalMessages: Long = 0,
     override var actors: Int = 0,

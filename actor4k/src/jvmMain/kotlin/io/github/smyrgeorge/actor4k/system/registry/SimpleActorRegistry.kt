@@ -3,12 +3,13 @@ package io.github.smyrgeorge.actor4k.system.registry
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.callSuspend
 import kotlinx.coroutines.sync.withLock
-import java.lang.reflect.InvocationTargetException
+import kotlin.reflect.KClass
+import kotlin.reflect.full.callSuspend
+import kotlin.reflect.full.primaryConstructor
 
 class SimpleActorRegistry : ActorRegistry() {
-    override suspend fun <A : Actor> get(actor: Class<A>, key: String, shard: String): ActorRef {
+    override suspend fun <A : Actor> get(actor: KClass<A>, key: String, shard: String): ActorRef {
         // Calculate the actor address.
         val address: String = Actor.addressOf(actor, key)
 
@@ -23,8 +24,8 @@ class SimpleActorRegistry : ActorRegistry() {
 
             // Spawn the actor.
             val a: Actor = actor
-                .getConstructor(String::class.java, String::class.java)
-                .newInstance(shard, key)
+                .primaryConstructor!!
+                .callSuspend(shard, key)
 
             // Store [Actor.Ref] to the local storage.
             local[address] = a
@@ -33,13 +34,8 @@ class SimpleActorRegistry : ActorRegistry() {
         }
 
         // Invoke activate (initialization) method.
-        @Suppress("DuplicatedCode")
         try {
-            actor.callSuspend(actorInstance, "activate")
-        } catch (e: InvocationTargetException) {
-            log.error("Could not activate ${actorInstance.address()}. Reason: ${e.targetException.message}")
-            unregister(actor = actor, key = key, force = true)
-            throw e
+            actorInstance.activate()
         } catch (e: Exception) {
             log.error("Could not activate ${actorInstance.address()}.")
             unregister(actor = actor, key = key, force = true)
@@ -50,7 +46,7 @@ class SimpleActorRegistry : ActorRegistry() {
         return ref
     }
 
-    override suspend fun <A : Actor> unregister(actor: Class<A>, key: String, force: Boolean) {
+    override suspend fun <A : Actor> unregister(actor: KClass<A>, key: String, force: Boolean) {
         val address = Actor.addressOf(actor, key)
         mutex.withLock {
             local[address]?.let {

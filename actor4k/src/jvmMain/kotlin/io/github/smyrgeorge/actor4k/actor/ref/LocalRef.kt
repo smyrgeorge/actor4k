@@ -3,6 +3,7 @@ package io.github.smyrgeorge.actor4k.actor.ref
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.Actor.Companion.addressOf
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import kotlin.reflect.KClass
 
 /**
  * `LocalRef` is a data class that represents a reference to a local actor in the `ActorSystem`.
@@ -19,7 +20,7 @@ data class LocalRef(
     override val shard: String,
     override val name: String,
     override val key: String,
-    val actor: Class<out Actor>,
+    val actor: KClass<out Actor>,
     override val address: String = addressOf(name, key)
 ) : ActorRef(shard, name, key, address) {
     /**

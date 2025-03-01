@@ -16,7 +16,6 @@ kotlin {
                 api(libs.kotlinx.coroutines.reactive)
                 api(libs.arrow.core)
                 api(libs.arrow.fx.coroutines)
-                api(libs.slf4j.api)
             }
         }
     }

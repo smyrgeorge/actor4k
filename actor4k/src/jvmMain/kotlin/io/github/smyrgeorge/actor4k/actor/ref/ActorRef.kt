@@ -1,7 +1,5 @@
 package io.github.smyrgeorge.actor4k.actor.ref
 
-import io.github.smyrgeorge.actor4k.util.java.JRef
-
 /**
  * Abstract class representing a reference to an actor in the system.
  * Contains basic information about the actor and defines methods
@@ -12,7 +10,6 @@ import io.github.smyrgeorge.actor4k.util.java.JRef
  * @property key The unique key associated with the actor.
  * @property address The address of the actor.
  */
-@Suppress("unused")
 abstract class ActorRef(
     open val shard: String,
     open val name: String,
@@ -32,11 +29,4 @@ abstract class ActorRef(
      * @return The response returned by the actor.
      */
     abstract suspend fun <R> ask(msg: Any): R
-
-    /**
-     * Converts this `ActorRef` to a `JRef` for Java interoperability.
-     *
-     * @return a `JRef` instance that wraps this `ActorRef`, allowing interaction from Java code.
-     */
-    fun asJava(): JRef = JRef(this)
 }

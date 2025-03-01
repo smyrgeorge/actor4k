@@ -4,6 +4,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.util.launch
+import io.github.smyrgeorge.actor4k.util.Logger
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
@@ -11,9 +12,8 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.withTimeout
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Instant
+import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -25,12 +25,12 @@ import kotlin.time.Duration.Companion.seconds
  * @property key the key identifying the actor.
  */
 abstract class Actor(open val shard: String, open val key: String) {
-    protected val log: Logger = LoggerFactory.getLogger(this::class.java)
+    protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
 
     private var status = Status.INITIALISING
     private var initializedAt: Instant? = null
-    private val name: String = nameOf(this::class.java)
-    private val address: String by lazy { addressOf(this::class.java, key) }
+    private val name: String = nameOf(this::class)
+    private val address: String by lazy { addressOf(this::class, key) }
 
     private val stats: Stats = Stats()
     private val mail: Channel<Patterns> = Channel(capacity = ActorSystem.conf.actorQueueSize)
@@ -54,7 +54,6 @@ abstract class Actor(open val shard: String, open val key: String) {
      */
     abstract suspend fun onReceive(m: Message, r: Response.Builder): Response
 
-    @Suppress("unused")
     suspend fun activate() {
         onBeforeActivate()
 
@@ -69,7 +68,7 @@ abstract class Actor(open val shard: String, open val key: String) {
                         try {
                             val e = IllegalStateException("Actor is prematurely closed (could not be initialized).")
                             it.replyTo.send(Result.failure(e))
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             log.debug("Could not send reply to the client.")
                         }
                     }
@@ -121,9 +120,9 @@ abstract class Actor(open val shard: String, open val key: String) {
                             }
                         } catch (e: TimeoutCancellationException) {
                             log.debug("[consume] Could not send reply in time. ${e.message}")
-                        } catch (e: ClosedSendChannelException) {
+                        } catch (_: ClosedSendChannelException) {
                             log.warn("[consume] Did not manage to reply in time (although the message was processed). $it")
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             log.error("[consume] An error occurred while processing $it")
                         }
                     }
@@ -198,7 +197,7 @@ abstract class Actor(open val shard: String, open val key: String) {
         mail.close()
     }
 
-    fun ref(): LocalRef = LocalRef(shard, name, key, this::class.java)
+    fun ref(): LocalRef = LocalRef(shard, name, key, this::class)
 
     private sealed interface Patterns {
         val msg: Any
@@ -246,7 +245,7 @@ abstract class Actor(open val shard: String, open val key: String) {
         }
 
     companion object {
-        private fun <A : Actor> nameOf(actor: Class<A>): String = actor.simpleName ?: "Anonymous"
+        private fun <A : Actor> nameOf(actor: KClass<A>): String = actor.simpleName ?: "Anonymous"
 
         /**
          * Calculates the address of an actor by concatenating the actor name with the given key.
@@ -255,7 +254,7 @@ abstract class Actor(open val shard: String, open val key: String) {
          * @param key the key used to generate the address
          * @return the address of the actor
          */
-        fun <A : Actor> addressOf(actor: Class<A>, key: String): String = addressOf(nameOf(actor), key)
+        fun <A : Actor> addressOf(actor: KClass<A>, key: String): String = addressOf(nameOf(actor), key)
 
         /**
          * Calculates the address of an actor by concatenating the actor name with the given key.

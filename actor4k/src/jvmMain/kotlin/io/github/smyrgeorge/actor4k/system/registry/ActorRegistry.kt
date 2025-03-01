@@ -4,13 +4,11 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.java.JActorRegistry
+import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Instant
 import kotlin.reflect.KClass
 
@@ -64,7 +62,11 @@ import kotlin.reflect.KClass
 @Suppress("unused")
 abstract class ActorRegistry {
 
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
+    val log: Logger = try {
+        ActorSystem.loggerFactory.getLogger(this::class)
+    } catch (e: UninitializedPropertyAccessException) {
+        error("Please register first a Logger.Factory to the ActorSystem.")
+    }
 
     // Mutex for the create operation.
     val mutex = Mutex()
@@ -75,8 +77,10 @@ abstract class ActorRegistry {
     init {
         launch {
             while (true) {
-                delay(ActorSystem.conf.registryCleanup)
-                stopLocalExpired()
+                runCatching {
+                    delay(ActorSystem.conf.registryCleanup)
+                    stopLocalExpired()
+                }
             }
         }
     }
@@ -84,20 +88,10 @@ abstract class ActorRegistry {
     suspend fun get(ref: LocalRef): Actor =
         local[ref.address] ?: get(ref.actor, ref.key).let { local[ref.address]!! }
 
-    suspend fun <A : Actor> get(
-        actor: KClass<A>,
-        key: String,
-        shard: String = key
-    ): ActorRef = get(actor.java, key, shard)
+    abstract suspend fun <A : Actor> get(actor: KClass<A>, key: String, shard: String = key): ActorRef
 
-    abstract suspend fun <A : Actor> get(
-        actor: Class<A>,
-        key: String,
-        shard: String = key
-    ): ActorRef
-
-    suspend fun unregister(actor: Actor): Unit = unregister(actor::class.java, actor.key)
-    abstract suspend fun <A : Actor> unregister(actor: Class<A>, key: String, force: Boolean = false)
+    suspend fun unregister(actor: Actor): Unit = unregister(actor::class, actor.key)
+    abstract suspend fun <A : Actor> unregister(actor: KClass<A>, key: String, force: Boolean = false)
 
     suspend fun stopAll(): Unit = mutex.withLock {
         log.debug("Stopping all local actors.")
@@ -117,5 +111,4 @@ abstract class ActorRegistry {
 
     fun count(): Int = local.size
     fun totalMessages(): Long = local.map { it.value.stats().messages }.sum()
-    fun asJava(): JActorRegistry = JActorRegistry
 }

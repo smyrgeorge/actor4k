@@ -1,5 +1,6 @@
 plugins {
     id("io.github.smyrgeorge.actor4k.multiplatform.jvm")
+    id("io.github.smyrgeorge.actor4k.publish")
 }
 
 kotlin {
@@ -10,8 +11,8 @@ kotlin {
         @Suppress("unused")
         val jvmMain by getting {
             dependencies {
-                implementation(project(":actor4k-java"))
-                implementation(libs.slf4j.reload4j)
+                api(project(":actor4k"))
+                api(libs.slf4j.api)
             }
         }
     }

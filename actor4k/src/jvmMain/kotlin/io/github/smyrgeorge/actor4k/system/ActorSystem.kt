@@ -5,13 +5,12 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.Stats
+import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import kotlin.concurrent.thread
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
@@ -27,14 +26,13 @@ import kotlin.time.Duration.Companion.seconds
 @Suppress("unused")
 object ActorSystem {
 
-    private val log: Logger = LoggerFactory.getLogger(this::class.java)
-
     var conf = Conf()
 
-    @Suppress("MemberVisibilityCanBePrivate")
     var type: Type = Type.SIMPLE
     var status: Status = Status.NOT_READY
 
+    lateinit var log: Logger
+    lateinit var loggerFactory: Logger.Factory
     lateinit var stats: Stats
     lateinit var cluster: Cluster
     lateinit var registry: ActorRegistry
@@ -42,16 +40,20 @@ object ActorSystem {
     init {
         launch {
             while (true) {
-                delay(conf.clusterCollectStats)
-                stats.collect()
+                runCatching {
+                    delay(conf.clusterCollectStats)
+                    stats.collect()
+                }
             }
         }
 
         launch {
             while (true) {
-                delay(conf.clusterLogStats)
-                // Log [Stats].
-                log.info(stats.toString())
+                runCatching {
+                    delay(conf.clusterLogStats)
+                    // Log [Stats].
+                    log.info(stats.toString())
+                }
             }
         }
     }
@@ -62,16 +64,15 @@ object ActorSystem {
         actor: KClass<A>,
         key: String,
         shard: String = key
-    ): ActorRef = registry.get(actor.java, key, shard)
-
-    suspend fun <A : Actor> get(
-        actor: Class<A>,
-        key: String,
-        shard: String = key
     ): ActorRef = registry.get(actor, key, shard)
 
     fun conf(conf: Conf): ActorSystem {
         this.conf = conf
+        return this
+    }
+
+    fun register(loggerFactory: Logger.Factory): ActorSystem {
+        this.loggerFactory = loggerFactory
         return this
     }
 
@@ -93,6 +94,8 @@ object ActorSystem {
     }
 
     fun start(): ActorSystem {
+        if (!this::loggerFactory.isInitialized) error("Please register a Logger factory.")
+        log = loggerFactory.getLogger(this::class)
         if (!this::stats.isInitialized) error("Please register a stats collector.")
         if (!this::registry.isInitialized) error("Please register an actor registry.")
         if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
