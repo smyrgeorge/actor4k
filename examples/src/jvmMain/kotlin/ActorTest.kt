@@ -1,5 +1,3 @@
-package io.github.smyrgeorge.actor4k.examples
-
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
