@@ -10,5 +10,5 @@ pluginManagement {
 }
 
 include("actor4k")
-include("actor4k-java")
+include("actor4k-jvm")
 include("examples")

@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.java.util
+package io.github.smyrgeorge.actor4k.jvm.util
 
 import io.github.smyrgeorge.actor4k.util.Logger
 import org.slf4j.Logger as Slf4jLogger

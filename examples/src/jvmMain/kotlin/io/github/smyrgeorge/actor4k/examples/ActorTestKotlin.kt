@@ -3,7 +3,7 @@ package io.github.smyrgeorge.actor4k.examples
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
-import io.github.smyrgeorge.actor4k.java.util.JLoggerFactory
+import io.github.smyrgeorge.actor4k.jvm.util.JLoggerFactory
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.SimpleStats

@@ -10,7 +10,7 @@ kotlin {
         @Suppress("unused")
         val jvmMain by getting {
             dependencies {
-                implementation(project(":actor4k-java"))
+                implementation(project(":actor4k-jvm"))
                 implementation(libs.slf4j.reload4j)
             }
         }

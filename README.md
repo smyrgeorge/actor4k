@@ -24,10 +24,26 @@ A small actor system written in kotlin using Coroutines.
 
 🏠 [Homepage](https://smyrgeorge.github.io/) (under construction)
 
-### Usage
+## Actor Model
+
+The actor model is a design paradigm for building concurrent systems where the basic unit of computation, known as an
+actor, encapsulates its own state and behavior and interacts with others solely through asynchronous message passing.
+Each actor processes messages sequentially, which simplifies managing state changes and avoids common pitfalls like race
+conditions and deadlocks that arise with traditional multithreading approaches.
+
+This model is particularly useful for highly concurrent, distributed, and fault-tolerant systems. Its scalability and
+resilience come from the ability to isolate errors within individual actors through supervision strategies, making it a
+fitting choice for applications such as real-time data processing, microservices architectures, and any system that
+requires robust fault isolation and maintainability.
+
+## Usage
 
 ```kotlin
+// Base package
 implementation("io.github.smyrgeorge:actor4k:x.y.z")
+
+// If project is targeted for jvm, simply use:
+implementation("io.github.smyrgeorge:actor4k-jvm:x.y.z")
 ```
 
 ### Start up the Actor System
@@ -42,7 +58,7 @@ val registry = SimpleActorRegistry()
 
 // Start the actor system.
 ActorSystem
-    .register(JLoggerFactory()) // The Logger factory, for the internal use.
+    .register(JLoggerFactory()) // Part of the actor4k-java dependency
     .register(SimpleStats())
     .register(registry)
     .start()
@@ -90,26 +106,13 @@ println(r)
 
 See other examples [here](examples%2Fsrc%2Fmain%2Fkotlin%2Fio%2Fgithub%2Fsmyrgeorge%2Factor4k%2Fexamples).
 
-### Working with Java
-
-We provide special utilities to accomplish this.
-Whenever you need to, simply call the asJava() method and the magic will happen.
-
-For instance take a look here.
-
-```java
-ActorSystem system = ActorSystem.INSTANCE.start(ActorSystem.INSTANCE.getConf());
-Actor.Ref ref = system.getRegistry().asJava().get(AccountActor.class, "ACC00011").join();
-System.out.println(ref);
-```
-
-### Build
+## Build
 
 ```shell
 ./gradlew build
 ```
 
-### Links and References
+## Links and References
 
 - https://kotlinlang.org/docs/coroutines-guide.html
 - https://doc.akka.io/docs/akka/current/general/actor-systems.html

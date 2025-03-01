@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.java.util
+package io.github.smyrgeorge.actor4k.jvm.util
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
