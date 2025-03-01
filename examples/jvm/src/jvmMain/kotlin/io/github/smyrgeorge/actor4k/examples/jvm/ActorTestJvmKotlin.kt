@@ -10,7 +10,7 @@ import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
-class ActorTestJvm
+class ActorTestJvmKotlin
 
 data class Req(val msg: String)
 data class Resp(val msg: String)

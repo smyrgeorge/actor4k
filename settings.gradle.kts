@@ -12,4 +12,5 @@ pluginManagement {
 include("actor4k")
 include("actor4k-kmp")
 include("actor4k-jvm")
-include("examples")
+include("examples:jvm")
+include("examples:kmp")

@@ -42,10 +42,10 @@ requires robust fault isolation and maintainability.
 // Base package
 implementation("io.github.smyrgeorge:actor4k:x.y.z")
 
-// If project is targeted for kotlin-multiplatform, simply use:
+// If your project is targets Kotlin-Multiplatform, simply use:
 implementation("io.github.smyrgeorge:actor4k-kmp:x.y.z")
 
-// If project is targeted for jvm, simply use:
+// Or If your project targets JVM, simply use:
 implementation("io.github.smyrgeorge:actor4k-jvm:x.y.z")
 ```
 
@@ -110,7 +110,7 @@ val r = a.ask<Resp>(req2)
 println(r)
 ```
 
-See other examples [here](examples%2Fsrc%2Fmain%2Fkotlin%2Fio%2Fgithub%2Fsmyrgeorge%2Factor4k%2Fexamples).
+See all the available examples [here](examples).
 
 ## Build
 

@@ -1,6 +1,5 @@
 plugins {
-    id("io.github.smyrgeorge.actor4k.multiplatform")
-    id("io.github.smyrgeorge.actor4k.publish")
+    id("io.github.smyrgeorge.actor4k.multiplatform.jvm")
 }
 
 kotlin {
@@ -9,10 +8,10 @@ kotlin {
             languageSettings.progressiveMode = true
         }
         @Suppress("unused")
-        val commonMain by getting {
+        val jvmMain by getting {
             dependencies {
-                api(project(":actor4k"))
-                api(libs.log4k)
+                implementation(project(":actor4k-jvm"))
+                implementation(libs.slf4j.reload4j)
             }
         }
     }
