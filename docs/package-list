@@ -10,7 +10,3 @@ io.github.smyrgeorge.actor4k.system.registry
 io.github.smyrgeorge.actor4k.system.stats
 io.github.smyrgeorge.actor4k.util
 io.github.smyrgeorge.actor4k.util.extentions
-module:actor4k-rt-jvm
-io.github.smyrgeorge.actor4k.jvm.util
-module:actor4k-rt-kmp
-io.github.smyrgeorge.actor4k.kmp.util

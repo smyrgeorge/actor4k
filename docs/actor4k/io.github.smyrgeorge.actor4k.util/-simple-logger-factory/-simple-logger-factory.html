@@ -2,7 +2,7 @@
 <html class="no-js">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-    <title>KmpLoggerFactory</title>
+    <title>SimpleLoggerFactory</title>
 <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
     <script>document.documentElement.classList.replace("no-js","js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
@@ -41,11 +41,13 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">0.35.0
+        <div class="library-version" id="library-version">0.36.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain">common</button>
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":actor4k:dokkaHtmlPartial/commonMain">common</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":actor4k:dokkaHtmlPartial/jvmMain">jvm</button>
+                <button class="platform-tag platform-selector native-like" data-active="" data-filter=":actor4k:dokkaHtmlPartial/nativeMain">native</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
                 <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
@@ -56,9 +58,23 @@
                     </div>
                         <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain" data-filter=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain">
+                                <input type="checkbox" class="checkbox--input" id=":actor4k:dokkaHtmlPartial/commonMain" data-filter=":actor4k:dokkaHtmlPartial/commonMain">
                                 <span class="checkbox--icon"></span>
                                 common
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":actor4k:dokkaHtmlPartial/jvmMain" data-filter=":actor4k:dokkaHtmlPartial/jvmMain">
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":actor4k:dokkaHtmlPartial/nativeMain" data-filter=":actor4k:dokkaHtmlPartial/nativeMain">
+                                <span class="checkbox--icon"></span>
+                                native
                             </label>
                         </li>
                 </ul>
@@ -90,55 +106,14 @@
                 </div>
             </div>
             <div id="main">
-<div class="main-content" data-page-type="classlike" id="content" pageids="actor4k-rt-kmp::io.github.smyrgeorge.actor4k.kmp.util/KmpLoggerFactory///PointingToDeclaration//-123647793">
-  <div class="breadcrumbs"><a href="../../index.html">actor4k-rt-kmp</a><span class="delimiter">/</span><a href="../index.html">io.github.smyrgeorge.actor4k.kmp.util</a><span class="delimiter">/</span><span class="current">KmpLoggerFactory</span></div>
+<div class="main-content" data-page-type="member" id="content" pageids="actor4k::io.github.smyrgeorge.actor4k.util/SimpleLoggerFactory/SimpleLoggerFactory/#/PointingToDeclaration//230580753">
+  <div class="breadcrumbs"><a href="../../index.html">actor4k</a><span class="delimiter">/</span><a href="../index.html">io.github.smyrgeorge.actor4k.util</a><span class="delimiter">/</span><a href="index.html">SimpleLoggerFactory</a><span class="delimiter">/</span><span class="current">SimpleLoggerFactory</span></div>
   <div class="cover ">
-    <h1 class="cover"><span>Kmp</span><wbr><span>Logger</span><wbr><span><span>Factory</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">KmpLoggerFactory</a> : <a href="../../../actor4k/io.github.smyrgeorge.actor4k.util/-logger/-factory/index.html">Logger.Factory</a></div></div></div>
+    <h1 class="cover"><span>Simple</span><wbr><span>Logger</span><wbr><span><span>Factory</span></span></h1>
   </div>
-  <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
-    <div class="tabs-section-body">
-      <div data-togglable="CONSTRUCTOR">
-        <h2 class="">Constructors</h2>
-        <div class="table"><a data-name="1169524032%2FConstructors%2F-123647793" anchor-label="KmpLoggerFactory" id="1169524032%2FConstructors%2F-123647793" data-filterable-set=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="-kmp-logger-factory.html"><span>Kmp</span><wbr><span>Logger</span><wbr><span><span>Factory</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1169524032%2FConstructors%2F-123647793"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div data-togglable="FUNCTION">
-        <h2 class="">Functions</h2>
-        <div class="table"><a data-name="1383748933%2FFunctions%2F-123647793" anchor-label="getLogger" id="1383748933%2FFunctions%2F-123647793" data-filterable-set=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="get-logger.html"><span>get</span><wbr><span><span>Logger</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1383748933%2FFunctions%2F-123647793"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-rt-kmp:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="get-logger.html"><span class="token function">getLogger</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">clazz<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/-k-class/index.html">KClass</a><span class="token operator">&lt;</span><span class="token operator">*</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util/-logger/index.html">Logger</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":actor4k:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":actor4k:dokkaHtmlPartial/jvmMain" data-filterable-set=":actor4k:dokkaHtmlPartial/jvmMain" data-toggle=":actor4k:dokkaHtmlPartial/jvmMain">jvm</button><button class="platform-bookmark" data-filterable-current=":actor4k:dokkaHtmlPartial/nativeMain" data-filterable-set=":actor4k:dokkaHtmlPartial/nativeMain" data-toggle=":actor4k:dokkaHtmlPartial/nativeMain">native</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">expect </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-togglable=":actor4k:dokkaHtmlPartial/nativeMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>  </div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
