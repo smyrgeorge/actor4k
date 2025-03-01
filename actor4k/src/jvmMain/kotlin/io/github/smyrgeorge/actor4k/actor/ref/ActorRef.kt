@@ -5,13 +5,11 @@ package io.github.smyrgeorge.actor4k.actor.ref
  * Contains basic information about the actor and defines methods
  * for interacting with it.
  *
- * @property shard The shard identifier of the actor.
  * @property name The name of the actor.
  * @property key The unique key associated with the actor.
  * @property address The address of the actor.
  */
 abstract class ActorRef(
-    open val shard: String,
     open val name: String,
     open val key: String,
     open val address: String

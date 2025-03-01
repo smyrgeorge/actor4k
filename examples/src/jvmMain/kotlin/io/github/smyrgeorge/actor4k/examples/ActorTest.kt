@@ -15,10 +15,7 @@ class ActorTest
 data class Req(val msg: String)
 data class Resp(val msg: String)
 
-data class AccountActor(
-    override val shard: String,
-    override val key: String
-) : Actor(shard, key) {
+data class AccountActor(override val key: String) : Actor(key) {
 
     override suspend fun onBeforeActivate() {
         log.info("[${address()}] before-activate")

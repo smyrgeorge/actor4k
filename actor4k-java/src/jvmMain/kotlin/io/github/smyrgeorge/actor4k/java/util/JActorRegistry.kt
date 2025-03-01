@@ -14,14 +14,6 @@ import java.util.concurrent.CompletableFuture
  */
 @Suppress("unused")
 object JActorRegistry {
-    fun <A : Actor> get(
-        actor: Class<A>,
-        key: String,
-        shard: String = key
-    ): CompletableFuture<ActorRef> = runBlocking { future { ActorSystem.get(actor.kotlin, key, shard) } }
-
-    fun <A : Actor> get(
-        actor: Class<A>,
-        key: String
-    ): CompletableFuture<ActorRef> = runBlocking { future { ActorSystem.get(actor.kotlin, key, key) } }
+    fun <A : Actor> get(actor: Class<A>, key: String): CompletableFuture<ActorRef> =
+        runBlocking { future { ActorSystem.get(actor.kotlin, key) } }
 }

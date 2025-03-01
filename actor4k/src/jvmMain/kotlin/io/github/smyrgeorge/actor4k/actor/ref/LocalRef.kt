@@ -10,19 +10,17 @@ import kotlin.reflect.KClass
  * It extends `ActorRef` and provides additional functionalities like sending messages,
  * querying status, and stopping the actor.
  *
- * @property shard The shard identifier for the actor.
  * @property name The name of the actor.
  * @property key The key associated with the actor.
  * @property actor The class type of the actor.
  * @property address The address of the actor, defaulting to a computed address using the actor's name and key.
  */
 data class LocalRef(
-    override val shard: String,
     override val name: String,
     override val key: String,
     val actor: KClass<out Actor>,
     override val address: String = addressOf(name, key)
-) : ActorRef(shard, name, key, address) {
+) : ActorRef(name, key, address) {
     /**
      * Sends a message to the actor associated with this `LocalRef`.
      *
