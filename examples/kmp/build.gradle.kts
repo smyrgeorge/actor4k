@@ -10,7 +10,7 @@ kotlin {
         @Suppress("unused")
         val commonMain by getting {
             dependencies {
-                implementation(project(":actor4k-kmp"))
+                implementation(project(":actor4k-rt-kmp"))
             }
         }
     }

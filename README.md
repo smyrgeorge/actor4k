@@ -43,13 +43,11 @@ requires robust fault isolation and maintainability.
 implementation("io.github.smyrgeorge:actor4k:x.y.z")
 
 // If your project is targets Kotlin-Multiplatform, simply use:
-implementation("io.github.smyrgeorge:actor4k-kmp:x.y.z")
+implementation("io.github.smyrgeorge:actor4k-rt-kmp:x.y.z")
 
 // Or If your project targets JVM, simply use:
-implementation("io.github.smyrgeorge:actor4k-jvm:x.y.z")
+implementation("io.github.smyrgeorge:actor4k-rt-jvm:x.y.z")
 ```
-
-
 
 ### Start up the Actor System
 
@@ -63,8 +61,8 @@ val registry = SimpleActorRegistry()
 
 // Start the actor system.
 ActorSystem
-    .register(KmpLoggerFactory()) // Part of the actor4k-kmp dependency.
-    // .register(JLoggerFactory()) // Additionally you can use the JLoggerFactory (part of the actor4k-jvm dependency.)
+    .register(KmpLoggerFactory()) // Part of the actor4k-rt-kmp dependency.
+    // .register(JLoggerFactory()) // Additionally you can use the JLoggerFactory (part of the actor4k-rt-jvm dependency.)
     .register(SimpleStats())
     .register(registry)
     .start()
@@ -116,6 +114,18 @@ See all the available examples [here](examples).
 
 ```shell
 ./gradlew build
+```
+
+You can also build for specific targets.
+
+```shell
+./gradlew build -Ptargets=macosArm64,macosX64
+```
+
+To build for all available target run:
+
+```shell
+./gradlew build -Ptargets=all
 ```
 
 ## Links and References
