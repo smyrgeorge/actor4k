@@ -39,14 +39,7 @@ requires robust fault isolation and maintainability.
 ## Usage
 
 ```kotlin
-// Base package
 implementation("io.github.smyrgeorge:actor4k:x.y.z")
-
-// If your project is targets Kotlin-Multiplatform, simply use:
-implementation("io.github.smyrgeorge:actor4k-rt-kmp:x.y.z")
-
-// Or If your project targets JVM, simply use:
-implementation("io.github.smyrgeorge:actor4k-rt-jvm:x.y.z")
 ```
 
 ### Start up the Actor System
@@ -61,8 +54,7 @@ val registry = SimpleActorRegistry()
 
 // Start the actor system.
 ActorSystem
-    .register(KmpLoggerFactory()) // Part of the actor4k-rt-kmp dependency.
-    // .register(JLoggerFactory()) // Additionally you can use the JLoggerFactory (part of the actor4k-rt-jvm dependency.)
+    .register(SimpleLoggerFactory())
     .register(SimpleStats())
     .register(registry)
     .start()

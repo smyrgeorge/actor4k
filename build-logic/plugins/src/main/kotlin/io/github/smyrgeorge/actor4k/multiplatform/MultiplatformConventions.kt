@@ -4,13 +4,8 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinTargetContainerWithJsPresetFunctions
-import org.jetbrains.kotlin.gradle.dsl.KotlinTargetContainerWithPresetFunctions
-import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsTargetDsl
-import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinTargetWithNodeJsDsl
-import kotlin.collections.forEach
-import kotlin.collections.get
 
 @Suppress("unused")
 class MultiplatformConventions : Plugin<Project> {
@@ -27,7 +22,15 @@ class MultiplatformConventions : Plugin<Project> {
                 Pair("linuxArm64") { linuxArm64() },
                 Pair("linuxX64") { linuxX64() },
                 Pair("mingwX64") { mingwX64() },
-                Pair("jvm") { jvm() },
+                Pair("jvm") {
+                    jvm {
+                        withJava()
+                        compilerOptions {
+                            freeCompilerArgs.set(listOf("-Xjsr305=strict"))
+                            jvmTarget.set(JvmTarget.JVM_21)
+                        }
+                    }
+                },
                 Pair("js") {
                     js {
                         browser()
