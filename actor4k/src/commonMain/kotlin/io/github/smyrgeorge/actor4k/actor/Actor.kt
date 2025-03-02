@@ -15,7 +15,6 @@ import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -30,8 +29,7 @@ abstract class Actor(open val key: String) {
 
     private var status = Status.INITIALISING
     private var initializedAt: Instant? = null
-    private val name: String = nameOf(this::class)
-    private val address: Address by lazy { addressOf(this::class, key) }
+    private val address: Address by lazy { Address.of(this::class, key) }
 
     private val stats: Stats = Stats()
     private val mail: Channel<Patterns> = Channel(capacity = ActorSystem.conf.actorQueueSize)
@@ -132,29 +130,6 @@ abstract class Actor(open val key: String) {
         }
     }
 
-    data class Message(
-        val id: Long,
-        private val value: Any
-    ) {
-        @Suppress("UNCHECKED_CAST")
-        fun <T> cast(): T = value as? T ?: error("Could not cast to the requested type.")
-        fun isFirst(): Boolean = id == 1L
-    }
-
-    data class Response(
-        val value: Any
-    ) {
-        class Builder {
-            private lateinit var value: Any
-            fun value(v: Any): Builder {
-                value = v
-                return this
-            }
-
-            fun build(): Response = Response(value)
-        }
-    }
-
     /**
      * Sends a message to the actor.
      *
@@ -201,7 +176,7 @@ abstract class Actor(open val key: String) {
      *
      * @return the name of the actor as a [String].
      */
-    fun name(): String = name
+    fun name(): String = address.name
 
     /**
      * Retrieves the current statistics of the actor.
@@ -239,6 +214,76 @@ abstract class Actor(open val key: String) {
      * @return a [LocalRef] representing the reference to the current actor.
      */
     fun ref(): LocalRef = LocalRef(address = address, actor = this::class)
+
+    /**
+     * Represents a message with an identifier and a value.
+     *
+     * This class is primarily utilized in actor-based systems to encapsulate messages
+     * exchanged between actors. Each message is identified by a unique identifier
+     * and can hold a value of any type.
+     *
+     * @property id Unique identifier of the message.
+     * @property value The value or payload of the message, which can be of any type.
+     */
+    data class Message(
+        val id: Long,
+        private val value: Any
+    ) {
+        /**
+         * Casts the encapsulated value of the message to the specified type.
+         *
+         * This function attempts to cast the payload of the message (`value`) to the requested
+         * type `T`. If the cast is unsuccessful, an error is thrown indicating
+         * that the value cannot be cast to the desired type.
+         *
+         * @return The payload of the message cast to the specified type `T`.
+         * @throws IllegalStateException if the value cannot be cast to the requested type.
+         */
+        @Suppress("UNCHECKED_CAST")
+        fun <T> cast(): T = value as? T ?: error("Could not cast to the requested type.")
+
+        /**
+         * Determines if the current message is the first one.
+         *
+         * @return `true` if the message's identifier (`id`) is `1L`, indicating it is the first message; `false` otherwise.
+         */
+        fun isFirst(): Boolean = id == 1L
+    }
+
+    /**
+     * Represents a response returned from an actor after processing a message.
+     * This class encapsulates a result value of type `Any`.
+     *
+     * The `Response` class has a companion `Builder` class, which allows for
+     * a step-by-step construction of a `Response` object using a fluent API.
+     *
+     * @property value The encapsulated value of the response, which can be of any type.
+     */
+    data class Response(
+        val value: Any
+    ) {
+        /**
+         * A builder class for constructing instances of the `Response` class.
+         *
+         * This class enables a step-by-step, fluent approach to setting the properties
+         * of a `Response` object before creating an instance of it. The primary method of the
+         * builder is `value`, which assigns a value to the `Response`. To complete the building
+         * process, the `build` method is used to generate the `Response` instance.
+         *
+         * Methods:
+         * - `value(v: Any): Builder`: Sets the value for the `Response` to be built and returns the builder instance for chaining.
+         * - `build(): Response`: Constructs a `Response` instance using the value set in the builder.
+         */
+        class Builder {
+            private lateinit var value: Any
+            fun value(v: Any): Builder {
+                value = v
+                return this
+            }
+
+            fun build(): Response = Response(value)
+        }
+    }
 
     /**
      * Represents message patterns used by the `Actor` for communication and message handling.
@@ -340,23 +385,4 @@ abstract class Actor(open val key: String) {
                 ActorSystem.registry.unregister(this@Actor)
             }
         }
-
-    companion object {
-        /**
-         * Retrieves the name of the given actor class.
-         *
-         * @param actor The class of the actor whose name is to be retrieved.
-         * @return The simple name of the actor's class, or "Anonymous" if the name is not available.
-         */
-        private fun <A : Actor> nameOf(actor: KClass<A>): String = actor.simpleName ?: "Anonymous"
-
-        /**
-         * Computes the address of an actor based on its class type and a unique key.
-         *
-         * @param actor The class type of the actor.
-         * @param key A unique key that identifies the actor.
-         * @return The computed address of the actor as an [Address] object.
-         */
-        fun <A : Actor> addressOf(actor: KClass<A>, key: String): Address = Address(nameOf(actor), key)
-    }
 }
