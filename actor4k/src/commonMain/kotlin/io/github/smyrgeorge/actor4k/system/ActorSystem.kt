@@ -28,8 +28,11 @@ object ActorSystem {
     var type: Type = Type.SIMPLE
     var status: Status = Status.NOT_READY
 
-    lateinit var log: Logger
     lateinit var loggerFactory: Logger.Factory
+    val log: Logger by lazy {
+        if (!this::loggerFactory.isInitialized) error("Please register a Logger factory.")
+        loggerFactory.getLogger(this::class)
+    }
     lateinit var stats: Stats
     lateinit var cluster: Cluster
     lateinit var registry: ActorRegistry
@@ -151,11 +154,10 @@ object ActorSystem {
      * is not registered, or if the system is not in the `NOT_READY` status.
      */
     fun start(): ActorSystem {
+        if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
         if (!this::loggerFactory.isInitialized) error("Please register a Logger factory.")
-        log = loggerFactory.getLogger(this::class)
         if (!this::stats.isInitialized) error("Please register a stats collector.")
         if (!this::registry.isInitialized) error("Please register an actor registry.")
-        if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
         if (isCluster()) cluster.start()
         status = Status.READY
         return this
@@ -190,6 +192,9 @@ object ActorSystem {
             log.info("Waiting ${registry.size()} actors to finish.")
             delay(1000)
         }
+
+        // Reset cluster's status.
+        status = Status.NOT_READY
     }
 
     /**

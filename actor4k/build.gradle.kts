@@ -16,9 +16,22 @@ kotlin {
             }
         }
         @Suppress("unused")
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.assertk)
+            }
+        }
+        @Suppress("unused")
         val jvmMain by getting {
             dependencies {
                 api(libs.slf4j.api)
+            }
+        }
+        @Suppress("unused")
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.slf4j.reload4j)
             }
         }
         @Suppress("unused")
