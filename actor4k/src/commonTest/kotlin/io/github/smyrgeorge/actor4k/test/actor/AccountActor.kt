@@ -2,7 +2,7 @@ package io.github.smyrgeorge.actor4k.test.actor
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 
-data class AccountActor(override val key: String) : Actor(key) {
+open class AccountActor(override val key: String) : Actor(key) {
 
     override suspend fun onBeforeActivate() {
         log.info("[${address()}] before-activate")

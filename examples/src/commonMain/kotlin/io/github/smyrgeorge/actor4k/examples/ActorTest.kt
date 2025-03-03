@@ -12,10 +12,8 @@ import kotlinx.coroutines.runBlocking
 
 class ActorTest
 
-data class Req(val msg: String)
-data class Resp(val msg: String)
 
-data class AccountActor(override val key: String) : Actor(key) {
+class AccountActor(override val key: String) : Actor(key) {
 
     override suspend fun onBeforeActivate() {
         log.info("[${address()}] before-activate")
@@ -31,6 +29,9 @@ data class AccountActor(override val key: String) : Actor(key) {
         val res = Resp("Pong!")
         return r.value(res).build()
     }
+
+    data class Req(val msg: String)
+    data class Resp(val msg: String)
 }
 
 object Main {
@@ -47,11 +48,11 @@ object Main {
 
         val a: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
 
-        val req = Req(msg = "[tell] Hello World!")
+        val req = AccountActor.Req(msg = "[tell] Hello World!")
         a.tell(req)
 
-        val req2 = Req(msg = "[ask] Ping!")
-        val r = a.ask<Resp>(req2)
+        val req2 = AccountActor.Req(msg = "[ask] Ping!")
+        val r = a.ask<AccountActor.Resp>(req2)
         println(r)
 
         val a2: LocalRef = ActorSystem.get(AccountActor::class, "ACC0010") as LocalRef
