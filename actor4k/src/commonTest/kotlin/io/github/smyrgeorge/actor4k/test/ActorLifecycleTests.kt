@@ -9,13 +9,14 @@ import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor
+import io.github.smyrgeorge.actor4k.test.actor.NotRegisteredAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertFails
 
-class BasicActorLifecycleTests {
+class ActorLifecycleTests {
     private val registry: ActorRegistry = Registry.registry
 
     init {
@@ -23,6 +24,11 @@ class BasicActorLifecycleTests {
             ActorSystem.shutdown()
             ActorSystem.start()
         }
+    }
+
+    @Test
+    fun `Should fail for missing actor factory`(): Unit = runBlocking {
+        assertFails { ActorSystem.get(NotRegisteredAccountActor::class, ACC0000) }
     }
 
     @Test
