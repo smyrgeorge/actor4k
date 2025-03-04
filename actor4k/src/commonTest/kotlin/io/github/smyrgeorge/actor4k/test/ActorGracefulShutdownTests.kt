@@ -37,7 +37,7 @@ class ActorGracefulShutdownTests {
     }
 
     @Test
-    fun `Actor should graceful shutdown (process all messages and then close)`(): Unit = runBlocking {
+    fun `Actor should graceful shutdown`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(SlowProcessAccountActor::class, ACC0000)
         assertThat(registry.size()).isEqualTo(1)
         repeat(2) { ref.tell(AccountActor.Req("Ping!")) }

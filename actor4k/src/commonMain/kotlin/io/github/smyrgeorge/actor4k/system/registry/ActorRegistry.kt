@@ -91,24 +91,13 @@ abstract class ActorRegistry {
     abstract suspend fun <A : Actor> get(clazz: KClass<A>, key: String): ActorRef
 
     /**
-     * Unregisters an actor from the registry using its type and key.
+     * Unregisters an actor from the registry based on its address. Optionally, forces unregistration
+     * regardless of the actor's current status.
      *
-     * @param actor The actor instance to be unregistered.
-     * @return Unit A coroutine completion indicating that the operation has finished.
+     * @param address The address of the actor to be unregistered.
+     * @param force If true, forces unregistration even if the actor's status is not FINISHED. Defaults to false.
      */
-    suspend fun unregister(actor: Actor): Unit = unregister(actor::class, actor.key)
-
-    /**
-     * Unregisters an actor of the specified type and key from the local registry.
-     * If the `force` parameter is set to false, the actor cannot be unregistered
-     * unless its status is `FINISHED`.
-     *
-     * @param actor The class of the actor to be unregistered.
-     * @param key A unique string key associated with the actor.
-     * @param force Whether to forcibly unregister the actor, even if its status is not `FINISHED`.
-     */
-    suspend fun <A : Actor> unregister(actor: KClass<A>, key: String, force: Boolean = false) {
-        val address = Address.of(actor, key)
+    suspend fun unregister(address: Address, force: Boolean = false) {
         lock {
             registry[address]?.let {
                 if (!force && it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")

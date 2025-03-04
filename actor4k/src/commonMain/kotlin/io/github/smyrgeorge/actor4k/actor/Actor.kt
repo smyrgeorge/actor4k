@@ -382,7 +382,7 @@ abstract class Actor(open val key: String) {
             }
             if (isClosedForReceive) {
                 status = Status.FINISHED
-                ActorSystem.registry.unregister(this@Actor)
+                ActorSystem.registry.unregister(this@Actor.address())
             }
         }
 }

@@ -37,7 +37,7 @@ class SimpleActorRegistry : ActorRegistry() {
                 log.debug("Actor {} activated successfully.", address)
             } catch (e: Exception) {
                 log.error("Could not activate ${actor.address()}.")
-                unregister(actor = clazz, key = key, force = true)
+                unregister(address = address, force = true)
                 throw e
             }
         }
