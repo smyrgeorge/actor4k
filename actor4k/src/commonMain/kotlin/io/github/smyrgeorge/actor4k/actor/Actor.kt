@@ -96,7 +96,7 @@ abstract class Actor(open val key: String) {
                                     it.replyTo.send(Result.failure(e))
                                 }
                             } catch (e: Exception) {
-                                log.debug("Could not send reply to the client. ${e.message}")
+                                log.debug("Could not send reply to the client. {}", e.message ?: "Unknown error.")
                             }
                         }
                         shutdown()
@@ -118,7 +118,7 @@ abstract class Actor(open val key: String) {
                                 it.replyTo.send(r)
                             }
                         } catch (e: TimeoutCancellationException) {
-                            log.debug("[consume] Could not send reply in time. ${e.message}")
+                            log.debug("[consume] Could not send reply in time. {}", e.message ?: "Unknown error.")
                         } catch (_: ClosedSendChannelException) {
                             log.warn("[consume] Did not manage to reply in time (although the message was processed). $it")
                         } catch (_: Exception) {

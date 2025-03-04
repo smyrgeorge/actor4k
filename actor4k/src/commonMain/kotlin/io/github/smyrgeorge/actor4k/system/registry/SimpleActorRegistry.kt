@@ -12,7 +12,7 @@ class SimpleActorRegistry : ActorRegistry() {
         val address: Address = Address.of(clazz, key)
 
         if (ActorSystem.status != ActorSystem.Status.READY)
-            error("Cannot get/create $address, system is ${ActorSystem.status}.")
+            error("Failed to get $address, ActorSystem is ${ActorSystem.status}.")
 
         // Limit the concurrent access to one at a time.
         // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
@@ -36,7 +36,7 @@ class SimpleActorRegistry : ActorRegistry() {
                 actor.activate()
                 log.debug("Actor {} activated successfully.", address)
             } catch (e: Exception) {
-                log.error("Could not activate ${actor.address()}.")
+                log.error("Could not activate ${actor.address()}. Reason: ${e.message ?: "Unknown error."}.")
                 unregister(address = address, force = true)
                 throw e
             }
