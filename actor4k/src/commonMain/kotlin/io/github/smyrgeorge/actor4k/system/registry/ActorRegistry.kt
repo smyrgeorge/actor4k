@@ -91,16 +91,18 @@ abstract class ActorRegistry {
     abstract suspend fun <A : Actor> get(clazz: KClass<A>, key: String): ActorRef
 
     /**
-     * Unregisters an actor from the registry based on its address. Optionally, forces unregistration
-     * regardless of the actor's current status.
+     * Unregisters the actor associated with the given address from the registry.
      *
-     * @param address The address of the actor to be unregistered.
-     * @param force If true, forces unregistration even if the actor's status is not FINISHED. Defaults to false.
+     * The method ensures that the actor is unregistered only if its status is `FINISHED`.
+     * If the actor is in any other state, an error will be raised. The method is
+     * executed within a lock to maintain thread safety.
+     *
+     * @param address The unique address of the actor to be unregistered from the registry.
      */
-    suspend fun unregister(address: Address, force: Boolean = false) {
+    suspend fun unregister(address: Address) {
         lock {
             registry[address]?.let {
-                if (!force && it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
+                if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
                 registry.remove(address)
                 log.info("Unregistered actor $address.")
             }
@@ -179,7 +181,7 @@ abstract class ActorRegistry {
      * @return Unit A coroutine completion indicating the operation has finished.
      */
     private suspend fun stopLocalExpired(): Unit = lock {
-        log.debug("Stopping all local expired actors.")
+        log.debug("Stopping local expired actors.")
         registry.values.forEach {
             val df = (Clock.System.now() - it.stats().last).inWholeSeconds
             if (df > ActorSystem.conf.actorExpiration.inWholeSeconds) {

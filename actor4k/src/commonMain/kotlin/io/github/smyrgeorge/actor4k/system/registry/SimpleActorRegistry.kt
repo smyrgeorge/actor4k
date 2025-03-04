@@ -37,7 +37,7 @@ class SimpleActorRegistry : ActorRegistry() {
                 log.debug("Actor {} activated successfully.", address)
             } catch (e: Exception) {
                 log.error("Could not activate ${actor.address()}. Reason: ${e.message ?: "Unknown error."}.")
-                unregister(address = address, force = true)
+                registry.remove(address)
                 throw e
             }
         }
