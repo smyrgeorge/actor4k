@@ -57,7 +57,7 @@ object Main {
 
         val a2: LocalRef = ActorSystem.get(AccountActor::class, "ACC0010") as LocalRef
         println(a2.status())
-        a2.stop()
+        a2.shutdown()
         delay(1000)
 
         val a3: LocalRef = ActorSystem.get(AccountActor::class, "ACC0030") as LocalRef

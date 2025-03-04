@@ -42,13 +42,15 @@ data class LocalRef(
         ActorSystem.registry.get(this).status()
 
     /**
-     * Stops the actor associated with this `LocalRef`.
+     * Shuts down the actor associated with this `LocalRef`.
      *
-     * This function retrieves the actor instance from the registry and initiates
-     * the shutdown process, changing the actor's status to `FINISHING` and closing its mailbox.
+     * This method triggers the shutdown process for the actor by delegating
+     * the shutdown command to the actor system's registry. The shutdown process
+     * involves setting the actor's status to `FINISHING` and closing its mailbox,
+     * ensuring that the actor stops processing messages.
      *
-     * @return Unit
+     * This function is suspendable and should be called within a coroutine context.
      */
-    suspend fun stop() =
+    suspend fun shutdown() =
         ActorSystem.registry.get(this).shutdown()
 }
