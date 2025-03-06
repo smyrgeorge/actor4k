@@ -6,7 +6,6 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
@@ -437,10 +436,6 @@ abstract class Actor(open val key: String) {
 
             @OptIn(DelicateCoroutinesApi::class)
             if (isClosedForReceive) {
-                @OptIn(ExperimentalCoroutinesApi::class)
-                if (!isEmpty) {
-                    log.warn("[$address::consume] Channel is closed but there are still messages in the queue.")
-                }
                 status = Status.SHUT_DOWN
                 ActorSystem.registry.unregister(this@Actor.address())
             }
