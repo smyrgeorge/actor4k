@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">0.37.0
+        <div class="library-version" id="library-version">0.40.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -95,7 +95,7 @@
   <div class="cover ">
     <h1 class="cover"><span>on</span><wbr><span>Before</span><wbr><span><span>Activate</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="on-before-activate.html"><span class="token function">onBeforeActivate</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><p class="paragraph">Is called by the <a href="../../io.github.smyrgeorge.actor4k.system.registry/-simple-actor-registry/index.html">SimpleActorRegistry</a>. Is called before the <a href="index.html">Actor</a> begins to consume <a href="-message/index.html">Message</a>s. In case of an error the <a href="../../io.github.smyrgeorge.actor4k.system.registry/-simple-actor-registry/index.html">SimpleActorRegistry</a> will deregister the newly created <a href="index.html">Actor</a>. You can use this hook to early initialise the <a href="index.html">Actor</a>'s state.</p></div></div>
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="on-before-activate.html"><span class="token function">onBeforeActivate</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><p class="paragraph">Hook called before the actor is activated.</p><p class="paragraph">This method provides a pre-activation step for setting up or preparing the actor before it processes its first message. It is executed within the <code class="lang-kotlin">activate</code> method, prior to handling the initialization message and before the actor enters its active state.</p><p class="paragraph">Override this method in a subclass to implement any custom logic required before the actor's activation.</p><p class="paragraph">This function suspends and allows for asynchronous operations to be performed during the pre-activation phase.</p></div></div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
