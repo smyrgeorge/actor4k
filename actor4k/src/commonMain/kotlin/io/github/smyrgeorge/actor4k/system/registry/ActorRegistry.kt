@@ -135,7 +135,7 @@ abstract class ActorRegistry {
      *
      * @return The total count of messages processed by all actors.
      */
-    fun totalMessages(): Long = registry.map { it.value.stats().processedMessages }.sum()
+    fun totalMessages(): Long = registry.map { it.value.stats().receivedMessages }.sum()
 
     /**
      * Registers a factory function for creating instances of a specific actor type within the ActorRegistry.

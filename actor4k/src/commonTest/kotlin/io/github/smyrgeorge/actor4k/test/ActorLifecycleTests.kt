@@ -37,7 +37,7 @@ class ActorLifecycleTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         delay(100)
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
-        assertThat(actor.stats().processedMessages).isZero()
+        assertThat(actor.stats().receivedMessages).isZero()
     }
 
     @Test
@@ -57,7 +57,7 @@ class ActorLifecycleTests {
         ref.tell(AccountActor.Req("Ping!"))
         val actor: Actor = registry.get(ref as LocalRef)
         delay(100) // Ensure that the message is processed.
-        assertThat(actor.stats().processedMessages).isEqualTo(1)
+        assertThat(actor.stats().receivedMessages).isEqualTo(1)
         assertThat(actor.status()).isEqualTo(Actor.Status.READY)
     }
 
@@ -67,7 +67,7 @@ class ActorLifecycleTests {
         val res: AccountActor.Resp = ref.ask<AccountActor.Resp>(AccountActor.Req("Ping!"))
         assertThat(res.msg).isEqualTo("Pong!")
         val actor: Actor = registry.get(ref as LocalRef)
-        assertThat(actor.stats().processedMessages).isEqualTo(1)
+        assertThat(actor.stats().receivedMessages).isEqualTo(1)
         assertThat(actor.status()).isEqualTo(Actor.Status.READY)
     }
 
@@ -78,7 +78,7 @@ class ActorLifecycleTests {
         assertThat(registry.size()).isEqualTo(1)
         assertThat(actor.key).isEqualTo(ACC0000)
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
-        assertThat(actor.stats().processedMessages).isZero()
+        assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
         assertThat(actor.status()).isEqualTo(Actor.Status.FINISHING)
         delay(100) // Ensure that the actor shut down.
@@ -93,7 +93,7 @@ class ActorLifecycleTests {
         assertThat(registry.size()).isEqualTo(1)
         assertThat(actor.key).isEqualTo(ACC0000)
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
-        assertThat(actor.stats().processedMessages).isZero()
+        assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
         assertFails { ref.tell(AccountActor.Req("Ping!")) }
         delay(100) // Ensure that the actor shut down.

@@ -111,9 +111,9 @@ abstract class Actor(open val key: String) {
                 }
 
                 stats.lastMessageAt = Clock.System.now()
-                stats.processedMessages += 1
+                stats.receivedMessages += 1
 
-                val msg = Message(stats.processedMessages, it.msg)
+                val msg = Message(stats.receivedMessages, it.msg)
 
                 // Activation flow.
                 if (msg.isFirst()) {
@@ -408,14 +408,14 @@ abstract class Actor(open val key: String) {
      * @property initializedAt The timestamp when the actor was initialized, or `null` if not yet initialized.
      * @property shutDownAt The timestamp when the actor was shut down, or `null` if not yet shut down.
      * @property lastMessageAt The timestamp of the last message processed by the actor.
-     * @property processedMessages The total number of messages processed by the actor.
+     * @property receivedMessages The total number of messages processed by the actor.
      */
     data class Stats(
         var createdAt: Instant = Clock.System.now(),
         var initializedAt: Instant? = null,
         var shutDownAt: Instant? = null,
         var lastMessageAt: Instant = Clock.System.now(),
-        var processedMessages: Long = 0
+        var receivedMessages: Long = 0
     )
 
     private suspend inline fun <E> ReceiveChannel<E>.consumeEach(action: (E) -> Unit): Unit =

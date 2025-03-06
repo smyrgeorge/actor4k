@@ -33,7 +33,7 @@ class ActorGracefulShutdownTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         delay(100)
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
-        assertThat(actor.stats().processedMessages).isZero()
+        assertThat(actor.stats().receivedMessages).isZero()
     }
 
     @Test
@@ -48,7 +48,7 @@ class ActorGracefulShutdownTests {
         delay(1500)
         assertThat(actor.status()).isEqualTo(Actor.Status.FINISHED)
         assertThat(registry.size()).isZero()
-        assertThat(actor.stats().processedMessages).isEqualTo(2)
+        assertThat(actor.stats().receivedMessages).isEqualTo(2)
     }
 
     companion object {

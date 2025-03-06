@@ -63,7 +63,7 @@ class ActorRegistryLifecycleTests {
         val actor = registry.get(ref as LocalRef)
         assertThat(actor.key).isEqualTo(ACC0001)
         delay(1000) // Ensure that all messages are processed.
-        assertThat(actor.stats().processedMessages).isEqualTo(4 * 100)
+        assertThat(actor.stats().receivedMessages).isEqualTo(4 * 100)
     }
 
     companion object {

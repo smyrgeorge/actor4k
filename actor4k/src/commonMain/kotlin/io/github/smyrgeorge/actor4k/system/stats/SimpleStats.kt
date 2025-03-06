@@ -3,8 +3,8 @@ package io.github.smyrgeorge.actor4k.system.stats
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 
 data class SimpleStats(
-    var totalMessages: Long = 0,
     override var actors: Int = 0,
+    var totalMessages: Long = 0,
     var lastCollectPeriodMessages: Long = 0,
 ) : Stats {
     override fun collect() {
