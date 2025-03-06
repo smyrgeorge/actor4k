@@ -49,7 +49,7 @@ class ActorRegistryLifecycleTests {
     }
 
     @Test
-    fun `Concurrent gets for the same actor should not create multiples`(): Unit = runBlocking {
+    fun `Concurrent gets for the same actor should not create duplicates`(): Unit = runBlocking {
         val workers = listOf(1, 2, 3, 4)
         workers.forEachParallel {
             repeat(100) {
@@ -63,7 +63,7 @@ class ActorRegistryLifecycleTests {
         val actor = registry.get(ref as LocalRef)
         assertThat(actor.key).isEqualTo(ACC0001)
         delay(1000) // Ensure that all messages are processed.
-        assertThat(actor.stats().messages).isEqualTo(4 * 100)
+        assertThat(actor.stats().processedMessages).isEqualTo(4 * 100)
     }
 
     companion object {

@@ -9,7 +9,11 @@ import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor
+import io.github.smyrgeorge.actor4k.test.actor.SlowActivateAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.SlowActivateWithErrorInActivationAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -30,10 +34,10 @@ class ActorLifecycleTests {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
         val actor: Actor = registry.get(ref as LocalRef)
         assertThat(actor.key).isEqualTo(ACC0000)
-        assertThat(actor.status()).isEqualTo(Actor.Status.INITIALISING)
+        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         delay(100)
-        assertThat(actor.status()).isEqualTo(Actor.Status.INITIALISING)
-        assertThat(actor.stats().messages).isZero()
+        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
+        assertThat(actor.stats().processedMessages).isZero()
     }
 
     @Test
@@ -53,7 +57,7 @@ class ActorLifecycleTests {
         ref.tell(AccountActor.Req("Ping!"))
         val actor: Actor = registry.get(ref as LocalRef)
         delay(100) // Ensure that the message is processed.
-        assertThat(actor.stats().messages).isEqualTo(1)
+        assertThat(actor.stats().processedMessages).isEqualTo(1)
         assertThat(actor.status()).isEqualTo(Actor.Status.READY)
     }
 
@@ -63,7 +67,7 @@ class ActorLifecycleTests {
         val res: AccountActor.Resp = ref.ask<AccountActor.Resp>(AccountActor.Req("Ping!"))
         assertThat(res.msg).isEqualTo("Pong!")
         val actor: Actor = registry.get(ref as LocalRef)
-        assertThat(actor.stats().messages).isEqualTo(1)
+        assertThat(actor.stats().processedMessages).isEqualTo(1)
         assertThat(actor.status()).isEqualTo(Actor.Status.READY)
     }
 
@@ -73,8 +77,8 @@ class ActorLifecycleTests {
         val actor: Actor = registry.get(ref as LocalRef)
         assertThat(registry.size()).isEqualTo(1)
         assertThat(actor.key).isEqualTo(ACC0000)
-        assertThat(actor.status()).isEqualTo(Actor.Status.INITIALISING)
-        assertThat(actor.stats().messages).isZero()
+        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
+        assertThat(actor.stats().processedMessages).isZero()
         actor.shutdown()
         assertThat(actor.status()).isEqualTo(Actor.Status.FINISHING)
         delay(100) // Ensure that the actor shut down.
@@ -88,8 +92,8 @@ class ActorLifecycleTests {
         val actor: Actor = registry.get(ref as LocalRef)
         assertThat(registry.size()).isEqualTo(1)
         assertThat(actor.key).isEqualTo(ACC0000)
-        assertThat(actor.status()).isEqualTo(Actor.Status.INITIALISING)
-        assertThat(actor.stats().messages).isZero()
+        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
+        assertThat(actor.stats().processedMessages).isZero()
         actor.shutdown()
         assertFails { ref.tell(AccountActor.Req("Ping!")) }
         delay(100) // Ensure that the actor shut down.
@@ -97,7 +101,39 @@ class ActorLifecycleTests {
         assertThat(registry.size()).isZero()
     }
 
+    @Test
+    fun `If actor fails to activate all ask request should receive the same error`(): Unit = runBlocking {
+        val ref = ActorSystem.get(SlowActivateWithErrorInActivationAccountActor::class, ACC0000)
+        val errors = listOf(1, 2, 3, 4).map {
+            async {
+                val res = runCatching { ref.ask<AccountActor.Resp>(AccountActor.Req("Ping!")) }.exceptionOrNull()
+                res?.message ?: ""
+            }
+        }.awaitAll()
+        assertThat(errors.size).isEqualTo(4)
+        assertThat(errors).isEqualTo(listOf("boom!", "boom!", "boom!", "boom!"))
+    }
+
+    @Test
+    fun `An actor should be activated once`(): Unit = runBlocking {
+        val ref = listOf(
+            async { ActorSystem.get(SlowActivateAccountActor::class, ACC0001) },
+            async { ActorSystem.get(SlowActivateAccountActor::class, ACC0001) },
+            async { ActorSystem.get(SlowActivateAccountActor::class, ACC0001) },
+            async { ActorSystem.get(SlowActivateAccountActor::class, ACC0001) },
+        ).awaitAll().first()
+
+        val res = listOf(1, 2, 3, 4).map {
+            async { ref.ask<AccountActor.Resp>(AccountActor.Req("Ping!")).msg }
+        }.awaitAll()
+
+        assertThat(registry.size()).isEqualTo(1)
+        assertThat(SlowActivateAccountActor.activated).isEqualTo(1)
+        assertThat(res).isEqualTo(listOf("Pong!", "Pong!", "Pong!", "Pong!"))
+    }
+
     companion object {
         private const val ACC0000: String = "ACC0000"
+        private const val ACC0001: String = "ACC0001"
     }
 }

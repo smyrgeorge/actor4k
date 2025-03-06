@@ -30,10 +30,10 @@ class ActorGracefulShutdownTests {
         val ref: ActorRef = ActorSystem.get(SlowProcessAccountActor::class, ACC0000)
         val actor: Actor = registry.get(ref as LocalRef)
         assertThat(actor.key).isEqualTo(ACC0000)
-        assertThat(actor.status()).isEqualTo(Actor.Status.INITIALISING)
+        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         delay(100)
-        assertThat(actor.status()).isEqualTo(Actor.Status.INITIALISING)
-        assertThat(actor.stats().messages).isZero()
+        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
+        assertThat(actor.stats().processedMessages).isZero()
     }
 
     @Test
@@ -48,7 +48,7 @@ class ActorGracefulShutdownTests {
         delay(1500)
         assertThat(actor.status()).isEqualTo(Actor.Status.FINISHED)
         assertThat(registry.size()).isZero()
-        assertThat(actor.stats().messages).isEqualTo(2)
+        assertThat(actor.stats().processedMessages).isEqualTo(2)
     }
 
     companion object {

@@ -179,7 +179,6 @@ object ActorSystem {
         log.info("Received shutdown signal, will shutdown...")
         status = Status.SHUTTING_DOWN
 
-        log.info("Closing ${registry.size()} actors..")
         registry.shutdown()
 
         if (isCluster()) {
@@ -189,7 +188,7 @@ object ActorSystem {
 
         // Wait for all actors to finish.
         while (registry.size() > 0) {
-            log.info("Waiting ${registry.size()} actors to finish.")
+            log.info("Waiting ${registry.size()} actors to finish...")
             delay(1000)
         }
 

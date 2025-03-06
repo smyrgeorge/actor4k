@@ -119,7 +119,7 @@ abstract class ActorRegistry {
      * @return Unit A coroutine completion indicating that all local actors have been successfully shut down.
      */
     suspend fun shutdown(): Unit = lock {
-        log.debug("Stopping all local actors.")
+        log.debug("Stopping all local actors (size=${registry.size})...")
         registry.values.forEach { it.shutdown() }
     }
 
@@ -135,7 +135,7 @@ abstract class ActorRegistry {
      *
      * @return The total count of messages processed by all actors.
      */
-    fun totalMessages(): Long = registry.map { it.value.stats().messages }.sum()
+    fun totalMessages(): Long = registry.map { it.value.stats().processedMessages }.sum()
 
     /**
      * Registers a factory function for creating instances of a specific actor type within the ActorRegistry.
@@ -183,7 +183,7 @@ abstract class ActorRegistry {
     private suspend fun stopLocalExpired(): Unit = lock {
         log.debug("Stopping local expired actors.")
         registry.values.forEach {
-            val df = (Clock.System.now() - it.stats().last).inWholeSeconds
+            val df = (Clock.System.now() - it.stats().lastMessageAt).inWholeSeconds
             if (df > ActorSystem.conf.actorExpiration.inWholeSeconds) {
                 log.info("Closing ${it.address()}, ${it.stats()} (expired).")
                 it.shutdown()

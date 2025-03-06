@@ -32,7 +32,6 @@ class SimpleActorRegistry : ActorRegistry() {
         // Only call the activate method if the Actor just created.
         if (isNew) {
             try {
-                // Invoke activate (initialization) method of the Actor.
                 actor.activate()
                 log.debug("Actor {} activated successfully.", address)
             } catch (e: Exception) {
