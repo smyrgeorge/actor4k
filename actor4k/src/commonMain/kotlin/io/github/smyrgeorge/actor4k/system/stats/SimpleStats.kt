@@ -20,7 +20,7 @@ data class SimpleStats(
             append("[actors=")
             append(actors)
             append(", messages(last ")
-            append(ActorSystem.conf.clusterCollectStats)
+            append(ActorSystem.conf.systemCollectStatsEvery)
             append(")=")
             append(lastCollectPeriodMessages)
             append(", total=")

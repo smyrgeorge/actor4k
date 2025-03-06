@@ -80,9 +80,9 @@ class ActorLifecycleTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
-        assertThat(actor.status()).isEqualTo(Actor.Status.FINISHING)
+        assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
         delay(100) // Ensure that the actor shut down.
-        assertThat(actor.status()).isEqualTo(Actor.Status.FINISHED)
+        assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
         assertThat(registry.size()).isZero()
     }
 
@@ -97,7 +97,7 @@ class ActorLifecycleTests {
         actor.shutdown()
         assertFails { ref.tell(AccountActor.Req("Ping!")) }
         delay(100) // Ensure that the actor shut down.
-        assertThat(actor.status()).isEqualTo(Actor.Status.FINISHED)
+        assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
         assertThat(registry.size()).isZero()
     }
 

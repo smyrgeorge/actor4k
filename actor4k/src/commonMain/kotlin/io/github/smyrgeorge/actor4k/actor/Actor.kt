@@ -208,8 +208,10 @@ abstract class Actor(open val key: String) {
     /**
      * Retrieves the current status of the actor.
      *
-     * @return The current status of the actor as a [Status] enum value, which indicates whether
-     * the actor can accept messages and if it is in the process of finishing its operations.
+     * The status represents the actor's lifecycle state, which determines
+     * whether it can accept messages or is in the process of shutting down.
+     *
+     * @return The current lifecycle status of the actor as a [Status].
      */
     fun status(): Status = status
 
@@ -236,14 +238,18 @@ abstract class Actor(open val key: String) {
     fun address(): Address = address
 
     /**
-     * Initiates the shutdown process for the actor.
+     * Performs the shutdown process for the actor.
      *
-     * This function sets the actor's status to `FINISHING` and closes its mailbox,
-     * signaling that the actor will no longer process messages.
+     * This method updates the actor's lifecycle status to `SHUTTING_DOWN`
+     * and records the shutdown time in the actor's statistics. It also
+     * closes the actor's mailbox to prevent further message handling.
+     *
+     * This method is used to cleanly transition the actor out of its
+     * active state and ensure proper resource management.
      */
     fun shutdown() {
         stats.shutDownAt = Clock.System.now()
-        status = Status.FINISHING
+        status = Status.SHUTTING_DOWN
         mail.close()
     }
 
@@ -375,25 +381,26 @@ abstract class Actor(open val key: String) {
     }
 
     /**
-     * Represents the various states of an Actor during its lifecycle.
+     * Represents the lifecycle status of an actor.
      *
-     * Status indicates whether an Actor can accept messages and/or if it is in
-     * the process of shutting down. The possible statuses are:
+     * This enum defines the various stages that an actor can be in during its lifecycle, along with
+     * whether the actor can accept incoming messages in each stage. The status is primarily
+     * used to determine the actor's current state and its ability to handle messages:
      *
-     * - `ACTIVATING`: The Actor is being initialized and can accept messages.
-     * - `READY`: The Actor is fully initialized and ready to process messages.
-     * - `FINISHING`: The Actor is preparing to shut down and will soon stop accepting messages.
-     * - `FINISHED`: The Actor has finished its operations and is no longer active.
+     * - `ACTIVATING`: The actor is in the process of becoming ready and is preparing for operation.
+     * - `READY`: The actor is fully activated and ready to process messages.
+     * - `SHUTTING_DOWN`: The actor is in the process of shutting down and cannot accept new messages.
+     * - `SHUT_DOWN`: The actor has completed the shutdown process and is no longer active.
      *
-     * @property canAcceptMessages Indicates whether the Actor is able to accept incoming messages.
+     * @property canAcceptMessages Indicates whether the actor can process incoming messages in this state.
      */
     enum class Status(
         val canAcceptMessages: Boolean
     ) {
         ACTIVATING(true),
         READY(true),
-        FINISHING(false),
-        FINISHED(false)
+        SHUTTING_DOWN(false),
+        SHUT_DOWN(false)
     }
 
     /**
@@ -434,7 +441,7 @@ abstract class Actor(open val key: String) {
                 if (!isEmpty) {
                     log.warn("[$address::consume] Channel is closed but there are still messages in the queue.")
                 }
-                status = Status.FINISHED
+                status = Status.SHUT_DOWN
                 ActorSystem.registry.unregister(this@Actor.address())
             }
         }

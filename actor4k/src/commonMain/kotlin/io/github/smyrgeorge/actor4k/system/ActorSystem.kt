@@ -43,7 +43,7 @@ object ActorSystem {
         launch {
             while (true) {
                 runCatching {
-                    delay(conf.clusterCollectStats)
+                    delay(conf.systemCollectStatsEvery)
                     stats.collect()
                 }
             }
@@ -52,7 +52,7 @@ object ActorSystem {
         launch {
             while (true) {
                 runCatching {
-                    delay(conf.clusterLogStats)
+                    delay(conf.systemLogStatsEvery)
                     // Log [Stats].
                     log.info(stats.toString())
                 }
@@ -231,32 +231,19 @@ object ActorSystem {
     }
 
     /**
-     * Represents the configuration settings for an actor-based system.
-     * This data class allows customization of various parameters related to
-     * system performance, initialization processes, resource management,
-     * and behavior under specific circumstances.
+     * Configuration class for setting up parameters related to the ActorSystem.
      *
-     * @property actorQueueSize Specifies the size of the actor's queue. It determines how many messages can be queued before the sender is suspended. Defaults to an unlimited capacity.
-     * @property initializationRounds The number of rounds for the initialization process. This can affect the readiness and preparation of system components.
-     * @property initializationDelayPerRound The delay applied between each initialization round.
-     * @property clusterLogStats The interval duration for cluster logging activities.
-     * @property clusterCollectStats The frequency at which cluster statistics are collected.
-     * @property registryCleanup The frequency of clean-up processes for the registry.
-     * @property actorExpiration Duration after which unused actors are considered expired and subject to resource cleanup.
-     * @property actorRemoteRefExpiration The expiration time for remote actor references.
-     * @property memberManagerRoundDelay The delay between rounds of the member management process.
-     * @property lowMemoryThresholdMd Memory threshold in megabytes below which the system may trigger memory warnings or adapt to lower resource conditions.
+     * @property actorQueueSize Defines the maximum size of the actor queue. Defaults to unlimited.
+     * @property actorExpiresAfter Specifies the duration after which an actor expires if idle. Defaults to 15 minutes.
+     * @property systemCollectStatsEvery Interval for the system to collect statistical data. Defaults to 5 seconds.
+     * @property systemLogStatsEvery Interval for logging system statistics. Defaults to 30 seconds.
+     * @property registryCleanupEvery Frequency at which the actor registry performs cleanup operations. Defaults to 30 seconds.
      */
     data class Conf(
         val actorQueueSize: Int = Channel.UNLIMITED,
-        val initializationRounds: Int = 10,
-        val initializationDelayPerRound: Duration = 5.seconds,
-        val clusterLogStats: Duration = 30.seconds,
-        val clusterCollectStats: Duration = 5.seconds,
-        val registryCleanup: Duration = 30.seconds,
-        val actorExpiration: Duration = 15.minutes,
-        val actorRemoteRefExpiration: Duration = 2.minutes,
-        val memberManagerRoundDelay: Duration = 2.seconds,
-        val lowMemoryThresholdMd: Int = 50
+        val actorExpiresAfter: Duration = 15.minutes,
+        val systemCollectStatsEvery: Duration = 5.seconds,
+        val systemLogStatsEvery: Duration = 30.seconds,
+        val registryCleanupEvery: Duration = 30.seconds,
     )
 }

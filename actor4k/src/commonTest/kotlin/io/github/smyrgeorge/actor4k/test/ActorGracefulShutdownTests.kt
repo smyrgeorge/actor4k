@@ -44,9 +44,9 @@ class ActorGracefulShutdownTests {
         val actor: Actor = registry.get(ref as LocalRef)
         delay(1000)
         actor.shutdown()
-        assertThat(actor.status()).isEqualTo(Actor.Status.FINISHING)
+        assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
         delay(1500)
-        assertThat(actor.status()).isEqualTo(Actor.Status.FINISHED)
+        assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
         assertThat(registry.size()).isZero()
         assertThat(actor.stats().receivedMessages).isEqualTo(2)
     }

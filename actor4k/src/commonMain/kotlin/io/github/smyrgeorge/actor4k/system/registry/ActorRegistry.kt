@@ -63,7 +63,7 @@ abstract class ActorRegistry {
         launch {
             while (true) {
                 runCatching {
-                    delay(ActorSystem.conf.registryCleanup)
+                    delay(ActorSystem.conf.registryCleanupEvery)
                     stopLocalExpired()
                 }
             }
@@ -93,16 +93,17 @@ abstract class ActorRegistry {
     /**
      * Unregisters the actor associated with the given address from the registry.
      *
-     * The method ensures that the actor is unregistered only if its status is `FINISHED`.
-     * If the actor is in any other state, an error will be raised. The method is
-     * executed within a lock to maintain thread safety.
+     * This method removes the actor from the registry only if its status is `SHUT_DOWN`.
+     * If the actor is not in a `SHUT_DOWN` state, an error is thrown.
+     * The operation is performed within a lock to ensure thread safety.
      *
-     * @param address The unique address of the actor to be unregistered from the registry.
+     * @param address The [Address] of the actor to be unregistered.
+     * @throws IllegalStateException If the actor's status is not `SHUT_DOWN`.
      */
     suspend fun unregister(address: Address) {
         lock {
             registry[address]?.let {
-                if (it.status() != Actor.Status.FINISHED) error("Cannot unregister $address while is ${it.status()}.")
+                if (it.status() != Actor.Status.SHUT_DOWN) error("Cannot unregister $address while is ${it.status()}.")
                 registry.remove(address)
                 log.info("Unregistered actor $address.")
             }
@@ -184,7 +185,7 @@ abstract class ActorRegistry {
         log.debug("Stopping local expired actors.")
         registry.values.forEach {
             val df = (Clock.System.now() - it.stats().lastMessageAt).inWholeSeconds
-            if (df > ActorSystem.conf.actorExpiration.inWholeSeconds) {
+            if (df > ActorSystem.conf.actorExpiresAfter.inWholeSeconds) {
                 log.info("Closing ${it.address()}, ${it.stats()} (expired).")
                 it.shutdown()
             }
