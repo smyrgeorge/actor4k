@@ -71,13 +71,39 @@ abstract class ActorRegistry {
     }
 
     /**
+     * Retrieves a local actor instance based on the provided `LocalRef`.
+     *
+     * This method resolves and returns the actor associated with the given `LocalRef`
+     * by utilizing its class type and unique key.
+     *
+     * @param ref The `LocalRef` representing the actor, containing its class type and address key.
+     * @return The actor instance corresponding to the provided `LocalRef`.
+     */
+    suspend fun getLocalActor(ref: LocalRef): Actor = getLocalActor(ref.clazz, ref.address.key)
+
+    /**
      * Retrieves an `ActorRef` for the specified actor type and key.
      *
      * @param clazz The class of the actor to be retrieved.
      * @param key A unique string key associated with the actor.
      * @return An `ActorRef` corresponding to the requested actor type and key.
      */
-    suspend fun <A : Actor> get(clazz: KClass<A>, key: String): ActorRef {
+    open suspend fun <A : Actor> get(clazz: KClass<A>, key: String): ActorRef = getLocalActor(clazz, key).ref()
+
+    /**
+     * Retrieves a local actor instance based on the specified actor class and unique key.
+     *
+     * This method resolves the actor by its class type and key, and ensures that only one instance
+     * of the actor is created and stored in the local registry. If the actor is newly created,
+     * it will be activated before being returned.
+     *
+     * @param clazz The class of the actor to be retrieved.
+     * @param key A unique string key identifying the actor instance.
+     * @return The actor instance corresponding to the provided class type and key.
+     * @throws IllegalStateException If the ActorSystem is not in a READY state.
+     * @throws Exception If an error occurs during the activation of a newly created actor.
+     */
+    private suspend fun <A : Actor> getLocalActor(clazz: KClass<A>, key: String): Actor {
         // Calculate the actor address.
         val address: Address = Address.of(clazz, key)
 
@@ -111,19 +137,8 @@ abstract class ActorRegistry {
             }
         }
 
-        return actor.ref()
+        return actor
     }
-
-    /**
-     * Retrieves an instance of an `Actor` based on the provided `LocalRef`.
-     * If the actor is not found in the local registry, it attempts to retrieve it using
-     * its actor type and key, and updates the local registry with the result.
-     *
-     * @param ref The `LocalRef` representing the actor to be retrieved.
-     * @return The `Actor` instance associated with the given `LocalRef`.
-     */
-    suspend fun get(ref: LocalRef): Actor =
-        registry[ref.address] ?: get(ref.clazz, ref.address.key).let { registry[ref.address]!! }
 
     /**
      * Unregisters a local actor reference from the registry.

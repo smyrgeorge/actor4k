@@ -33,7 +33,7 @@ class ActorLifecycleTests {
     @Test
     fun `Create an actor`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
-        val actor: Actor = registry.get(ref as LocalRef)
+        val actor: Actor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.key).isEqualTo(ACC0000)
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         delay(100)
@@ -45,7 +45,7 @@ class ActorLifecycleTests {
     fun `Evaluate actor's name and address`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
         val name: String = AccountActor::class.simpleName!!
-        val actor: Actor = registry.get(ref as LocalRef)
+        val actor: Actor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.address().name).isEqualTo(name)
         assertThat(ref.address.toString()).isEqualTo("$name-$ACC0000")
         assertThat(ref.address.name).isEqualTo(name)
@@ -56,7 +56,7 @@ class ActorLifecycleTests {
     fun `Tell something to an actor`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
         ref.tell(AccountActor.Req("Ping!"))
-        val actor: Actor = registry.get(ref as LocalRef)
+        val actor: Actor = registry.getLocalActor(ref as LocalRef)
         delay(100) // Ensure that the message is processed.
         assertThat(actor.stats().receivedMessages).isEqualTo(1)
         assertThat(actor.status()).isEqualTo(Actor.Status.READY)
@@ -67,7 +67,7 @@ class ActorLifecycleTests {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
         val res: AccountActor.Resp = ref.ask<AccountActor.Resp>(AccountActor.Req("Ping!"))
         assertThat(res.msg).isEqualTo("Pong!")
-        val actor: Actor = registry.get(ref as LocalRef)
+        val actor: Actor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.stats().receivedMessages).isEqualTo(1)
         assertThat(actor.status()).isEqualTo(Actor.Status.READY)
     }
@@ -75,7 +75,7 @@ class ActorLifecycleTests {
     @Test
     fun `Create and shutdown an actor`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
-        val actor: Actor = registry.get(ref as LocalRef)
+        val actor: Actor = registry.getLocalActor(ref as LocalRef)
         assertThat(registry.size()).isEqualTo(1)
         assertThat(actor.key).isEqualTo(ACC0000)
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
@@ -91,7 +91,7 @@ class ActorLifecycleTests {
     @Test
     fun `When shutdown is triggered the mail box should be closed for receive`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
-        val actor: Actor = registry.get(ref as LocalRef)
+        val actor: Actor = registry.getLocalActor(ref as LocalRef)
         assertThat(registry.size()).isEqualTo(1)
         assertThat(actor.key).isEqualTo(ACC0000)
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)

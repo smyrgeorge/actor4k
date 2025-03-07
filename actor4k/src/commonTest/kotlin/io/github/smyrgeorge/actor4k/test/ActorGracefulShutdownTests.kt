@@ -31,7 +31,7 @@ class ActorGracefulShutdownTests {
         val ref: ActorRef = ActorSystem.get(SlowProcessAccountActor::class, ACC0000)
         assertThat(registry.size()).isEqualTo(1)
         repeat(2) { ref.tell(AccountActor.Req("Ping!")) }
-        val actor: Actor = registry.get(ref as LocalRef)
+        val actor: Actor = registry.getLocalActor(ref as LocalRef)
         delay(1000)
         actor.shutdown()
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)

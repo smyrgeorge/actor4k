@@ -1,6 +1,8 @@
 package io.github.smyrgeorge.actor4k.actor.ref
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.system.ActorSystem
+import kotlin.time.Duration
 
 /**
  * Abstract class representing a reference to an actor in the system.
@@ -20,12 +22,21 @@ abstract class ActorRef(
     abstract suspend fun tell(msg: Any)
 
     /**
+     * Sends a message to the actor and waits for a response within the specified duration.
+     *
+     * @param msg The message to be sent to the actor.
+     * @param duration The maximum duration to wait for a response.
+     * @return The response received from the actor.
+     */
+    abstract suspend fun <R> ask(msg: Any, duration: Duration): R
+
+    /**
      * Sends a message to the actor and waits for a response.
      *
      * @param msg The message to be sent to the actor.
      * @return The response returned by the actor.
      */
-    abstract suspend fun <R> ask(msg: Any): R
+    suspend fun <R> ask(msg: Any): R = ask(msg, ActorSystem.conf.actorAskTimeout)
 
     /**
      * Retrieves the current status of the actor associated with this `LocalRef`.

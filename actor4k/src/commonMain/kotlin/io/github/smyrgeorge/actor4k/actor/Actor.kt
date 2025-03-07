@@ -23,7 +23,9 @@ import kotlin.time.Duration.Companion.seconds
  *
  * @property key the key identifying the actor.
  */
-abstract class Actor(open val key: String) {
+abstract class Actor(
+    open val key: String
+) {
     protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
 
     private val stats: Stats = Stats()
@@ -159,13 +161,19 @@ abstract class Actor(open val key: String) {
     }
 
     /**
-     * Sends a message to the actor and waits for a response.
+     * Sends a request to the actor and expects a response within a specified timeout.
      *
-     * @param msg the message to be sent
-     * @param timeout the timeout duration for waiting for a response (default is 30 seconds)
-     * @return the response from the actor
+     * This method follows the `Ask` pattern, where the caller sends a message and awaits a response
+     * from the actor. If the response is not received within the defined timeout, a timeout exception is thrown.
+     *
+     * @param msg The message to be sent to the actor. It must be of a type extending `Any`.
+     * @param timeout The maximum duration to wait for a response. Defaults to the actor configuration's `actorAskTimeout`.
+     * @return The response from the actor, cast to the expected type `R`.
+     * @throws IllegalStateException If the actor is in a state that cannot accept messages.
+     * @throws TimeoutCancellationException If the actor does not reply within the provided timeout.
+     * @throws ClassCastException If the response cannot be cast to the expected type `R`.
      */
-    suspend fun <C : Any, R> ask(msg: C, timeout: Duration = 30.seconds): R {
+    suspend fun <C : Any, R> ask(msg: C, timeout: Duration = ActorSystem.conf.actorAskTimeout): R {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         val ask = Patterns.Ask(msg)
         return try {
@@ -173,7 +181,7 @@ abstract class Actor(open val key: String) {
                 mail.send(ask)
                 val reply = ask.replyTo.receive().getOrThrow()
                 @Suppress("UNCHECKED_CAST")
-                reply as? R ?: error("Could not cast to the requested type.")
+                reply as? R ?: throw ClassCastException("Could not cast to the requested type.")
             }
         } finally {
             ask.replyTo.close()

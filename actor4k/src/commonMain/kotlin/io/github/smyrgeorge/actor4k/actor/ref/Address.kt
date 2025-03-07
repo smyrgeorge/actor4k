@@ -18,6 +18,11 @@ data class Address(
     private val address: String = "$name-$key"
     private val hash: Int = address.hashCode()
 
+    /**
+     * Returns the string representation of the address.
+     *
+     * @return The address as a concatenated string of the name and key in the format "name-key".
+     */
     override fun toString(): String = address
 
     override fun equals(other: Any?): Boolean {

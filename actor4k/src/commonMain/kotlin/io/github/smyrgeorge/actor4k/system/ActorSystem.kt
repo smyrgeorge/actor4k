@@ -28,14 +28,15 @@ object ActorSystem {
     var type: Type = Type.SIMPLE
     var status: Status = Status.NOT_READY
 
-    lateinit var loggerFactory: Logger.Factory
-    val log: Logger by lazy {
-        if (!this::loggerFactory.isInitialized) error("Please register a Logger factory.")
-        loggerFactory.getLogger(this::class)
-    }
     lateinit var stats: Stats
     lateinit var cluster: Cluster
     lateinit var registry: ActorRegistry
+
+    lateinit var loggerFactory: Logger.Factory
+    private val log: Logger by lazy {
+        if (!this::loggerFactory.isInitialized) error("Please register a Logger factory.")
+        loggerFactory.getLogger(this::class)
+    }
 
     init {
         registerShutdownHook()
@@ -231,16 +232,18 @@ object ActorSystem {
     }
 
     /**
-     * Configuration class for setting up parameters related to the ActorSystem.
+     * Configuration class for setting up system parameters in an Actor-based system.
      *
-     * @property actorQueueSize Defines the maximum size of the actor queue. Defaults to unlimited.
-     * @property actorExpiresAfter Specifies the duration after which an actor expires if idle. Defaults to 15 minutes.
-     * @property systemCollectStatsEvery Interval for the system to collect statistical data. Defaults to 5 seconds.
-     * @property systemLogStatsEvery Interval for logging system statistics. Defaults to 30 seconds.
-     * @property registryCleanupEvery Frequency at which the actor registry performs cleanup operations. Defaults to 30 seconds.
+     * @property actorQueueSize Specifies the maximum size of the actor's message queue. Defaults to unlimited queue size.
+     * @property actorAskTimeout Defines the timeout duration for requests sent using the 'ask' pattern to an actor.
+     * @property actorExpiresAfter Specifies the expiration time for inactive actors, determining when they are removed from the system.
+     * @property systemCollectStatsEvery Specifies the interval for system-level statistic collection.
+     * @property systemLogStatsEvery Configures the time interval for system statistics logging.
+     * @property registryCleanupEvery Specifies the interval for cleaning up the actor registry to remove expired or unused entries.
      */
     data class Conf(
         val actorQueueSize: Int = Channel.UNLIMITED,
+        val actorAskTimeout: Duration = 30.seconds,
         val actorExpiresAfter: Duration = 15.minutes,
         val systemCollectStatsEvery: Duration = 5.seconds,
         val systemLogStatsEvery: Duration = 30.seconds,
