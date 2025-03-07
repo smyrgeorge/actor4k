@@ -50,9 +50,9 @@ the factories to the registry for each Actor class in our project (see the examp
 ```kotlin
 // Create the Actor Registry.
 val registry = SimpleActorRegistry()
-    .register(AccountActor::class) { key ->
-        AccountActor(key) // You can define how an actor is created here.
-        // You could also pass other arguments to the actor at this point like for example:
+    .factoryFor(AccountActor::class) { key ->
+        AccountActor(key) // You can define how an Actor is created.
+        // You can also pass other arguments to the Actor at this point like for example:
         // AccountActor(key, arg1, ...)
         // This can be very helpful with dependency injection scenarios.
     }
@@ -65,7 +65,7 @@ ActorSystem
     .start()
 ```
 
-### Let's create an Actor!
+### Let's define an Actor!
 
 ```kotlin
 class AccountActor(override val key: String) : Actor(key) {

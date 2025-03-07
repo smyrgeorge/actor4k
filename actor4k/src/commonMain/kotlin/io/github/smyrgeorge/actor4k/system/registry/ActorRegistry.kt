@@ -91,7 +91,7 @@ abstract class ActorRegistry {
             registry[address]?.let { return@lock false to it }
 
             // Spawn the actor.
-            val a: Actor = factory(clazz)(key)
+            val a: Actor = factoryOf(clazz)(key)
 
             // Store the [Actor] to the local storage.
             registry[address] = a
@@ -136,7 +136,7 @@ abstract class ActorRegistry {
      * @param ref The `LocalRef` representing the actor to be unregistered.
      * @return Unit
      */
-    suspend fun unregister(ref: LocalRef): Unit = lock {
+    internal suspend fun unregister(ref: LocalRef): Unit = lock {
         val address = ref.address
         registry[address]?.let {
             if (it.status() != Actor.Status.SHUTTING_DOWN) error("Cannot unregister $address while is ${it.status()}.")
@@ -182,7 +182,7 @@ abstract class ActorRegistry {
      * @param factory A lambda function that takes a string key as a parameter and returns an instance of the actor.
      * @return The updated ActorRegistry instance.
      */
-    fun register(actor: KClass<out Actor>, factory: ActorFactory): ActorRegistry {
+    fun factoryFor(actor: KClass<out Actor>, factory: ActorFactory): ActorRegistry {
         if (ActorSystem.status == ActorSystem.Status.READY) error("Cannot register a factory while the system is ready.")
         this.factories[actor.qualifiedName!!] = factory
         return this
@@ -196,7 +196,7 @@ abstract class ActorRegistry {
      * @return A lambda function that takes a string key and returns an instance of the specified actor type.
      * @throws IllegalStateException if no factory is registered for the provided actor type.
      */
-    fun factory(actor: KClass<out Actor>): ActorFactory =
+    private fun factoryOf(actor: KClass<out Actor>): ActorFactory =
         factories[actor.qualifiedName!!] ?: error("No factory registered for ${actor.qualifiedName!!}.")
 
     /**

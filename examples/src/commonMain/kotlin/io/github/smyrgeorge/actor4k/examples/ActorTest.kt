@@ -36,7 +36,7 @@ class AccountActor(override val key: String) : Actor(key) {
 object Main {
     fun run() = runBlocking {
         val registry = SimpleActorRegistry()
-            .register(AccountActor::class) { AccountActor(it) }
+            .factoryFor(AccountActor::class) { AccountActor(it) }
 
         // Start the actor system.
         ActorSystem

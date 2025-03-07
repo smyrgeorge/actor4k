@@ -13,12 +13,12 @@ import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 
 object Registry {
     val registry = SimpleActorRegistry()
-        .register(AccountActor::class) { AccountActor(it) }
-        .register(InitMethodFailsAccountActor::class) { InitMethodFailsAccountActor(it) }
-        .register(OnBeforeActivateFailsAccountActor::class) { OnBeforeActivateFailsAccountActor(it) }
-        .register(SlowActivateAccountActor::class) { SlowActivateAccountActor(it) }
-        .register(SlowProcessAccountActor::class) { SlowProcessAccountActor(it) }
-        .register(SlowActivateWithErrorInActivationAccountActor::class) {
+        .factoryFor(AccountActor::class) { AccountActor(it) }
+        .factoryFor(InitMethodFailsAccountActor::class) { InitMethodFailsAccountActor(it) }
+        .factoryFor(OnBeforeActivateFailsAccountActor::class) { OnBeforeActivateFailsAccountActor(it) }
+        .factoryFor(SlowActivateAccountActor::class) { SlowActivateAccountActor(it) }
+        .factoryFor(SlowProcessAccountActor::class) { SlowProcessAccountActor(it) }
+        .factoryFor(SlowActivateWithErrorInActivationAccountActor::class) {
             SlowActivateWithErrorInActivationAccountActor(it)
         }
 
