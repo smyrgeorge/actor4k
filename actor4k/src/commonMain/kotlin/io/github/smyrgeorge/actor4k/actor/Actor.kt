@@ -196,7 +196,7 @@ abstract class Actor(open val key: String) {
                 pattern.replyTo.send(reply)
             }
         } catch (_: TimeoutCancellationException) {
-            log.warn("[$address::$operation] Could not reply in time. {}")
+            log.warn("[$address::$operation] Could not reply in time.")
         } catch (_: ClosedSendChannelException) {
             log.warn("[$address::$operation] Could not reply, the channel is closed.")
         } catch (e: Exception) {
