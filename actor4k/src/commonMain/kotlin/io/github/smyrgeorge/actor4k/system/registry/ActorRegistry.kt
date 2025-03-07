@@ -123,24 +123,28 @@ abstract class ActorRegistry {
      * @return The `Actor` instance associated with the given `LocalRef`.
      */
     suspend fun get(ref: LocalRef): Actor =
-        registry[ref.address] ?: get(ref.actor, ref.address.key).let { registry[ref.address]!! }
+        registry[ref.address] ?: get(ref.clazz, ref.address.key).let { registry[ref.address]!! }
 
     /**
-     * Unregisters the actor associated with the given address from the registry.
+     * Unregisters a local actor reference from the registry.
      *
-     * This method removes the actor from the registry only if its status is `SHUT_DOWN`.
-     * If the actor is not in a `SHUT_DOWN` state, an error is thrown.
-     * The operation is performed within a lock to ensure thread safety.
+     * This method removes the actor associated with the provided `LocalRef`
+     * from the local registry, ensuring that the actor has completed its shutdown
+     * process. If the actor is not in the `SHUT_DOWN` status, an error is thrown.
+     * After successful removal, the actor reference is invalidated.
      *
-     * @param address The [Address] of the actor to be unregistered.
-     * @throws IllegalStateException If the actor's status is not `SHUT_DOWN`.
+     * @param ref The `LocalRef` representing the actor to be unregistered.
+     * @return Unit
      */
-    suspend fun unregister(address: Address): Unit = lock {
+    suspend fun unregister(ref: LocalRef): Unit = lock {
+        val address = ref.address
         registry[address]?.let {
-            if (it.status() != Actor.Status.SHUT_DOWN) error("Cannot unregister $address while is ${it.status()}.")
+            if (it.status() != Actor.Status.SHUTTING_DOWN) error("Cannot unregister $address while is ${it.status()}.")
             registry.remove(address)
             log.info("Unregistered actor $address.")
         }
+        // Invalidate the shared LocalRef.
+        ref.invalidate()
     }
 
     /**

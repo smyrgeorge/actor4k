@@ -50,54 +50,56 @@ the factories to the registry for each Actor class in our project (see the examp
 ```kotlin
 // Create the Actor Registry.
 val registry = SimpleActorRegistry()
-    .register(AccountActor::class) { AccountActor(it) }
+    .register(AccountActor::class) { key ->
+        AccountActor(key) // You can define how an actor is created here.
+        // You could also pass other arguments to the actor at this point like for example:
+        // AccountActor(key, arg1, ...)
+        // This can be very helpful with dependency injection scenarios.
+    }
 
 // Start the actor system.
 ActorSystem
     .register(SimpleLoggerFactory())
     .register(SimpleStats())
-    .register(registry)
+    .register(registry) // You can override the registry implementation here.
     .start()
 ```
 
 ### Let's create an Actor!
 
 ```kotlin
-data class Req(val msg: String)
-data class Resp(val msg: String)
-
-data class AccountActor(
-    override val key: String
-) : Actor(key) {
+class AccountActor(override val key: String) : Actor(key) {
 
     override suspend fun onBeforeActivate() {
-        log.info("[${address()}] before-activate")
+        log.info("[${address()}] onBeforeActivate")
     }
 
     override suspend fun onActivate(m: Message) {
-        log.info("[${address()}] activate ($m)")
+        log.info("[${address()}] onActivate: $m")
     }
 
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {
         val msg = m.cast<Req>()
-        log.info("[${address()}] Received message: $msg")
+        log.info("[${address()}] onReceive: $msg")
         val res = Resp("Pong!")
         return r.value(res).build()
     }
+
+    data class Req(val msg: String)
+    data class Resp(val msg: String)
 }
 ```
 
 Now let's send some messages:
 
 ```kotlin
-val a: Actor.Ref = ActorSystem.get(AccountActor::class, "ACC0010")
-
-val req = Req(msg = "[tell] Hello World!")
-a.tell(req)
-
-val req2 = Req(msg = "[ask] Ping!")
-val r = a.ask<Resp>(req2)
-println(r)
+// [Create/Get] the desired actor from the registry.
+val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
+// [Tell] something to the actor (asynchronous operation). 
+actor.tell(AccountActor.Req(msg = "[tell] Hello World!"))
+// [Ask] something to the actor (synchronous operation).
+val res = actor.ask<AccountActor.Resp>(AccountActor.Req(msg = "[ask] Ping!"))
+println(res)
 ```
 
 See all the available examples [here](examples).

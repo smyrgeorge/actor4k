@@ -10,7 +10,7 @@ import io.github.smyrgeorge.actor4k.actor.Actor
  * @property address The address of the actor.
  */
 abstract class ActorRef(
-    open val address: Address
+    val address: Address
 ) {
     /**
      * Send a message to the actor referenced by this `ActorRef`.

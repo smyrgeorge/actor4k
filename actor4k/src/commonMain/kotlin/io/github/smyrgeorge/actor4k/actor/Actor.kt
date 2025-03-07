@@ -30,6 +30,7 @@ abstract class Actor(open val key: String) {
     private var status = Status.ACTIVATING
     private var initializationFailed: Exception? = null
     private val address: Address by lazy { Address.of(this::class, key) }
+    private val ref: LocalRef by lazy { LocalRef(address = address, actor = this) }
     private val mail: Channel<Patterns> = Channel(capacity = ActorSystem.conf.actorQueueSize)
 
     /**
@@ -152,7 +153,7 @@ abstract class Actor(open val key: String) {
      * @param msg the message to be sent
      */
     suspend fun <C : Any> tell(msg: C) {
-        if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
+        if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         val tell = Patterns.Tell(msg)
         mail.send(tell)
     }
@@ -165,7 +166,7 @@ abstract class Actor(open val key: String) {
      * @return the response from the actor
      */
     suspend fun <C : Any, R> ask(msg: C, timeout: Duration = 30.seconds): R {
-        if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
+        if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         val ask = Patterns.Ask(msg)
         return try {
             withTimeout(timeout) {
@@ -215,13 +216,6 @@ abstract class Actor(open val key: String) {
     fun status(): Status = status
 
     /**
-     * Retrieves the name of the actor.
-     *
-     * @return the name of the actor as a [String].
-     */
-    fun name(): String = address.name
-
-    /**
      * Retrieves the current statistics of the actor.
      *
      * @return The [Stats] object containing details such as the `last` processed time and the total
@@ -247,13 +241,13 @@ abstract class Actor(open val key: String) {
      * active state and ensure proper resource management.
      */
     fun shutdown() {
-        stats.shutDownAt = Clock.System.now()
+        stats.triggeredDownAt = Clock.System.now()
         status = Status.SHUTTING_DOWN
         mail.close()
     }
 
     /**
-     * Creates and returns a reference to the current actor as a [LocalRef].
+     * Returns a reference to the current actor as a [LocalRef].
      *
      * The returned [LocalRef] provides details about the actor, including its
      * name, key, and class type, and enables interaction with the actor such
@@ -261,7 +255,7 @@ abstract class Actor(open val key: String) {
      *
      * @return a [LocalRef] representing the reference to the current actor.
      */
-    fun ref(): LocalRef = LocalRef(address = address, actor = this::class)
+    fun ref(): LocalRef = ref
 
     /**
      * Represents a message with an identifier and a value.
@@ -403,22 +397,23 @@ abstract class Actor(open val key: String) {
     }
 
     /**
-     * Represents the statistical data and lifecycle timestamps of an actor.
+     * Represents statistics related to the lifecycle and message handling of an actor.
      *
-     * This class captures important metrics for monitoring an actor's activity,
-     * such as its creation time, the time it was initialized, the last time it processed
-     * a message, and when it was shut down. It also keeps track of the total number
-     * of messages processed by the actor.
+     * This data class contains various timestamps and counters that provide insights into
+     * the operational state of an actor, such as when it was created, initialized, shutdown,
+     * the last time a message was processed, and the total number of messages it has processed.
      *
      * @property createdAt The timestamp when the actor was created.
-     * @property initializedAt The timestamp when the actor was initialized, or `null` if not yet initialized.
-     * @property shutDownAt The timestamp when the actor was shut down, or `null` if not yet shut down.
-     * @property lastMessageAt The timestamp of the last message processed by the actor.
-     * @property receivedMessages The total number of messages processed by the actor.
+     * @property initializedAt The timestamp when the actor was initialized. Nullable.
+     * @property triggeredDownAt The timestamp when the actor was triggered to shut down. Nullable.
+     * @property shutDownAt The timestamp when the actor completed its shutdown process. Nullable.
+     * @property lastMessageAt The timestamp when the last message was processed by the actor.
+     * @property receivedMessages The total number of messages received and processed by the actor.
      */
     data class Stats(
         var createdAt: Instant = Clock.System.now(),
         var initializedAt: Instant? = null,
+        var triggeredDownAt: Instant? = null,
         var shutDownAt: Instant? = null,
         var lastMessageAt: Instant = Clock.System.now(),
         var receivedMessages: Long = 0
@@ -435,10 +430,12 @@ abstract class Actor(open val key: String) {
             }
 
             @OptIn(DelicateCoroutinesApi::class)
-            if (isClosedForReceive) {
-                status = Status.SHUT_DOWN
-                ActorSystem.registry.unregister(this@Actor.address())
+            if (!isClosedForReceive) {
+                log.warn("[$address::consume] Channel is not closed for receive but the actor is shutting down.")
             }
+            ActorSystem.registry.unregister(this@Actor.ref)
+            status = Status.SHUT_DOWN
+            stats.shutDownAt = Clock.System.now()
         }
 
     private suspend fun replyActivationError(pattern: Patterns) {

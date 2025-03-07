@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.test
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
 import assertk.assertions.isZero
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
@@ -36,6 +37,7 @@ class ActorGracefulShutdownTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
         delay(1500)
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
+        assertThat(actor.stats().shutDownAt).isNotNull()
         assertThat(registry.size()).isZero()
         assertThat(actor.stats().receivedMessages).isEqualTo(2)
     }

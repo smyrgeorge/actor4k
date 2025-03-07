@@ -15,16 +15,16 @@ class ActorTest
 class AccountActor(override val key: String) : Actor(key) {
 
     override suspend fun onBeforeActivate() {
-        log.info("[${address()}] before-activate")
+        log.info("[${address()}] onBeforeActivate")
     }
 
     override suspend fun onActivate(m: Message) {
-        log.info("[${address()}] activate ($m)")
+        log.info("[${address()}] onActivate: $m")
     }
 
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {
         val msg = m.cast<Req>()
-        log.info("[${address()}] Received message: $msg")
+        log.info("[${address()}] onReceive: $msg")
         val res = Resp("Pong!")
         return r.value(res).build()
     }
@@ -45,14 +45,13 @@ object Main {
             .register(registry)
             .start()
 
-        val a: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
-
-        val req = AccountActor.Req(msg = "[tell] Hello World!")
-        a.tell(req)
-
-        val req2 = AccountActor.Req(msg = "[ask] Ping!")
-        val r = a.ask<AccountActor.Resp>(req2)
-        println(r)
+        // [Create/Get] the desired actor from the registry.
+        val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
+        // [Tell] something to the actor (asynchronous operation).
+        actor.tell(AccountActor.Req(msg = "[tell] Hello World!"))
+        // [Ask] something to the actor (synchronous operation).
+        val res = actor.ask<AccountActor.Resp>(AccountActor.Req(msg = "[ask] Ping!"))
+        println(res)
 
         val a2 = ActorSystem.get(AccountActor::class, "ACC0010")
         println(a2.status())
@@ -61,6 +60,7 @@ object Main {
 
         ActorSystem.get(AccountActor::class, "ACC0030")
 
+        val req = AccountActor.Req(msg = "[tell] Hello World!")
         a2.tell(req) // Will re-create the actor.
     }
 }

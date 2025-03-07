@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.test
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
 import assertk.assertions.isZero
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
@@ -45,7 +46,7 @@ class ActorLifecycleTests {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
         val name: String = AccountActor::class.simpleName!!
         val actor: Actor = registry.get(ref as LocalRef)
-        assertThat(actor.name()).isEqualTo(name)
+        assertThat(actor.address().name).isEqualTo(name)
         assertThat(ref.address.toString()).isEqualTo("$name-$ACC0000")
         assertThat(ref.address.name).isEqualTo(name)
         assertThat(ref.address.key).isEqualTo(ACC0000)
@@ -83,6 +84,7 @@ class ActorLifecycleTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
         delay(100) // Ensure that the actor shut down.
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
+        assertThat(actor.stats().shutDownAt).isNotNull()
         assertThat(registry.size()).isZero()
     }
 
@@ -98,6 +100,7 @@ class ActorLifecycleTests {
         assertFails { ref.tell(AccountActor.Req("Ping!")) }
         delay(100) // Ensure that the actor shut down.
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
+        assertThat(actor.stats().shutDownAt).isNotNull()
         assertThat(registry.size()).isZero()
     }
 
