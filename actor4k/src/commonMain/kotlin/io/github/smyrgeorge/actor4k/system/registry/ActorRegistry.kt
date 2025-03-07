@@ -71,6 +71,15 @@ abstract class ActorRegistry {
     }
 
     /**
+     * Retrieves an `ActorRef` for the specified actor type and key.
+     *
+     * @param clazz The class of the actor to be retrieved.
+     * @param key A unique string key associated with the actor.
+     * @return An `ActorRef` corresponding to the requested actor type and key.
+     */
+    open suspend fun <A : Actor> get(clazz: KClass<A>, key: String): ActorRef = getLocalActor(clazz, key).ref()
+
+    /**
      * Retrieves a local actor instance based on the provided `LocalRef`.
      *
      * This method resolves and returns the actor associated with the given `LocalRef`
@@ -80,15 +89,6 @@ abstract class ActorRegistry {
      * @return The actor instance corresponding to the provided `LocalRef`.
      */
     suspend fun getLocalActor(ref: LocalRef): Actor = getLocalActor(ref.clazz, ref.address.key)
-
-    /**
-     * Retrieves an `ActorRef` for the specified actor type and key.
-     *
-     * @param clazz The class of the actor to be retrieved.
-     * @param key A unique string key associated with the actor.
-     * @return An `ActorRef` corresponding to the requested actor type and key.
-     */
-    open suspend fun <A : Actor> get(clazz: KClass<A>, key: String): ActorRef = getLocalActor(clazz, key).ref()
 
     /**
      * Retrieves a local actor instance based on the specified actor class and unique key.
