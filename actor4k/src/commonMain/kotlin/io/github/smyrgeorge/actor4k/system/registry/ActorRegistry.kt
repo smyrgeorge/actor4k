@@ -47,7 +47,7 @@ abstract class ActorRegistry {
      * Operations on this map should be synchronized or externally controlled to ensure
      * thread safety, as it may be accessed by multiple coroutines or concurrent processes.
      */
-    val registry: MutableMap<Address, Actor> = mutableMapOf()
+    private val registry: MutableMap<Address, Actor> = mutableMapOf()
 
     /**
      * A registry of factory functions used to create instances of different `Actor` types.
@@ -71,6 +71,50 @@ abstract class ActorRegistry {
     }
 
     /**
+     * Retrieves an `ActorRef` for the specified actor type and key.
+     *
+     * @param clazz The class of the actor to be retrieved.
+     * @param key A unique string key associated with the actor.
+     * @return An `ActorRef` corresponding to the requested actor type and key.
+     */
+    suspend fun <A : Actor> get(clazz: KClass<A>, key: String): ActorRef {
+        // Calculate the actor address.
+        val address: Address = Address.of(clazz, key)
+
+        if (ActorSystem.status != ActorSystem.Status.READY)
+            error("Failed to get $address, ActorSystem is ${ActorSystem.status}.")
+
+        // Limit the concurrent access to one at a time.
+        // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
+        val (isNew: Boolean, actor: Actor) = lock {
+            // Check if the actor already exists in the local storage.
+            registry[address]?.let { return@lock false to it }
+
+            // Spawn the actor.
+            val a: Actor = factory(clazz)(key)
+
+            // Store the [Actor] to the local storage.
+            registry[address] = a
+
+            true to a
+        }
+
+        // Only call the activate method if the Actor just created.
+        if (isNew) {
+            try {
+                actor.activate()
+                log.debug("Actor {} activated successfully.", address)
+            } catch (e: Exception) {
+                log.error("Could not activate ${actor.address()}. Reason: ${e.message ?: "Unknown error."}.")
+                registry.remove(address)
+                throw e
+            }
+        }
+
+        return actor.ref()
+    }
+
+    /**
      * Retrieves an instance of an `Actor` based on the provided `LocalRef`.
      * If the actor is not found in the local registry, it attempts to retrieve it using
      * its actor type and key, and updates the local registry with the result.
@@ -82,15 +126,6 @@ abstract class ActorRegistry {
         registry[ref.address] ?: get(ref.actor, ref.address.key).let { registry[ref.address]!! }
 
     /**
-     * Retrieves an `ActorRef` for the specified actor type and key.
-     *
-     * @param clazz The class of the actor to be retrieved.
-     * @param key A unique string key associated with the actor.
-     * @return An `ActorRef` corresponding to the requested actor type and key.
-     */
-    abstract suspend fun <A : Actor> get(clazz: KClass<A>, key: String): ActorRef
-
-    /**
      * Unregisters the actor associated with the given address from the registry.
      *
      * This method removes the actor from the registry only if its status is `SHUT_DOWN`.
@@ -100,13 +135,11 @@ abstract class ActorRegistry {
      * @param address The [Address] of the actor to be unregistered.
      * @throws IllegalStateException If the actor's status is not `SHUT_DOWN`.
      */
-    suspend fun unregister(address: Address) {
-        lock {
-            registry[address]?.let {
-                if (it.status() != Actor.Status.SHUT_DOWN) error("Cannot unregister $address while is ${it.status()}.")
-                registry.remove(address)
-                log.info("Unregistered actor $address.")
-            }
+    suspend fun unregister(address: Address): Unit = lock {
+        registry[address]?.let {
+            if (it.status() != Actor.Status.SHUT_DOWN) error("Cannot unregister $address while is ${it.status()}.")
+            registry.remove(address)
+            log.info("Unregistered actor $address.")
         }
     }
 
@@ -163,14 +196,6 @@ abstract class ActorRegistry {
         factories[actor.qualifiedName!!] ?: error("No factory registered for ${actor.qualifiedName!!}.")
 
     /**
-     * Acquires a lock before executing the provided suspend function.
-     *
-     * @param f The suspend function to be executed within the lock.
-     * @return Unit
-     */
-    suspend fun <T> lock(f: suspend () -> T): T = mutex.withLock { f() }
-
-    /**
      * Stops and removes all locally registered actors that have exceeded their expiration time.
      *
      * This method iterates through all actors in the local registry, calculates their
@@ -191,4 +216,12 @@ abstract class ActorRegistry {
             }
         }
     }
+
+    /**
+     * Acquires a lock before executing the provided suspend function.
+     *
+     * @param f The suspend function to be executed within the lock.
+     * @return Unit
+     */
+    private suspend fun <T> lock(f: suspend () -> T): T = mutex.withLock { f() }
 }

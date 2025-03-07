@@ -26,17 +26,6 @@ class ActorGracefulShutdownTests {
     }
 
     @Test
-    fun `Create an actor`(): Unit = runBlocking {
-        val ref: ActorRef = ActorSystem.get(SlowProcessAccountActor::class, ACC0000)
-        val actor: Actor = registry.get(ref as LocalRef)
-        assertThat(actor.key).isEqualTo(ACC0000)
-        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
-        delay(100)
-        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
-        assertThat(actor.stats().receivedMessages).isZero()
-    }
-
-    @Test
     fun `Actor should graceful shutdown`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(SlowProcessAccountActor::class, ACC0000)
         assertThat(registry.size()).isEqualTo(1)

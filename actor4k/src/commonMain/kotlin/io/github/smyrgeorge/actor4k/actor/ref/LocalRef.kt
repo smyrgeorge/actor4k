@@ -13,7 +13,7 @@ import kotlin.reflect.KClass
  */
 data class LocalRef(
     override val address: Address,
-    val actor: KClass<out Actor>,
+    val actor: KClass<out Actor>
 ) : ActorRef(address) {
     /**
      * Sends a message to the actor associated with this `LocalRef`.
@@ -38,8 +38,16 @@ data class LocalRef(
      *
      * @return the current status of the actor.
      */
-    suspend fun status(): Actor.Status =
+    override suspend fun status(): Actor.Status =
         ActorSystem.registry.get(this).status()
+
+    /**
+     * Retrieves statistical information about the actor associated with this `LocalRef`.
+     *
+     * @return An instance of `Actor.Stats` containing statistics related to the actor.
+     */
+    override suspend fun stats(): Actor.Stats =
+        ActorSystem.registry.get(this).stats()
 
     /**
      * Shuts down the actor associated with this `LocalRef`.
@@ -49,6 +57,6 @@ data class LocalRef(
      * state and ceases processing messages. The actor's resources, such as its mailbox,
      * are released during this process.
      */
-    suspend fun shutdown() =
+    override suspend fun shutdown() =
         ActorSystem.registry.get(this).shutdown()
 }

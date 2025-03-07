@@ -151,9 +151,9 @@ abstract class Actor(open val key: String) {
      *
      * @param msg the message to be sent
      */
-    suspend fun <C> tell(msg: C) {
+    suspend fun <C : Any> tell(msg: C) {
         if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
-        val tell = Patterns.Tell(msg as Any)
+        val tell = Patterns.Tell(msg)
         mail.send(tell)
     }
 
@@ -164,9 +164,9 @@ abstract class Actor(open val key: String) {
      * @param timeout the timeout duration for waiting for a response (default is 30 seconds)
      * @return the response from the actor
      */
-    suspend fun <C, R> ask(msg: C, timeout: Duration = 30.seconds): R {
+    suspend fun <C : Any, R> ask(msg: C, timeout: Duration = 30.seconds): R {
         if (!status.canAcceptMessages) error("$address is in status='$status' and thus is not accepting messages.")
-        val ask = Patterns.Ask(msg as Any)
+        val ask = Patterns.Ask(msg)
         return try {
             withTimeout(timeout) {
                 mail.send(ask)

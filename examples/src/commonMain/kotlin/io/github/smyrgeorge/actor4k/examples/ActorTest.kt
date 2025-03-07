@@ -2,7 +2,6 @@ package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
-import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
@@ -10,8 +9,8 @@ import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
+@Suppress("unused")
 class ActorTest
-
 
 class AccountActor(override val key: String) : Actor(key) {
 
@@ -55,12 +54,12 @@ object Main {
         val r = a.ask<AccountActor.Resp>(req2)
         println(r)
 
-        val a2: LocalRef = ActorSystem.get(AccountActor::class, "ACC0010") as LocalRef
+        val a2 = ActorSystem.get(AccountActor::class, "ACC0010")
         println(a2.status())
         a2.shutdown()
         delay(1000)
 
-        val a3: LocalRef = ActorSystem.get(AccountActor::class, "ACC0030") as LocalRef
+        ActorSystem.get(AccountActor::class, "ACC0030")
 
         a2.tell(req) // Will re-create the actor.
     }
