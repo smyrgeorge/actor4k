@@ -85,7 +85,7 @@ class LocalRef : ActorRef {
      * disposing of its reference to the associated actor. After calling this method,
      * the `LocalRef` will no longer be linked to the actor until re-associated.
      */
-    fun invalidate() {
+    internal fun invalidate() {
         actor = null
     }
 

@@ -144,17 +144,15 @@ abstract class ActorRegistry {
      * Unregisters a local actor reference from the registry.
      *
      * This method removes the actor associated with the provided `LocalRef`
-     * from the local registry, ensuring that the actor has completed its shutdown
-     * process. If the actor is not in the `SHUT_DOWN` status, an error is thrown.
-     * After successful removal, the actor reference is invalidated.
+     * from the registry and invalidates the reference to ensure it is no longer
+     * linked to the actor.
      *
      * @param ref The `LocalRef` representing the actor to be unregistered.
-     * @return Unit
+     * @return Unit The completion of the operation.
      */
     internal suspend fun unregister(ref: LocalRef): Unit = lock {
         val address = ref.address
         registry[address]?.let {
-            if (it.status() != Actor.Status.SHUTTING_DOWN) error("Cannot unregister $address while is ${it.status()}.")
             registry.remove(address)
             log.info("Unregistered actor $address.")
         }
@@ -172,7 +170,7 @@ abstract class ActorRegistry {
      * @return Unit A coroutine completion indicating that all local actors have been successfully shut down.
      */
     suspend fun shutdown(): Unit = lock {
-        log.debug("Stopping all local actors (size=${registry.size})...")
+        log.debug("Stopping all local actors (size={})...", registry.size)
         registry.values.forEach { it.shutdown() }
     }
 

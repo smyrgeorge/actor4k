@@ -249,7 +249,7 @@ abstract class Actor(
      * active state and ensure proper resource management.
      */
     fun shutdown() {
-        stats.triggeredDownAt = Clock.System.now()
+        stats.triggeredShutDownAt = Clock.System.now()
         status = Status.SHUTTING_DOWN
         mail.close()
     }
@@ -413,7 +413,7 @@ abstract class Actor(
      *
      * @property createdAt The timestamp when the actor was created.
      * @property initializedAt The timestamp when the actor was initialized. Nullable.
-     * @property triggeredDownAt The timestamp when the actor was triggered to shut down. Nullable.
+     * @property triggeredShutDownAt The timestamp when the actor was triggered to shut down. Nullable.
      * @property shutDownAt The timestamp when the actor completed its shutdown process. Nullable.
      * @property lastMessageAt The timestamp when the last message was processed by the actor.
      * @property receivedMessages The total number of messages received and processed by the actor.
@@ -421,12 +421,21 @@ abstract class Actor(
     data class Stats(
         var createdAt: Instant = Clock.System.now(),
         var initializedAt: Instant? = null,
-        var triggeredDownAt: Instant? = null,
+        var triggeredShutDownAt: Instant? = null,
         var shutDownAt: Instant? = null,
         var lastMessageAt: Instant = Clock.System.now(),
         var receivedMessages: Long = 0
     )
 
+    /**
+     * Consumes each element from the `ReceiveChannel` and processes it using the provided action.
+     * This function ensures safe consumption by handling exceptions during processing,
+     * logging any errors, and performing necessary cleanup operations after consumption.
+     *
+     * @param E the type of elements in the `ReceiveChannel`.
+     * @param action the function to process each element received from the channel.
+     * @return Unit the result of the operation.
+     */
     private suspend inline fun <E> ReceiveChannel<E>.consumeEach(action: (E) -> Unit): Unit =
         consume {
             for (e in this) {
