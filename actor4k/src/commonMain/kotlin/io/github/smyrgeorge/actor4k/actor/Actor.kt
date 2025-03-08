@@ -4,16 +4,20 @@ import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
-import io.github.smyrgeorge.actor4k.util.extentions.launch
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -464,6 +468,17 @@ abstract class Actor(
                 val r: Result<Any> = Result.failure(e)
                 reply(operation = "activate", pattern = pattern, reply = r)
             }
+        }
+    }
+
+    companion object {
+        private object ActorScope : CoroutineScope {
+            override val coroutineContext: CoroutineContext
+                get() = EmptyCoroutineContext
+        }
+
+        private fun launch(f: suspend () -> Unit) {
+            ActorScope.launch(Dispatchers.Default) { f() }
         }
     }
 }

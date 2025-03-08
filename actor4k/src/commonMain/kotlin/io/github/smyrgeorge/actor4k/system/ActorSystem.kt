@@ -7,7 +7,7 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem.conf
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.Stats
 import io.github.smyrgeorge.actor4k.util.Logger
-import io.github.smyrgeorge.actor4k.util.extentions.launch
+import io.github.smyrgeorge.actor4k.util.extentions.forever
 import io.github.smyrgeorge.actor4k.util.extentions.registerShutdownHook
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -47,25 +47,8 @@ object ActorSystem {
 
     init {
         registerShutdownHook()
-
-        launch {
-            while (true) {
-                runCatching {
-                    delay(_conf.systemCollectStatsEvery)
-                    stats.collect()
-                }
-            }
-        }
-
-        launch {
-            while (true) {
-                runCatching {
-                    delay(_conf.systemLogStatsEvery)
-                    // Log [Stats].
-                    log.info(stats.toString())
-                }
-            }
-        }
+        forever(_conf.systemCollectStatsEvery) { stats.collect() }
+        forever(_conf.systemLogStatsEvery) { log.info(stats.toString()) }
     }
 
     /**
