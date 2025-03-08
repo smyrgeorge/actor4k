@@ -24,19 +24,26 @@ import kotlin.time.Duration.Companion.seconds
 @Suppress("unused")
 object ActorSystem {
 
-    var conf = Conf()
-    var type: Type = Type.SIMPLE
-    var status: Status = Status.NOT_READY
+    private var _conf = Conf()
+    private var _type: Type = Type.SIMPLE
+    private var _status: Status = Status.NOT_READY
+    private lateinit var _stats: Stats
+    private lateinit var _cluster: Cluster
+    private lateinit var _registry: ActorRegistry
+    private lateinit var _loggerFactory: Logger.Factory
 
-    lateinit var stats: Stats
-    lateinit var cluster: Cluster
-    lateinit var registry: ActorRegistry
-
-    lateinit var loggerFactory: Logger.Factory
     private val log: Logger by lazy {
-        if (!this::loggerFactory.isInitialized) error("Please register a Logger factory.")
+        if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.")
         loggerFactory.getLogger(this::class)
     }
+
+    val conf: Conf get() = _conf
+    val type: Type get() = _type
+    val status: Status get() = _status
+    val stats: Stats get() = _stats
+    val cluster: Cluster get() = _cluster
+    val registry: ActorRegistry get() = _registry
+    val loggerFactory: Logger.Factory get() = _loggerFactory
 
     init {
         registerShutdownHook()
@@ -44,7 +51,7 @@ object ActorSystem {
         launch {
             while (true) {
                 runCatching {
-                    delay(conf.systemCollectStatsEvery)
+                    delay(_conf.systemCollectStatsEvery)
                     stats.collect()
                 }
             }
@@ -53,7 +60,7 @@ object ActorSystem {
         launch {
             while (true) {
                 runCatching {
-                    delay(conf.systemLogStatsEvery)
+                    delay(_conf.systemLogStatsEvery)
                     // Log [Stats].
                     log.info(stats.toString())
                 }
@@ -90,7 +97,7 @@ object ActorSystem {
      * @return The configured instance of the ActorSystem.
      */
     fun conf(conf: Conf): ActorSystem {
-        this.conf = conf
+        _conf = conf
         return this
     }
 
@@ -101,7 +108,7 @@ object ActorSystem {
      * @return The `ActorSystem` instance for chaining further configurations or operations.
      */
     fun register(loggerFactory: Logger.Factory): ActorSystem {
-        this.loggerFactory = loggerFactory
+        _loggerFactory = loggerFactory
         return this
     }
 
@@ -112,7 +119,7 @@ object ActorSystem {
      * @return The `ActorSystem` instance for chaining further configurations or operations.
      */
     fun register(stats: Stats): ActorSystem {
-        this.stats = stats
+        _stats = stats
         return this
     }
 
@@ -123,7 +130,7 @@ object ActorSystem {
      * @return The current `ActorSystem` instance after registering the `ActorRegistry`.
      */
     fun register(registry: ActorRegistry): ActorSystem {
-        this.registry = registry
+        _registry = registry
         return this
     }
 
@@ -140,8 +147,8 @@ object ActorSystem {
      */
     fun register(c: Cluster): ActorSystem {
         if (isCluster()) error("Cannot register a cluster while it's already registered.")
-        type = Type.CLUSTER
-        cluster = c
+        _type = Type.CLUSTER
+        _cluster = c
         return this
     }
 
@@ -156,11 +163,11 @@ object ActorSystem {
      */
     fun start(): ActorSystem {
         if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
-        if (!this::loggerFactory.isInitialized) error("Please register a Logger factory.")
-        if (!this::stats.isInitialized) error("Please register a stats collector.")
-        if (!this::registry.isInitialized) error("Please register an actor registry.")
+        if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.")
+        if (!this::_stats.isInitialized) error("Please register a stats collector.")
+        if (!this::_registry.isInitialized) error("Please register an actor registry.")
         if (isCluster()) cluster.start()
-        status = Status.READY
+        _status = Status.READY
         return this
     }
 
@@ -178,7 +185,7 @@ object ActorSystem {
      */
     suspend fun shutdown() {
         log.info("Received shutdown signal, will shutdown...")
-        status = Status.SHUTTING_DOWN
+        _status = Status.SHUTTING_DOWN
 
         registry.shutdown()
 
@@ -194,7 +201,7 @@ object ActorSystem {
         }
 
         // Reset cluster's status.
-        status = Status.NOT_READY
+        _status = Status.NOT_READY
     }
 
     /**
