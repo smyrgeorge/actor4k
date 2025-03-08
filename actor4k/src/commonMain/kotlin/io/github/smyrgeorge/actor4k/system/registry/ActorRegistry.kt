@@ -189,7 +189,7 @@ abstract class ActorRegistry {
      */
     fun factoryFor(actor: KClass<out Actor>, factory: ActorFactory): ActorRegistry {
         if (ActorSystem.status == ActorSystem.Status.READY) error("Cannot register a factory while the system is ready.")
-        this.factories[actor.qualifiedName!!] = factory
+        factories[actor.qualifiedName!!] = factory
         return this
     }
 
