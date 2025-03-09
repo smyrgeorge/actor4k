@@ -80,7 +80,7 @@ abstract class ActorRegistry {
      * @param ref The `LocalRef` representing the actor, containing its class type and address key.
      * @return The actor instance corresponding to the provided `LocalRef`.
      */
-    suspend fun getLocalActor(ref: LocalRef): Actor<*> = getLocalActor(ref.clazz, ref.address.key)
+    internal suspend fun getLocalActor(ref: LocalRef): Actor<*> = getLocalActor(ref.clazz, ref.address.key)
 
     /**
      * Retrieves a local actor instance based on the specified actor class and unique key.
