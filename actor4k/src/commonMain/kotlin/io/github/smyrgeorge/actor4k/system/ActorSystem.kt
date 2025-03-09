@@ -64,7 +64,6 @@ object ActorSystem {
     /**
      * Retrieves an `ActorRef` instance from the registry for a specific actor type and key.
      *
-     * @param A the type of `Actor` to retrieve.
      * @param actor the `KClass` of the actor type.
      * @param key the unique key identifying the actor.
      * @return the reference (`ActorRef`) associated with the specified actor type and key.
