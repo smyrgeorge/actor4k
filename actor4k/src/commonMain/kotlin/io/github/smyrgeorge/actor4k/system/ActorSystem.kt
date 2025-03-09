@@ -70,7 +70,7 @@ object ActorSystem {
      * @param key the unique key identifying the actor.
      * @return the reference (`ActorRef`) associated with the specified actor type and key.
      */
-    suspend fun <A : Actor> get(actor: KClass<A>, key: String): ActorRef = registry.get(actor, key)
+    suspend fun <A : Actor<*>> get(actor: KClass<A>, key: String): ActorRef = registry.get(actor, key)
 
     /**
      * Configures the ActorSystem with the given configuration.

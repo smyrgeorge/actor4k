@@ -1,21 +1,21 @@
 package io.github.smyrgeorge.actor4k.test.actor
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
 
-open class AccountActor(override val key: String) : Actor(key) {
+open class AccountActor(override val key: String) : Actor<Protocol>(key) {
 
     override suspend fun onBeforeActivate() {
         log.info("[${address()}] onBeforeActivate")
     }
 
-    override suspend fun onActivate(m: Message) {
+    override suspend fun onActivate(m: Protocol) {
         log.info("[${address()}] onActivate: $m")
     }
 
-    override suspend fun onReceive(m: Message, r: Response.Builder): Response {
-        val msg = m.cast<Protocol>()
-        log.info("[${address()}] onReceive: $msg")
-        val res = when (msg) {
+    override suspend fun onReceive(m: Protocol, r: Response.Builder): Response {
+        log.info("[${address()}] onReceive: $m")
+        val res = when (m) {
             is Protocol.Req -> Protocol.Req.Resp("Pong!")
         }
         return r.value(res).build()

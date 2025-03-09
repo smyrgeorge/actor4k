@@ -19,8 +19,8 @@ import kotlin.time.Duration
  */
 class LocalRef : ActorRef {
 
-    private var actor: Actor?
-    val clazz: KClass<out Actor>
+    private var actor: Actor<*>?
+    val clazz: KClass<out Actor<*>>
 
     /**
      * Creates a new `LocalRef` instance.
@@ -28,7 +28,7 @@ class LocalRef : ActorRef {
      * @param address The unique `Address` of the actor in the actor system.
      * @param actor The actor instance to be referenced.
      */
-    internal constructor(address: Address, actor: Actor) : super(address) {
+    internal constructor(address: Address, actor: Actor<*>) : super(address) {
         this.actor = actor
         this.clazz = actor::class
     }
@@ -95,7 +95,7 @@ class LocalRef : ActorRef {
      *
      * @return The actor instance associated with this `LocalRef`.
      */
-    private suspend fun actor(): Actor = actor ?: ActorSystem.registry.getLocalActor(this)
+    private suspend fun actor(): Actor<*> = actor ?: ActorSystem.registry.getLocalActor(this)
 
     override fun toString(): String = "LocalRef($address)"
 }

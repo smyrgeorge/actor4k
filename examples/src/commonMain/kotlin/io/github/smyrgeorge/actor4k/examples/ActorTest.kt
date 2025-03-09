@@ -13,20 +13,19 @@ import kotlinx.coroutines.runBlocking
 @Suppress("unused")
 class ActorTest
 
-class AccountActor(override val key: String) : Actor(key) {
+class AccountActor(override val key: String) : Actor<Protocol>(key) {
 
     override suspend fun onBeforeActivate() {
         log.info("[${address()}] onBeforeActivate")
     }
 
-    override suspend fun onActivate(m: Message) {
+    override suspend fun onActivate(m: Protocol) {
         log.info("[${address()}] onActivate: $m")
     }
 
-    override suspend fun onReceive(m: Message, r: Response.Builder): Response {
-        val msg = m.cast<Protocol>()
-        log.info("[${address()}] onReceive: $msg")
-        val res = when (msg) {
+    override suspend fun onReceive(m: Protocol, r: Response.Builder): Response {
+        log.info("[${address()}] onReceive: $m")
+        val res = when (m) {
             is Protocol.Req -> Protocol.Req.Resp("Pong!")
         }
         return r.value(res).build()

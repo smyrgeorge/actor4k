@@ -46,7 +46,7 @@ abstract class ActorRegistry {
      * Operations on this map should be synchronized or externally controlled to ensure
      * thread safety, as it may be accessed by multiple coroutines or concurrent processes.
      */
-    private val registry: MutableMap<Address, Actor> = mutableMapOf()
+    private val registry: MutableMap<Address, Actor<*>> = mutableMapOf()
 
     /**
      * A registry of factory functions used to create instances of different `Actor` types.
@@ -56,7 +56,7 @@ abstract class ActorRegistry {
      * Factory functions are registered via the `register` method and retrieved through the `factory` method.
      * It is used to manage the creation of actor instances dynamically within the `ActorRegistry`.
      */
-    private val factories: MutableMap<String, (key: String) -> Actor> = mutableMapOf()
+    private val factories: MutableMap<String, (key: String) -> Actor<*>> = mutableMapOf()
 
     init {
         forever(ActorSystem.conf.registryCleanupEvery) { stopLocalExpired() }
@@ -69,7 +69,7 @@ abstract class ActorRegistry {
      * @param key A unique string key associated with the actor.
      * @return An `ActorRef` corresponding to the requested actor type and key.
      */
-    open suspend fun <A : Actor> get(clazz: KClass<A>, key: String): ActorRef = getLocalActor(clazz, key).ref()
+    open suspend fun <A : Actor<*>> get(clazz: KClass<A>, key: String): ActorRef = getLocalActor(clazz, key).ref()
 
     /**
      * Retrieves a local actor instance based on the provided `LocalRef`.
@@ -80,7 +80,7 @@ abstract class ActorRegistry {
      * @param ref The `LocalRef` representing the actor, containing its class type and address key.
      * @return The actor instance corresponding to the provided `LocalRef`.
      */
-    suspend fun getLocalActor(ref: LocalRef): Actor = getLocalActor(ref.clazz, ref.address.key)
+    suspend fun getLocalActor(ref: LocalRef): Actor<*> = getLocalActor(ref.clazz, ref.address.key)
 
     /**
      * Retrieves a local actor instance based on the specified actor class and unique key.
@@ -95,7 +95,7 @@ abstract class ActorRegistry {
      * @throws IllegalStateException If the ActorSystem is not in a READY state.
      * @throws Exception If an error occurs during the activation of a newly created actor.
      */
-    private suspend fun <A : Actor> getLocalActor(clazz: KClass<A>, key: String): Actor {
+    private suspend fun <A : Actor<*>> getLocalActor(clazz: KClass<A>, key: String): Actor<*> {
         // Calculate the actor address.
         val address: Address = Address.of(clazz, key)
 
@@ -104,12 +104,12 @@ abstract class ActorRegistry {
 
         // Limit the concurrent access to one at a time.
         // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
-        val (isNew: Boolean, actor: Actor) = lock {
+        val (isNew: Boolean, actor: Actor<*>) = lock {
             // Check if the actor already exists in the local storage.
             registry[address]?.let { return@lock false to it }
 
             // Spawn the actor.
-            val a: Actor = factoryOf(clazz)(key)
+            val a: Actor<*> = factoryOf(clazz)(key)
 
             // Store the [Actor] to the local storage.
             registry[address] = a
@@ -187,7 +187,7 @@ abstract class ActorRegistry {
      * @param factory A lambda function that takes a string key as a parameter and returns an instance of the actor.
      * @return The updated ActorRegistry instance.
      */
-    fun factoryFor(actor: KClass<out Actor>, factory: ActorFactory): ActorRegistry {
+    fun factoryFor(actor: KClass<out Actor<*>>, factory: ActorFactory): ActorRegistry {
         if (ActorSystem.status == ActorSystem.Status.READY) error("Cannot register a factory while the system is ready.")
         factories[actor.qualifiedName!!] = factory
         return this
@@ -201,7 +201,7 @@ abstract class ActorRegistry {
      * @return A lambda function that takes a string key and returns an instance of the specified actor type.
      * @throws IllegalStateException if no factory is registered for the provided actor type.
      */
-    private fun factoryOf(actor: KClass<out Actor>): ActorFactory =
+    private fun factoryOf(actor: KClass<out Actor<*>>): ActorFactory =
         factories[actor.qualifiedName!!] ?: error("No factory registered for ${actor.qualifiedName!!}.")
 
     /**

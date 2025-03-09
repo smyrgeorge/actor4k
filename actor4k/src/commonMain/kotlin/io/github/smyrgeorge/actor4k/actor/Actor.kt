@@ -27,7 +27,7 @@ import kotlin.time.Duration.Companion.seconds
  *
  * @property key the key identifying the actor.
  */
-abstract class Actor(
+abstract class Actor<M : Actor.Message>(
     open val key: String
 ) {
     protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
@@ -37,7 +37,7 @@ abstract class Actor(
     private var initializationFailed: Exception? = null
     private val address: Address by lazy { Address.of(this::class, key) }
     private val ref: LocalRef by lazy { LocalRef(address = address, actor = this) }
-    private val mail: Channel<Patterns> = Channel(capacity = ActorSystem.conf.actorQueueSize)
+    private val mail: Channel<Patterns<M>> = Channel(capacity = ActorSystem.conf.actorQueueSize)
 
     /**
      * Hook called before the actor is activated.
@@ -64,7 +64,7 @@ abstract class Actor(
      *
      * @param m The initial message used to activate and initialize the actor.
      */
-    open suspend fun onActivate(m: Message) {}
+    open suspend fun onActivate(m: M) {}
 
     /**
      * Processes an incoming message and generates a response.
@@ -77,7 +77,7 @@ abstract class Actor(
      * @param r the builder for constructing the response.
      * @return the constructed response after processing the message.
      */
-    abstract suspend fun onReceive(m: Message, r: Response.Builder): Response
+    abstract suspend fun onReceive(m: M, r: Response.Builder): Response
 
     /**
      * Activates the actor and starts the message consumption process.
@@ -154,31 +154,48 @@ abstract class Actor(
     }
 
     /**
-     * Sends a message to the actor.
+     * Sends a message to the actor in a fire-and-forget communication manner.
      *
-     * @param msg the message to be sent
+     * This function ensures that the actor is in a state to accept messages before attempting to send.
+     * It validates the message's type to ensure it matches the expected type for the actor.
+     * If the actor cannot accept messages or the message type is incorrect, an error is thrown.
+     * Upon successful validation, the message is encapsulated in a `Tell` pattern
+     * and dispatched via the actor's mailbox.
+     *
+     * @param msg The message to be sent to the actor. It must be an instance of the expected message type.
+     * @throws IllegalStateException If the actor is unable to accept messages due to its current status.
+     * @throws ClassCastException If the message cannot be cast to the expected type.
      */
-    suspend fun tell(msg: Message) {
+    suspend fun tell(msg: Any) {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
+        @Suppress("UNCHECKED_CAST")
+        msg as? M ?: throw ClassCastException("Could not cast to the expected type, m = $msg.")
         val tell = Patterns.Tell(msg)
         mail.send(tell)
     }
 
     /**
-     * Sends a request to the actor and expects a response within a specified timeout.
+     * Sends a message to the actor and obtains a response synchronously within a specified timeout.
      *
-     * This method follows the `Ask` pattern, where the caller sends a message and awaits a response
-     * from the actor. If the response is not received within the defined timeout, a timeout exception is thrown.
+     * The `ask` function enables a requester to send a message to an actor and wait for a response.
+     * It ensures that the actor is in a state to accept messages before proceeding. If the actor
+     * is unable to process the message (due to its current status or an invalid message type), an
+     * exception is thrown.
      *
-     * @param msg The message to be sent to the actor. It must be of a type extending `Any`.
-     * @param timeout The maximum duration to wait for a response. Defaults to the actor configuration's `actorAskTimeout`.
+     * The message is sent using the `Ask` pattern, allowing communication in a request-response
+     * manner. The function suspends until a response is received or the timeout duration elapses.
+     *
+     * @param msg The message to send to the actor. It must match the expected message type.
+     * @param timeout The duration within which the actor must respond. Defaults to the actor system's
+     *                configuration for ask timeout.
      * @return The response from the actor, cast to the expected type `R`.
-     * @throws IllegalStateException If the actor is in a state that cannot accept messages.
-     * @throws TimeoutCancellationException If the actor does not reply within the provided timeout.
-     * @throws ClassCastException If the response cannot be cast to the expected type `R`.
+     * @throws IllegalStateException If the actor cannot accept messages due to its current status.
+     * @throws ClassCastException If the message or response cannot be cast to the expected types.
      */
-    suspend fun <R> ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): R {
+    suspend fun <R> ask(msg: Any, timeout: Duration = ActorSystem.conf.actorAskTimeout): R {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
+        @Suppress("UNCHECKED_CAST")
+        msg as? M ?: throw ClassCastException("Could not cast to the expected type, m = $msg.")
         val ask = Patterns.Ask(msg)
         return try {
             withTimeout(timeout) {
@@ -202,7 +219,7 @@ abstract class Actor(
      * @param pattern The `Ask` pattern containing the message payload and the channel for sending a response.
      * @param reply The result to be sent as a reply, encapsulated in a `Result` type.
      */
-    private suspend fun reply(operation: String, pattern: Patterns.Ask, reply: Result<Any>) {
+    private suspend fun reply(operation: String, pattern: Patterns.Ask<*>, reply: Result<Any>) {
         try {
             // We should be able to reply immediately.
             withTimeout(2.seconds) {
@@ -277,23 +294,10 @@ abstract class Actor(
      * properties and behaviors specific to their use cases.
      */
     abstract class Message {
-        internal var id: Long = -1
+        var id: Long = -1
 
         @Suppress("unused")
         val createdAt: Instant = Clock.System.now()
-
-        /**
-         * Casts the encapsulated value of the message to the specified type.
-         *
-         * This function attempts to cast the payload of the message (`value`) to the requested
-         * type `T`. If the cast is unsuccessful, an error is thrown indicating
-         * that the value cannot be cast to the desired type.
-         *
-         * @return The payload of the message cast to the specified type `T`.
-         * @throws IllegalStateException if the value cannot be cast to the requested type.
-         */
-        @Suppress("UNCHECKED_CAST")
-        fun <T> cast(): T = this as? T ?: error("Could not cast to the requested type.")
 
         /**
          * Determines if the current message is the first one.
@@ -350,8 +354,8 @@ abstract class Actor(
      * These patterns are consumed and processed within the `Actor` class's message handling logic.
      * Specifically, `Ask` allows sending responses back to the sender using its `replyTo` property.
      */
-    private sealed interface Patterns {
-        val msg: Message
+    private sealed interface Patterns<M : Message> {
+        val msg: M
 
         /**
          * Represents a one-way communication pattern for sending messages between actors.
@@ -364,9 +368,9 @@ abstract class Actor(
          *
          * @property msg The payload of the message being sent.
          */
-        class Tell(
-            override val msg: Message
-        ) : Patterns
+        class Tell<M : Message>(
+            override val msg: M
+        ) : Patterns<M>
 
         /**
          * Represents a request-response communication pattern used for interactions between actors.
@@ -378,10 +382,10 @@ abstract class Actor(
          * @property replyTo A channel used to send the response back to the sender. The channel uses a rendezvous
          * approach to manage communication between the sender and recipient.
          */
-        class Ask(
-            override val msg: Message,
+        class Ask<M : Message>(
+            override val msg: M,
             val replyTo: Channel<Result<Any>> = Channel(Channel.RENDEZVOUS)
-        ) : Patterns
+        ) : Patterns<M>
     }
 
     /**
@@ -458,7 +462,7 @@ abstract class Actor(
             stats.shutDownAt = Clock.System.now()
         }
 
-    private suspend fun replyActivationError(pattern: Patterns) {
+    private suspend fun replyActivationError(pattern: Patterns<*>) {
         when (pattern) {
             is Patterns.Tell -> Unit
             is Patterns.Ask -> {
