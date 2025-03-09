@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">0.41.0
+        <div class="library-version" id="library-version">0.42.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -94,7 +94,7 @@
   <div class="breadcrumbs"><a href="../../index.html">actor4k</a><span class="delimiter">/</span><a href="../index.html">io.github.smyrgeorge.actor4k.actor</a><span class="delimiter">/</span><span class="current">Actor</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Actor</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="index.html">Actor</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>key<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span></div><p class="paragraph">Abstract class representing an actor with basic functionality for message handling, activation, and status management.</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="index.html">Actor</a><span class="token operator">&lt;</span><a href="index.html">Req</a><span class="token operator"> : </span><a href="-message/index.html">Actor.Message</a><span class="token punctuation">, </span><a href="index.html">Res</a><span class="token operator"> : </span><a href="-message/-response/index.html">Actor.Message.Response</a><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>key<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span></div><p class="paragraph">Abstract class representing an actor with basic functionality for message handling, activation, and status management.</p></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
@@ -120,7 +120,22 @@
       </div>
       <div data-togglable="TYPE">
         <h2 class="">Types</h2>
-        <div class="table"><a data-name="-1154509480%2FClasslikes%2F1399988857" anchor-label="Message" id="-1154509480%2FClasslikes%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+        <div class="table"><a data-name="539727475%2FClasslikes%2F1399988857" anchor-label="Companion" id="539727475%2FClasslikes%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="539727475%2FClasslikes%2F1399988857"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1154509480%2FClasslikes%2F1399988857" anchor-label="Message" id="-1154509480%2FClasslikes%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
@@ -130,22 +145,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-message/index.html">Message</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>id<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-any/index.html">Any</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Represents a message with an identifier and a value.</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-104854142%2FClasslikes%2F1399988857" anchor-label="Response" id="-104854142%2FClasslikes%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="-response/index.html"><span><span>Response</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-104854142%2FClasslikes%2F1399988857"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-response/index.html">Response</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-any/index.html">Any</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Represents a response returned from an actor after processing a message. This class encapsulates a result value of type <code class="lang-kotlin">Any</code>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="-message/index.html">Message</a></div><div class="brief "><p class="paragraph">Represents an abstract message that can be used as a base class for custom message implementations.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -160,7 +160,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-stats/index.html">Stats</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">var </span>createdAt<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token operator"> = </span>Clock.System.now()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>initializedAt<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>shutDownAt<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>lastMessageAt<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token operator"> = </span>Clock.System.now()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>receivedMessages<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span><span class="token constant">0</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Represents the statistical data and lifecycle timestamps of an actor.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-stats/index.html">Stats</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">var </span>createdAt<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token operator"> = </span>Clock.System.now()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>initializedAt<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>triggeredShutDownAt<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>shutDownAt<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>lastMessageAt<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token operator"> = </span>Clock.System.now()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>receivedMessages<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span><span class="token constant">0</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Represents statistics related to the lifecycle and message handling of an actor.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -233,47 +233,32 @@
               </div>
             </div>
           </div>
-<a data-name="2105197132%2FFunctions%2F1399988857" anchor-label="ask" id="2105197132%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+<a data-name="-1473488610%2FFunctions%2F1399988857" anchor-label="ask" id="-1473488610%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="ask.html"><span><span>ask</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2105197132%2FFunctions%2F1399988857"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1473488610%2FFunctions%2F1399988857"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="ask.html">C</a><span class="token punctuation">, </span><a href="ask.html">R</a><span class="token operator">&gt; </span><a href="ask.html"><span class="token function">ask</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="ask.html">C</a><span class="token punctuation">, </span></span><span class="parameter ">timeout<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>30.seconds</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="ask.html">R</a></div><div class="brief "><p class="paragraph">Sends a message to the actor and waits for a response.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="ask.html"><span class="token function">ask</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="-message/index.html">Actor.Message</a><span class="token punctuation">, </span></span><span class="parameter ">timeout<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>ActorSystem.conf.actorAskTimeout</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-result/index.html">Result</a><span class="token operator">&lt;</span><a href="-message/-response/index.html">Actor.Message.Response</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Sends a message to an actor and awaits a response.</p></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1758003395%2FFunctions%2F1399988857" anchor-label="name" id="1758003395%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="name.html"><span><span>name</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1758003395%2FFunctions%2F1399988857"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="name.html"><span class="token function">name</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Retrieves the name of the actor.</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="888116194%2FFunctions%2F1399988857" anchor-label="onActivate" id="888116194%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+<a data-name="-2063957618%2FFunctions%2F1399988857" anchor-label="onActivate" id="-2063957618%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="on-activate.html"><span>on</span><wbr><span><span>Activate</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="888116194%2FFunctions%2F1399988857"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2063957618%2FFunctions%2F1399988857"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="on-activate.html"><span class="token function">onActivate</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">m<span class="token operator">: </span><a href="-message/index.html">Actor.Message</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Handles the activation process of the actor upon receiving the first message.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="on-activate.html"><span class="token function">onActivate</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">m<span class="token operator">: </span><a href="index.html">Req</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Handles the activation process of the actor upon receiving the first message.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -293,17 +278,17 @@
               </div>
             </div>
           </div>
-<a data-name="-1323762762%2FFunctions%2F1399988857" anchor-label="onReceive" id="-1323762762%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+<a data-name="-454452038%2FFunctions%2F1399988857" anchor-label="onReceive" id="-454452038%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="on-receive.html"><span>on</span><wbr><span><span>Receive</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1323762762%2FFunctions%2F1399988857"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-454452038%2FFunctions%2F1399988857"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="on-receive.html"><span class="token function">onReceive</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">m<span class="token operator">: </span><a href="-message/index.html">Actor.Message</a><span class="token punctuation">, </span></span><span class="parameter ">r<span class="token operator">: </span><a href="-response/-builder/index.html">Actor.Response.Builder</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-response/index.html">Actor.Response</a></div><div class="brief "><p class="paragraph">Processes an incoming message and generates a response.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="on-receive.html"><span class="token function">onReceive</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">m<span class="token operator">: </span><a href="index.html">Req</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">Res</a></div><div class="brief "><p class="paragraph">Handles the receipt of a message and processes it to produce a response.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -318,7 +303,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="ref.html"><span class="token function">ref</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor.ref/-local-ref/index.html">LocalRef</a></div><div class="brief "><p class="paragraph">Creates and returns a reference to the current actor as a <a href="../../io.github.smyrgeorge.actor4k.actor.ref/-local-ref/index.html">LocalRef</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="ref.html"><span class="token function">ref</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor.ref/-local-ref/index.html">LocalRef</a></div><div class="brief "><p class="paragraph">Returns a reference to the current actor as a <a href="../../io.github.smyrgeorge.actor4k.actor.ref/-local-ref/index.html">LocalRef</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -368,17 +353,17 @@
               </div>
             </div>
           </div>
-<a data-name="1668670465%2FFunctions%2F1399988857" anchor-label="tell" id="1668670465%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+<a data-name="-431788093%2FFunctions%2F1399988857" anchor-label="tell" id="-431788093%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="tell.html"><span><span>tell</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1668670465%2FFunctions%2F1399988857"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-431788093%2FFunctions%2F1399988857"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="tell.html">C</a><span class="token operator">&gt; </span><a href="tell.html"><span class="token function">tell</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="tell.html">C</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Sends a message to the actor.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="tell.html"><span class="token function">tell</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="-message/index.html">Actor.Message</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Sends a message to the actor in a fire-and-forget communication manner.</p></div></div></div>
                 </div>
               </div>
             </div>

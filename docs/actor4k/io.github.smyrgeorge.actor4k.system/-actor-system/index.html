@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">0.41.0
+        <div class="library-version" id="library-version">0.42.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -111,7 +111,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-conf/index.html">Conf</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>actorQueueSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span>Channel.UNLIMITED<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>actorExpiresAfter<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>15.minutes<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>systemCollectStatsEvery<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>5.seconds<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>systemLogStatsEvery<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>30.seconds<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>registryCleanupEvery<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>30.seconds</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Configuration class for setting up parameters related to the ActorSystem.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-conf/index.html">Conf</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>actorQueueSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span>Channel.UNLIMITED<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>actorAskTimeout<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>30.seconds<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>actorExpiresAfter<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>15.minutes<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>systemCollectStatsEvery<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>5.seconds<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>systemLogStatsEvery<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>30.seconds<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>registryCleanupEvery<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a><span class="token operator"> = </span>30.seconds</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Configuration class for setting up system parameters in an Actor-based system.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -160,7 +160,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">lateinit </span><span class="token keyword">var </span><a href="cluster.html">cluster</a><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.cluster/-cluster/index.html">Cluster</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="cluster.html">cluster</a><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.cluster/-cluster/index.html">Cluster</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -175,22 +175,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">var </span><a href="conf.html">conf</a><span class="token operator">: </span><a href="-conf/index.html">ActorSystem.Conf</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-2018502167%2FProperties%2F1399988857" anchor-label="log" id="-2018502167%2FProperties%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="log.html"><span><span>log</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2018502167%2FProperties%2F1399988857"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="log.html">log</a><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.util/-logger/index.html">Logger</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="conf.html">conf</a><span class="token operator">: </span><a href="-conf/index.html">ActorSystem.Conf</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -205,7 +190,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">lateinit </span><span class="token keyword">var </span><a href="logger-factory.html">loggerFactory</a><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.util/-logger/-factory/index.html">Logger.Factory</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="logger-factory.html">loggerFactory</a><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.util/-logger/-factory/index.html">Logger.Factory</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -220,7 +205,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">lateinit </span><span class="token keyword">var </span><a href="registry.html">registry</a><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.system.registry/-actor-registry/index.html">ActorRegistry</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="registry.html">registry</a><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.system.registry/-actor-registry/index.html">ActorRegistry</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -235,7 +220,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">lateinit </span><span class="token keyword">var </span><a href="stats.html">stats</a><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.system.stats/-stats/index.html">Stats</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="stats.html">stats</a><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.system.stats/-stats/index.html">Stats</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -250,7 +235,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">var </span><a href="status.html">status</a><span class="token operator">: </span><a href="-status/index.html">ActorSystem.Status</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="status.html">status</a><span class="token operator">: </span><a href="-status/index.html">ActorSystem.Status</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -265,7 +250,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">var </span><a href="type.html">type</a><span class="token operator">: </span><a href="-type/index.html">ActorSystem.Type</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="type.html">type</a><span class="token operator">: </span><a href="-type/index.html">ActorSystem.Type</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -289,17 +274,17 @@
               </div>
             </div>
           </div>
-<a data-name="2021742040%2FFunctions%2F1399988857" anchor-label="get" id="2021742040%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+<a data-name="-2026301794%2FFunctions%2F1399988857" anchor-label="get" id="-2026301794%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="get.html"><span><span>get</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2021742040%2FFunctions%2F1399988857"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2026301794%2FFunctions%2F1399988857"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="get.html">A</a><span class="token operator"> : </span><a href="../../io.github.smyrgeorge.actor4k.actor/-actor/index.html">Actor</a><span class="token operator">&gt; </span><a href="get.html"><span class="token function">get</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">actor<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/-k-class/index.html">KClass</a><span class="token operator">&lt;</span><a href="get.html">A</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor.ref/-actor-ref/index.html">ActorRef</a></div><div class="brief "><p class="paragraph">Retrieves an <code class="lang-kotlin">ActorRef</code> instance from the registry for a specific actor type and key.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="get.html"><span class="token function">get</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">actor<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util.extentions/-any-actor-class/index.html">AnyActorClass</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor.ref/-actor-ref/index.html">ActorRef</a></div><div class="brief "><p class="paragraph">Retrieves an <code class="lang-kotlin">ActorRef</code> instance from the registry for a specific actor type and key.</p></div></div></div>
                 </div>
               </div>
             </div>

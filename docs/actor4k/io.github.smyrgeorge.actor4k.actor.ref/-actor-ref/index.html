@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">0.41.0
+        <div class="library-version" id="library-version">0.42.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -130,7 +130,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="address.html">address</a><span class="token operator">: </span><a href="../-address/index.html">Address</a></div><div class="brief "><p class="paragraph">The address of the actor.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="address.html">address</a><span class="token operator">: </span><a href="../-address/index.html">Address</a></div><div class="brief "><p class="paragraph">The address of the actor.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -139,32 +139,77 @@
       </div>
       <div data-togglable="FUNCTION">
         <h2 class="">Functions</h2>
-        <div class="table"><a data-name="124408870%2FFunctions%2F1399988857" anchor-label="ask" id="124408870%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+        <div class="table"><a data-name="1037780043%2FFunctions%2F1399988857" anchor-label="ask" id="1037780043%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="ask.html"><span><span>ask</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="124408870%2FFunctions%2F1399988857"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1037780043%2FFunctions%2F1399988857"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="ask.html">R</a><span class="token operator">&gt; </span><a href="ask.html"><span class="token function">ask</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-any/index.html">Any</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="ask.html">R</a></div><div class="brief "><p class="paragraph">Sends a message to the actor and waits for a response.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="ask.html">Res</a><span class="token operator"> : </span><a href="../../io.github.smyrgeorge.actor4k.actor/-actor/-message/-response/index.html">Actor.Message.Response</a><span class="token operator">&gt; </span><a href="ask.html"><span class="token function">ask</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor/-actor/-message/index.html">Actor.Message</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-result/index.html">Result</a><span class="token operator">&lt;</span><a href="ask.html">Res</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Sends a message to an actor and waits for a response within the default timeout.</p></div><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="ask.html">Res</a><span class="token operator"> : </span><a href="../../io.github.smyrgeorge.actor4k.actor/-actor/-message/-response/index.html">Actor.Message.Response</a><span class="token operator">&gt; </span><a href="ask.html"><span class="token function">ask</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor/-actor/-message/index.html">Actor.Message</a><span class="token punctuation">, </span></span><span class="parameter ">timeout<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-result/index.html">Result</a><span class="token operator">&lt;</span><a href="ask.html">Res</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Sends a message to the actor and waits for a response within the specified timeout.</p></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1755763340%2FFunctions%2F1399988857" anchor-label="tell" id="1755763340%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+<a data-name="-1373211962%2FFunctions%2F1399988857" anchor-label="shutdown" id="-1373211962%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="tell.html"><span><span>tell</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1755763340%2FFunctions%2F1399988857"></span>
+                  <div><a href="shutdown.html"><span><span>shutdown</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1373211962%2FFunctions%2F1399988857"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="tell.html"><span class="token function">tell</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-any/index.html">Any</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Send a message to the actor referenced by this <code class="lang-kotlin">ActorRef</code>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="shutdown.html"><span class="token function">shutdown</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Shuts down the actor associated with this <code class="lang-kotlin">LocalRef</code>.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1528869823%2FFunctions%2F1399988857" anchor-label="stats" id="1528869823%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="stats.html"><span><span>stats</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1528869823%2FFunctions%2F1399988857"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="stats.html"><span class="token function">stats</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor/-actor/-stats/index.html">Actor.Stats</a></div><div class="brief "><p class="paragraph">Retrieves the statistical data for the actor associated with this <code class="lang-kotlin">ActorRef</code>.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-655160214%2FFunctions%2F1399988857" anchor-label="status" id="-655160214%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="status.html"><span><span>status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-655160214%2FFunctions%2F1399988857"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="status.html"><span class="token function">status</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor/-actor/-status/index.html">Actor.Status</a></div><div class="brief "><p class="paragraph">Retrieves the current status of the actor associated with this <code class="lang-kotlin">LocalRef</code>.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1578993999%2FFunctions%2F1399988857" anchor-label="tell" id="-1578993999%2FFunctions%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="tell.html"><span><span>tell</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1578993999%2FFunctions%2F1399988857"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="tell.html"><span class="token function">tell</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor/-actor/-message/index.html">Actor.Message</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Send a message to the actor referenced by this <code class="lang-kotlin">ActorRef</code>.</p></div></div></div>
                 </div>
               </div>
             </div>
