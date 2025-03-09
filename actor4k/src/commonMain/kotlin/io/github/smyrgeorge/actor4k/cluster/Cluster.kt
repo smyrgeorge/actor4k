@@ -14,9 +14,10 @@ interface Cluster {
      * This method is responsible for setting up and preparing the cluster for use. It ensures
      * that all necessary preconditions are met and that the cluster is properly initialized.
      *
-     * @return The initialized and fully operational cluster instance.
+     * @param wait If `true`, the method blocks until the server is fully started.
+     *             If `false`, it returns immediately after invoking the server's start mechanism.
      */
-    fun start(): Cluster
+    fun start(wait: Boolean)
 
     /**
      * Initiates the shutdown process for the cluster, transitioning it to a non-operational state.

@@ -1,0 +1,47 @@
+services:
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports:
+      - "9000:80"
+    networks:
+      - loadbalancing
+    depends_on:
+      - bank-1
+      - bank-2
+      - bank-3
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+
+  bank-1:
+    image: microbank
+    restart: unless-stopped
+    environment:
+      ACTOR4K_CURRENT_NODE: bank-1
+      ACTOR4K_NODES: bank-1::bank-1:6000,bank-2::bank-2:6000,bank-3::bank-3:6000
+    ports:
+      - "9001:6000"
+    networks:
+      loadbalancing:
+  bank-2:
+    image: microbank
+    restart: unless-stopped
+    environment:
+      ACTOR4K_CURRENT_NODE: bank-2
+      ACTOR4K_NODES: bank-1::bank-1:6000,bank-2::bank-2:6000,bank-3::bank-3:6000
+    ports:
+      - "9002:6000"
+    networks:
+      loadbalancing:
+  bank-3:
+    image: microbank
+    restart: unless-stopped
+    environment:
+      ACTOR4K_CURRENT_NODE: bank-3
+      ACTOR4K_NODES: bank-1::bank-1:6000,bank-2::bank-2:6000,bank-3::bank-3:6000
+    ports:
+      - "9003:6000"
+    networks:
+      loadbalancing:
+networks:
+  loadbalancing:

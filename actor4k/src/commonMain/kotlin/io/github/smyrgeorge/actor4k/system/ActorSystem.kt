@@ -12,6 +12,7 @@ import io.github.smyrgeorge.actor4k.util.extentions.registerShutdownHook
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -138,18 +139,19 @@ object ActorSystem {
      * and initialized. Validates the state of the system and transitions it to the `READY` status.
      * If the system is configured as a cluster, the cluster's lifecycle is also initiated.
      *
-     * @return The initialized and ready-to-use `ActorSystem` instance.
      * @throws IllegalStateException if the logger factory, stats collector, or actor registry
      * is not registered, or if the system is not in the `NOT_READY` status.
+     *
+     * @param wait If `true`, the method blocks until the server is fully started.
+     *             If `false`, it returns immediately after invoking the server's start mechanism.
      */
-    fun start(): ActorSystem {
+    fun start(wait: Boolean = false) {
         if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
         if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.")
         if (!this::_stats.isInitialized) error("Please register a stats collector.")
         if (!this::_registry.isInitialized) error("Please register an actor registry.")
-        if (isCluster()) cluster.start()
         _status = Status.READY
-        return this
+        if (isCluster()) cluster.start(wait)
     }
 
     /**
@@ -170,12 +172,10 @@ object ActorSystem {
 
         registry.shutdown()
 
-        if (isCluster()) {
-            log.info("Informing cluster that we are about to leave..")
-            cluster.shutdown()
-        }
+        if (isCluster()) cluster.shutdown()
 
         // Wait for all actors to finish.
+        delay(100.milliseconds)
         while (registry.size() > 0) {
             log.info("Waiting ${registry.size()} actors to finish...")
             delay(1.seconds)

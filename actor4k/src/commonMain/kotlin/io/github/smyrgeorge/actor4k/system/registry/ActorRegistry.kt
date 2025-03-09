@@ -168,7 +168,7 @@ abstract class ActorRegistry {
      * @return Unit A coroutine completion indicating that all local actors have been successfully shut down.
      */
     suspend fun shutdown(): Unit = lock {
-        log.debug("Stopping all local actors (size={})...", registry.size)
+        log.info("Stopping all local actors (size={})...", registry.size)
         registry.values.forEach { it.shutdown() }
     }
 
@@ -193,7 +193,7 @@ abstract class ActorRegistry {
      * @param factory A lambda function that takes a string key as a parameter and returns an instance of the actor.
      * @return The updated ActorRegistry instance.
      */
-    fun factoryFor(actor: AnyActorClass, factory: ActorFactory): ActorRegistry {
+    open fun factoryFor(actor: AnyActorClass, factory: ActorFactory): ActorRegistry {
         if (ActorSystem.status == ActorSystem.Status.READY) error("Cannot register a factory while the system is ready.")
         factories[actor.qualifiedName!!] = factory
         return this

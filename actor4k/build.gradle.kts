@@ -1,6 +1,7 @@
 plugins {
     id("io.github.smyrgeorge.actor4k.multiplatform")
     id("io.github.smyrgeorge.actor4k.publish")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -13,6 +14,7 @@ kotlin {
             dependencies {
                 api(libs.kotlinx.datetime)
                 api(libs.kotlinx.coroutines.core)
+                api(libs.kotlinx.serialization.core)
             }
         }
         @Suppress("unused")

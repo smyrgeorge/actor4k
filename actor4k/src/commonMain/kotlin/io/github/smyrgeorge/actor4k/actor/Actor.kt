@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
@@ -274,9 +275,9 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * timestamp of the message. It includes utility methods for determining message-specific states, such
      * as whether it is the first message.
      */
+    @Serializable
     abstract class Message {
-        private var _id: Long = -1
-        val id: Long get() = _id
+        var id: Long = -1L
 
         @Suppress("unused")
         val createdAt: Instant = Clock.System.now()
@@ -294,7 +295,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
          * @param id the identifier to be assigned to the message. This value will be stored and can be retrieved using the `id` property.
          */
         internal fun setId(id: Long) {
-            _id = id
+            this.id = id
         }
 
         /**
@@ -307,6 +308,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
          * Subclasses are expected to define their own structure and functionality, extending the core
          * capabilities provided by this abstract class.
          */
+        @Serializable
         abstract class Response : Message()
     }
 
@@ -370,6 +372,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      *
      * @property canAcceptMessages Indicates whether the actor can process incoming messages in this state.
      */
+    @Serializable
     enum class Status(
         val canAcceptMessages: Boolean
     ) {
@@ -393,6 +396,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @property lastMessageAt The timestamp when the last message was processed by the actor.
      * @property receivedMessages The total number of messages received and processed by the actor.
      */
+    @Serializable
     data class Stats(
         var createdAt: Instant = Clock.System.now(),
         var initializedAt: Instant? = null,

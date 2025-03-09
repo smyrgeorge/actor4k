@@ -95,5 +95,10 @@ class LocalRef : ActorRef {
      */
     private suspend fun actor(): AnyActor = actor ?: ActorSystem.registry.getLocalActor(this)
 
+    /**
+     * Provides the string representation of the `LocalRef` instance.
+     *
+     * @return A string in the format "LocalRef(address)", where `address` is the unique address of the actor.
+     */
     override fun toString(): String = "LocalRef($address)"
 }

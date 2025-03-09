@@ -62,4 +62,11 @@ abstract class ActorRef(
      * are released during this process.
      */
     abstract suspend fun shutdown()
+
+    /**
+     * Returns the string representation of the actor reference.
+     *
+     * @return A string that represents the actor reference, typically including its unique address.
+     */
+    abstract override fun toString(): String
 }

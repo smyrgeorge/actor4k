@@ -13,8 +13,7 @@ class PublishConventions : Plugin<Project> {
 
     private val descriptions: Map<String, String> = mapOf(
         "actor4k" to "A small actor system written in kotlin using Coroutines (kotlinx.coroutines).",
-        "actor4k-rt-kmp" to "A small actor system written in kotlin using Coroutines (kotlinx.coroutines).",
-        "actor4k-rt-jvm" to "A small actor system written in kotlin using Coroutines (kotlinx.coroutines).",
+        "actor4k-cluster" to "A small actor system written in kotlin using Coroutines (kotlinx.coroutines).",
     )
 
     override fun apply(project: Project) {

@@ -1,4 +1,3 @@
-import io.github.smyrgeorge.actor4k.examples.Main
+import io.github.smyrgeorge.actor4k.examples.ActorTest
 
-
-fun main() = Main.run()
+fun main() = ActorTest.run()
