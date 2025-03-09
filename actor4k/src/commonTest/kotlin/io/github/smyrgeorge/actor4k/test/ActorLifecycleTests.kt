@@ -67,7 +67,7 @@ class ActorLifecycleTests {
     @Test
     fun `Ask something an actor`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
-        val res: Protocol.Req.Resp = ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!"))
+        val res: Protocol.Req.Resp = ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")).getOrThrow()
         assertThat(res.message).isEqualTo("Pong!")
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.stats().receivedMessages).isEqualTo(1)
@@ -111,7 +111,7 @@ class ActorLifecycleTests {
         val ref = ActorSystem.get(SlowActivateWithErrorInActivationAccountActor::class, ACC0000)
         val errors = listOf(1, 2, 3, 4).map {
             async {
-                val res = runCatching { ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")) }.exceptionOrNull()
+                val res = ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")).exceptionOrNull()
                 res?.message ?: ""
             }
         }.awaitAll()
@@ -129,7 +129,7 @@ class ActorLifecycleTests {
         ).awaitAll().first()
 
         val res = listOf(1, 2, 3, 4).map {
-            async { ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")).message }
+            async { ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")).getOrThrow().message }
         }.awaitAll()
 
         assertThat(registry.size()).isEqualTo(1)

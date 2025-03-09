@@ -9,6 +9,7 @@ import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("unused")
 class ActorTest
@@ -57,13 +58,13 @@ object Main {
         // [Tell] something to the actor (asynchronous operation).
         actor.tell(Protocol.Req(message = "[tell] Hello World!"))
         // [Ask] something to the actor (synchronous operation).
-        val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!"))
+        val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!")).getOrThrow()
         println(res)
 
         val a2 = ActorSystem.get(AccountActor::class, "ACC0010")
         println(a2.status())
         a2.shutdown()
-        delay(1000)
+        delay(1.seconds)
 
         ActorSystem.get(AccountActor::class, "ACC0030")
 

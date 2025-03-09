@@ -180,7 +180,7 @@ object ActorSystem {
         // Wait for all actors to finish.
         while (registry.size() > 0) {
             log.info("Waiting ${registry.size()} actors to finish...")
-            delay(1000)
+            delay(1.seconds)
         }
 
         // Reset cluster's status.

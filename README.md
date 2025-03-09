@@ -106,7 +106,7 @@ val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
 // [Tell] something to the actor (asynchronous operation).
 actor.tell(Protocol.Req(message = "[tell] Hello World!"))
 // [Ask] something to the actor (synchronous operation).
-val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!"))
+val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!")).getOrThrow()
 println(res)
 ```
 

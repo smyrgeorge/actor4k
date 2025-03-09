@@ -164,31 +164,26 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     }
 
     /**
-     * Sends a message to the actor and obtains a response synchronously within a specified timeout.
+     * Sends a message to an actor and awaits a response.
      *
-     * The `ask` function enables a requester to send a message to an actor and wait for a response.
-     * It ensures that the actor is in a state to accept messages before proceeding. If the actor
-     * is unable to process the message (due to its current status or an invalid message type), an
-     * exception is thrown.
+     * This method ensures that the actor is in a state to accept messages before attempting to send. If the
+     * actor is not in a suitable state to process messages, an error is thrown. It uses the `Ask` pattern
+     * to send the message and receive a response. The operation is limited by a specified timeout, and the
+     * response is returned as a result of type `Message.Response`.
      *
-     * The message is sent using the `Ask` pattern, allowing communication in a request-response
-     * manner. The function suspends until a response is received or the timeout duration elapses.
-     *
-     * @param msg The message to send to the actor. It must match the expected message type.
-     * @param timeout The duration within which the actor must respond. Defaults to the actor system's
-     *                configuration for ask timeout.
-     * @return The response from the actor, cast to the expected type `R`.
-     * @throws IllegalStateException If the actor cannot accept messages due to its current status.
-     * @throws ClassCastException If the message or response cannot be cast to the expected types.
+     * @param msg The message to be sent to the actor. It must be an instance of the `Message` class or its subclass.
+     * @param timeout The duration within which the response must be received. Defaults to `ActorSystem.conf.actorAskTimeout`.
+     * @return A `Result` containing the response of type `Message.Response`, or an error if a failure occurs during processing.
+     * @throws IllegalStateException If the actor is unable to accept messages due to its current status.
      */
-    suspend fun ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): Message.Response {
+    suspend fun ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): Result<Message.Response> {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         @Suppress("UNCHECKED_CAST") (msg as Req)
         val ask = Patterns.Ask<Req, Res>(msg)
         return try {
             withTimeout(timeout) {
                 mail.send(ask)
-                ask.replyTo.receive().getOrThrow()
+                ask.replyTo.receive()
             }
         } finally {
             ask.replyTo.close()

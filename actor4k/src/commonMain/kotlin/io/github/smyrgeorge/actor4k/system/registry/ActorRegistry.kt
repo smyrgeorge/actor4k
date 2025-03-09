@@ -7,6 +7,7 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.ActorFactory
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
+import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
 import io.github.smyrgeorge.actor4k.util.extentions.forever
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -187,7 +188,7 @@ abstract class ActorRegistry {
      * @param factory A lambda function that takes a string key as a parameter and returns an instance of the actor.
      * @return The updated ActorRegistry instance.
      */
-    fun factoryFor(actor: KClass<out AnyActor>, factory: ActorFactory): ActorRegistry {
+    fun factoryFor(actor: AnyActorClass, factory: ActorFactory): ActorRegistry {
         if (ActorSystem.status == ActorSystem.Status.READY) error("Cannot register a factory while the system is ready.")
         factories[actor.qualifiedName!!] = factory
         return this
@@ -201,7 +202,7 @@ abstract class ActorRegistry {
      * @return A lambda function that takes a string key and returns an instance of the specified actor type.
      * @throws IllegalStateException if no factory is registered for the provided actor type.
      */
-    private fun factoryOf(actor: KClass<out AnyActor>): ActorFactory =
+    private fun factoryOf(actor: AnyActorClass): ActorFactory =
         factories[actor.qualifiedName!!] ?: error("No factory registered for ${actor.qualifiedName!!}.")
 
     /**
