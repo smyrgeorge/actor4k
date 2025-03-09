@@ -30,8 +30,8 @@ class LocalRef : ActorRef {
      * @param actor The actor instance to be referenced.
      */
     internal constructor(address: Address, actor: AnyActor) : super(address) {
-        this.actor = actor
         this.clazz = actor::class
+        this.actor = actor
     }
 
     /**
