@@ -134,15 +134,10 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
                 }
 
                 // Consume flow.
-                val reply: Result<Res> = runCatching { onReceive(msg) }
+                val reply: Result<Res> = runCatching { onReceive(msg).apply { setId(stats.receivedMessages) } }
                 when (it) {
                     is Patterns.Tell -> Unit
-                    is Patterns.Ask -> {
-                        val r: Result<Res> =
-                            if (reply.isSuccess) Result.success(reply.getOrThrow())
-                            else Result.failure(reply.exceptionOrNull()!!)
-                        reply(operation = "consume", pattern = it, reply = r)
-                    }
+                    is Patterns.Ask -> reply(operation = "consume", pattern = it, reply = reply)
                 }
             }
         }
@@ -161,7 +156,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @throws IllegalStateException If the actor is unable to accept messages due to its current status.
      * @throws ClassCastException If the message cannot be cast to the expected type.
      */
-    suspend fun tell(msg: Any) {
+    suspend fun tell(msg: Message) {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         @Suppress("UNCHECKED_CAST") (msg as Req)
         val tell = Patterns.Tell(msg)
@@ -186,15 +181,14 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @throws IllegalStateException If the actor cannot accept messages due to its current status.
      * @throws ClassCastException If the message or response cannot be cast to the expected types.
      */
-    suspend fun ask(msg: Any, timeout: Duration = ActorSystem.conf.actorAskTimeout): Res {
+    suspend fun ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): Message.Response {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         @Suppress("UNCHECKED_CAST") (msg as Req)
         val ask = Patterns.Ask(msg)
         return try {
             withTimeout(timeout) {
                 mail.send(ask)
-                val reply = ask.replyTo.receive().getOrThrow()
-                @Suppress("UNCHECKED_CAST") (reply as Res)
+                ask.replyTo.receive().getOrThrow()
             }
         } finally {
             ask.replyTo.close()
@@ -211,7 +205,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @param pattern The `Ask` pattern containing the message payload and the channel for sending a response.
      * @param reply The result to be sent as a reply, encapsulated in a `Result` type.
      */
-    private suspend fun reply(operation: String, pattern: Patterns.Ask<*>, reply: Result<Any>) {
+    private suspend fun reply(operation: String, pattern: Patterns.Ask<*>, reply: Result<Res>) {
         try {
             // We should be able to reply immediately.
             withTimeout(2.seconds) {
@@ -318,7 +312,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
          * Subclasses are expected to define their own structure and functionality, extending the core
          * capabilities provided by this abstract class.
          */
-        abstract class Response
+        abstract class Response : Message()
     }
 
     /**
@@ -363,7 +357,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
          */
         class Ask<Req : Message>(
             override val msg: Req,
-            val replyTo: Channel<Result<Any>> = Channel(Channel.RENDEZVOUS)
+            val replyTo: Channel<Result<Message.Response>> = Channel(Channel.RENDEZVOUS)
         ) : Patterns<Req>
     }
 
@@ -447,7 +441,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
             is Patterns.Ask -> {
                 val e = initializationFailed
                     ?: IllegalStateException("Actor is prematurely closed (could not be initialized).")
-                val r: Result<Any> = Result.failure(e)
+                val r: Result<Res> = Result.failure(e)
                 reply(operation = "activate", pattern = pattern, reply = r)
             }
         }

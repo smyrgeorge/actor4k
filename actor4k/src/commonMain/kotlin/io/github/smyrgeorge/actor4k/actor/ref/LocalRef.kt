@@ -50,10 +50,8 @@ class LocalRef : ActorRef {
      * @param timeout the maximum duration to wait for a response.
      * @return the response received from the actor.
      */
-    override suspend fun <Res> ask(msg: Actor.Message, timeout: Duration): Res {
-        @Suppress("UNCHECKED_CAST")
-        return actor().ask(msg, timeout) as Res
-    }
+    override suspend fun <Res : Actor.Message.Response> ask(msg: Actor.Message, timeout: Duration): Res =
+        @Suppress("UNCHECKED_CAST") (actor().ask(msg, timeout) as Res)
 
     /**
      * Retrieves the current status of the actor associated with this `LocalRef`.

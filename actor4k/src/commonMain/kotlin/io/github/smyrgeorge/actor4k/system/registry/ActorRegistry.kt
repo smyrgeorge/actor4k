@@ -56,7 +56,7 @@ abstract class ActorRegistry {
      * Factory functions are registered via the `register` method and retrieved through the `factory` method.
      * It is used to manage the creation of actor instances dynamically within the `ActorRegistry`.
      */
-    private val factories: MutableMap<String, (key: String) -> AnyActor> = mutableMapOf()
+    private val factories: MutableMap<String, ActorFactory> = mutableMapOf()
 
     init {
         forever(ActorSystem.conf.registryCleanupEvery) { stopLocalExpired() }
