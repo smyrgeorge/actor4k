@@ -27,7 +27,7 @@ import kotlin.time.Duration.Companion.seconds
  *
  * @property key the key identifying the actor.
  */
-abstract class Actor<M : Actor.Message>(
+abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     open val key: String
 ) {
     protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
@@ -37,7 +37,7 @@ abstract class Actor<M : Actor.Message>(
     private var initializationFailed: Exception? = null
     private val address: Address by lazy { Address.of(this::class, key) }
     private val ref: LocalRef by lazy { LocalRef(address = address, actor = this) }
-    private val mail: Channel<Patterns<M>> = Channel(capacity = ActorSystem.conf.actorQueueSize)
+    private val mail: Channel<Patterns<Req>> = Channel(capacity = ActorSystem.conf.actorQueueSize)
 
     /**
      * Hook called before the actor is activated.
@@ -64,20 +64,15 @@ abstract class Actor<M : Actor.Message>(
      *
      * @param m The initial message used to activate and initialize the actor.
      */
-    open suspend fun onActivate(m: M) {}
+    open suspend fun onActivate(m: Req) {}
 
     /**
-     * Processes an incoming message and generates a response.
+     * Handles the receipt of a message and processes it to produce a response.
      *
-     * This method is responsible for handling the content of the incoming `Message` and producing
-     * a corresponding `Response` using the provided `Response.Builder`. It is called for each
-     * message the `Actor` consumes after it has been activated.
-     *
-     * @param m the incoming message to be processed.
-     * @param r the builder for constructing the response.
-     * @return the constructed response after processing the message.
+     * @param m The incoming request message of type [Req] that needs to be processed.
+     * @return The response of type [Res] generated after processing the message.
      */
-    abstract suspend fun onReceive(m: M, r: Response.Builder): Response
+    abstract suspend fun onReceive(m: Req): Res
 
     /**
      * Activates the actor and starts the message consumption process.
@@ -139,12 +134,12 @@ abstract class Actor<M : Actor.Message>(
                 }
 
                 // Consume flow.
-                val reply: Result<Response> = runCatching { onReceive(msg, Response.Builder()) }
+                val reply: Result<Res> = runCatching { onReceive(msg) }
                 when (it) {
                     is Patterns.Tell -> Unit
                     is Patterns.Ask -> {
-                        val r: Result<Any> =
-                            if (reply.isSuccess) Result.success(reply.getOrThrow().value)
+                        val r: Result<Res> =
+                            if (reply.isSuccess) Result.success(reply.getOrThrow())
                             else Result.failure(reply.exceptionOrNull()!!)
                         reply(operation = "consume", pattern = it, reply = r)
                     }
@@ -168,8 +163,7 @@ abstract class Actor<M : Actor.Message>(
      */
     suspend fun tell(msg: Any) {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
-        @Suppress("UNCHECKED_CAST")
-        msg as? M ?: throw ClassCastException("Could not cast to the expected type, m = $msg.")
+        @Suppress("UNCHECKED_CAST") (msg as Req)
         val tell = Patterns.Tell(msg)
         mail.send(tell)
     }
@@ -192,17 +186,15 @@ abstract class Actor<M : Actor.Message>(
      * @throws IllegalStateException If the actor cannot accept messages due to its current status.
      * @throws ClassCastException If the message or response cannot be cast to the expected types.
      */
-    suspend fun <R> ask(msg: Any, timeout: Duration = ActorSystem.conf.actorAskTimeout): R {
+    suspend fun ask(msg: Any, timeout: Duration = ActorSystem.conf.actorAskTimeout): Res {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
-        @Suppress("UNCHECKED_CAST")
-        msg as? M ?: throw ClassCastException("Could not cast to the expected type, m = $msg.")
+        @Suppress("UNCHECKED_CAST") (msg as Req)
         val ask = Patterns.Ask(msg)
         return try {
             withTimeout(timeout) {
                 mail.send(ask)
                 val reply = ask.replyTo.receive().getOrThrow()
-                @Suppress("UNCHECKED_CAST")
-                reply as? R ?: throw ClassCastException("Could not cast to the requested type.")
+                @Suppress("UNCHECKED_CAST") (reply as Res)
             }
         } finally {
             ask.replyTo.close()
@@ -315,41 +307,18 @@ abstract class Actor<M : Actor.Message>(
         internal fun setId(id: Long) {
             _id = id
         }
-    }
 
-    /**
-     * Represents a response returned from an actor after processing a message.
-     * This class encapsulates a result value of type `Any`.
-     *
-     * The `Response` class has a companion `Builder` class, which allows for
-     * a step-by-step construction of a `Response` object using a fluent API.
-     *
-     * @property value The encapsulated value of the response, which can be of any type.
-     */
-    class Response(
-        val value: Any
-    ) {
         /**
-         * A builder class for constructing instances of the `Response` class.
+         * Represents an abstract base class for response messages.
          *
-         * This class enables a step-by-step, fluent approach to setting the properties
-         * of a `Response` object before creating an instance of it. The primary method of the
-         * builder is `value`, which assigns a value to the `Response`. To complete the building
-         * process, the `build` method is used to generate the `Response` instance.
+         * Response acts as a foundation for defining custom response types in the messaging or actor-based
+         * communication system. It inherits from `Message.Response` and allows the implementation of
+         * domain-specific responses that can be utilized in various messaging scenarios.
          *
-         * Methods:
-         * - `value(v: Any): Builder`: Sets the value for the `Response` to be built and returns the builder instance for chaining.
-         * - `build(): Response`: Constructs a `Response` instance using the value set in the builder.
+         * Subclasses are expected to define their own structure and functionality, extending the core
+         * capabilities provided by this abstract class.
          */
-        class Builder {
-            private lateinit var value: Any
-            fun value(v: Any): Builder {
-                value = v
-                return this
-            }
-
-            fun build(): Response = Response(value)
-        }
+        abstract class Response
     }
 
     /**
@@ -364,8 +333,8 @@ abstract class Actor<M : Actor.Message>(
      * These patterns are consumed and processed within the `Actor` class's message handling logic.
      * Specifically, `Ask` allows sending responses back to the sender using its `replyTo` property.
      */
-    private sealed interface Patterns<M : Message> {
-        val msg: M
+    private sealed interface Patterns<Req : Message> {
+        val msg: Req
 
         /**
          * Represents a one-way communication pattern for sending messages between actors.
@@ -378,9 +347,9 @@ abstract class Actor<M : Actor.Message>(
          *
          * @property msg The payload of the message being sent.
          */
-        class Tell<M : Message>(
-            override val msg: M
-        ) : Patterns<M>
+        class Tell<Req : Message>(
+            override val msg: Req
+        ) : Patterns<Req>
 
         /**
          * Represents a request-response communication pattern used for interactions between actors.
@@ -392,10 +361,10 @@ abstract class Actor<M : Actor.Message>(
          * @property replyTo A channel used to send the response back to the sender. The channel uses a rendezvous
          * approach to manage communication between the sender and recipient.
          */
-        class Ask<M : Message>(
-            override val msg: M,
+        class Ask<Req : Message>(
+            override val msg: Req,
             val replyTo: Channel<Result<Any>> = Channel(Channel.RENDEZVOUS)
-        ) : Patterns<M>
+        ) : Patterns<Req>
     }
 
     /**

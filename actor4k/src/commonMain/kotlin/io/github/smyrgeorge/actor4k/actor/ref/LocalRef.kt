@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.actor.ref
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
 import kotlin.reflect.KClass
 import kotlin.time.Duration
 
@@ -19,8 +20,8 @@ import kotlin.time.Duration
  */
 class LocalRef : ActorRef {
 
-    private var actor: Actor<*>?
-    val clazz: KClass<out Actor<*>>
+    private var actor: AnyActor?
+    val clazz: KClass<out AnyActor>
 
     /**
      * Creates a new `LocalRef` instance.
@@ -28,7 +29,7 @@ class LocalRef : ActorRef {
      * @param address The unique `Address` of the actor in the actor system.
      * @param actor The actor instance to be referenced.
      */
-    internal constructor(address: Address, actor: Actor<*>) : super(address) {
+    internal constructor(address: Address, actor: AnyActor) : super(address) {
         this.actor = actor
         this.clazz = actor::class
     }
@@ -42,17 +43,17 @@ class LocalRef : ActorRef {
     override suspend fun tell(msg: Actor.Message): Unit = actor().tell(msg)
 
     /**
-     * Sends a message to the actor and waits for a response within the specified duration.
+     * Sends a message to the associated actor and awaits a response within the specified timeout period.
      *
-     * This method implements the 'Ask' pattern where a message is sent to the actor
-     * and a response is awaited. If the actor does not respond within the provided
-     * timeout, the operation will be canceled.
-     *
-     * @param msg The message to be sent to the actor.
-     * @param timeout The maximum duration to wait for a response.
-     * @return The response from the actor, cast to the specified type `R`.
+     * @param Res the type of the expected response.
+     * @param msg the message to be sent to the actor.
+     * @param timeout the maximum duration to wait for a response.
+     * @return the response received from the actor.
      */
-    override suspend fun <R> ask(msg: Actor.Message, timeout: Duration): R = actor().ask(msg, timeout)
+    override suspend fun <Res> ask(msg: Actor.Message, timeout: Duration): Res {
+        @Suppress("UNCHECKED_CAST")
+        return actor().ask(msg, timeout) as Res
+    }
 
     /**
      * Retrieves the current status of the actor associated with this `LocalRef`.
@@ -95,7 +96,7 @@ class LocalRef : ActorRef {
      *
      * @return The actor instance associated with this `LocalRef`.
      */
-    private suspend fun actor(): Actor<*> = actor ?: ActorSystem.registry.getLocalActor(this)
+    private suspend fun actor(): AnyActor = actor ?: ActorSystem.registry.getLocalActor(this)
 
     override fun toString(): String = "LocalRef($address)"
 }
