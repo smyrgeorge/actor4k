@@ -7,6 +7,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor
+import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.test.actor.InitMethodFailsAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.NotRegisteredAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.OnBeforeActivateFailsAccountActor
@@ -54,7 +55,7 @@ class ActorRegistryLifecycleTests {
         workers.forEachParallel {
             repeat(100) {
                 val ref = registry.get(AccountActor::class, ACC0001)
-                ref.tell(AccountActor.Req("Ping!"))
+                ref.tell(Protocol.Req("Ping!"))
             }
         }
 

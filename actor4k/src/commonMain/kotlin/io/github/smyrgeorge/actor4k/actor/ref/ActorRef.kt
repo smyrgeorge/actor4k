@@ -19,16 +19,16 @@ abstract class ActorRef(
      *
      * @param msg The message to be sent to the actor.
      */
-    abstract suspend fun tell(msg: Any)
+    abstract suspend fun tell(msg: Actor.Message)
 
     /**
      * Sends a message to the actor and waits for a response within the specified duration.
      *
      * @param msg The message to be sent to the actor.
-     * @param duration The maximum duration to wait for a response.
+     * @param timeout The maximum duration to wait for a response.
      * @return The response received from the actor.
      */
-    abstract suspend fun <R> ask(msg: Any, duration: Duration): R
+    abstract suspend fun <R> ask(msg: Actor.Message, timeout: Duration): R
 
     /**
      * Sends a message to the actor and waits for a response.
@@ -36,7 +36,7 @@ abstract class ActorRef(
      * @param msg The message to be sent to the actor.
      * @return The response returned by the actor.
      */
-    suspend fun <R> ask(msg: Any): R = ask(msg, ActorSystem.conf.actorAskTimeout)
+    suspend fun <R> ask(msg: Actor.Message): R = ask(msg, ActorSystem.conf.actorAskTimeout)
 
     /**
      * Retrieves the current status of the actor associated with this `LocalRef`.

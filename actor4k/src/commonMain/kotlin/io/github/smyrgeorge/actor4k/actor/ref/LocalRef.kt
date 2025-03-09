@@ -39,7 +39,7 @@ class LocalRef : ActorRef {
      * @param msg the message to be sent
      * @return Unit
      */
-    override suspend fun tell(msg: Any): Unit = actor().tell(msg)
+    override suspend fun tell(msg: Actor.Message): Unit = actor().tell(msg)
 
     /**
      * Sends a message to the actor and waits for a response within the specified duration.
@@ -49,10 +49,10 @@ class LocalRef : ActorRef {
      * timeout, the operation will be canceled.
      *
      * @param msg The message to be sent to the actor.
-     * @param duration The maximum duration to wait for a response.
+     * @param timeout The maximum duration to wait for a response.
      * @return The response from the actor, cast to the specified type `R`.
      */
-    override suspend fun <R> ask(msg: Any, duration: Duration): R = actor().ask(msg, duration)
+    override suspend fun <R> ask(msg: Actor.Message, timeout: Duration): R = actor().ask(msg, timeout)
 
     /**
      * Retrieves the current status of the actor associated with this `LocalRef`.

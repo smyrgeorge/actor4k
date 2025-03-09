@@ -79,26 +79,33 @@ class AccountActor(override val key: String) : Actor(key) {
     }
 
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {
-        val msg = m.cast<Req>()
+        val msg = m.cast<Protocol>()
         log.info("[${address()}] onReceive: $msg")
-        val res = Resp("Pong!")
+        val res = when (msg) {
+            is Protocol.Req -> Protocol.Req.Resp("Pong!")
+        }
         return r.value(res).build()
     }
 
-    data class Req(val msg: String)
-    data class Resp(val msg: String)
+    sealed class Protocol : Message() {
+        data class Req(val message: String) : Protocol() {
+            data class Resp(val message: String)
+        }
+    }
 }
 ```
 
 Now let's send some messages:
 
 ```kotlin
+import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
+
 // [Create/Get] the desired actor from the registry.
 val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
-// [Tell] something to the actor (asynchronous operation). 
-actor.tell(AccountActor.Req(msg = "[tell] Hello World!"))
+// [Tell] something to the actor (asynchronous operation).
+actor.tell(Protocol.Req(message = "[tell] Hello World!"))
 // [Ask] something to the actor (synchronous operation).
-val res = actor.ask<AccountActor.Resp>(AccountActor.Req(msg = "[ask] Ping!"))
+val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!"))
 println(res)
 ```
 

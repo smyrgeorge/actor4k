@@ -108,6 +108,9 @@ abstract class Actor(
         // Start the mail consumer.
         launch {
             mail.consumeEach {
+                stats.lastMessageAt = Clock.System.now()
+                stats.receivedMessages += 1
+
                 // Case that activation flow failed and we still have messages to consume.
                 // If we get a shutdown event and the actor never initialized successfully,
                 // we need to reply with an error and to drop all the messages.
@@ -116,10 +119,7 @@ abstract class Actor(
                     return@consumeEach
                 }
 
-                stats.lastMessageAt = Clock.System.now()
-                stats.receivedMessages += 1
-
-                val msg = Message(stats.receivedMessages, it.msg)
+                val msg = it.msg.apply { id = stats.receivedMessages }
 
                 // Activation flow.
                 if (msg.isFirst()) {
@@ -158,7 +158,7 @@ abstract class Actor(
      *
      * @param msg the message to be sent
      */
-    suspend fun <C : Any> tell(msg: C) {
+    suspend fun tell(msg: Message) {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         val tell = Patterns.Tell(msg)
         mail.send(tell)
@@ -177,7 +177,7 @@ abstract class Actor(
      * @throws TimeoutCancellationException If the actor does not reply within the provided timeout.
      * @throws ClassCastException If the response cannot be cast to the expected type `R`.
      */
-    suspend fun <C : Any, R> ask(msg: C, timeout: Duration = ActorSystem.conf.actorAskTimeout): R {
+    suspend fun <R> ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): R {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         val ask = Patterns.Ask(msg)
         return try {
@@ -270,19 +270,18 @@ abstract class Actor(
     fun ref(): LocalRef = ref
 
     /**
-     * Represents a message with an identifier and a value.
+     * Represents a base structure for a message that can be exchanged within the system.
      *
-     * This class is primarily utilized in actor-based systems to encapsulate messages
-     * exchanged between actors. Each message is identified by a unique identifier
-     * and can hold a value of any type.
-     *
-     * @property id Unique identifier of the message.
-     * @property value The value or payload of the message, which can be of any type.
+     * This abstract class provides foundational elements for constructing and managing messages,
+     * including an identifier and creation timestamp. Subclasses may implement additional
+     * properties and behaviors specific to their use cases.
      */
-    data class Message(
-        val id: Long,
-        private val value: Any
-    ) {
+    abstract class Message {
+        internal var id: Long = -1
+
+        @Suppress("unused")
+        val createdAt: Instant = Clock.System.now()
+
         /**
          * Casts the encapsulated value of the message to the specified type.
          *
@@ -294,7 +293,7 @@ abstract class Actor(
          * @throws IllegalStateException if the value cannot be cast to the requested type.
          */
         @Suppress("UNCHECKED_CAST")
-        fun <T> cast(): T = value as? T ?: error("Could not cast to the requested type.")
+        fun <T> cast(): T = this as? T ?: error("Could not cast to the requested type.")
 
         /**
          * Determines if the current message is the first one.
@@ -313,7 +312,7 @@ abstract class Actor(
      *
      * @property value The encapsulated value of the response, which can be of any type.
      */
-    data class Response(
+    class Response(
         val value: Any
     ) {
         /**
@@ -352,7 +351,7 @@ abstract class Actor(
      * Specifically, `Ask` allows sending responses back to the sender using its `replyTo` property.
      */
     private sealed interface Patterns {
-        val msg: Any
+        val msg: Message
 
         /**
          * Represents a one-way communication pattern for sending messages between actors.
@@ -365,8 +364,8 @@ abstract class Actor(
          *
          * @property msg The payload of the message being sent.
          */
-        data class Tell(
-            override val msg: Any
+        class Tell(
+            override val msg: Message
         ) : Patterns
 
         /**
@@ -379,8 +378,8 @@ abstract class Actor(
          * @property replyTo A channel used to send the response back to the sender. The channel uses a rendezvous
          * approach to manage communication between the sender and recipient.
          */
-        data class Ask(
-            override val msg: Any,
+        class Ask(
+            override val msg: Message,
             val replyTo: Channel<Result<Any>> = Channel(Channel.RENDEZVOUS)
         ) : Patterns
     }

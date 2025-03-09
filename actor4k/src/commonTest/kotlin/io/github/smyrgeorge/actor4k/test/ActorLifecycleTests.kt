@@ -10,6 +10,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor
+import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.test.actor.SlowActivateAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.SlowActivateWithErrorInActivationAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
@@ -55,7 +56,7 @@ class ActorLifecycleTests {
     @Test
     fun `Tell something to an actor`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
-        ref.tell(AccountActor.Req("Ping!"))
+        ref.tell(Protocol.Req("Ping!"))
         val actor: Actor = registry.getLocalActor(ref as LocalRef)
         delay(100) // Ensure that the message is processed.
         assertThat(actor.stats().receivedMessages).isEqualTo(1)
@@ -65,8 +66,8 @@ class ActorLifecycleTests {
     @Test
     fun `Ask something an actor`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
-        val res: AccountActor.Resp = ref.ask<AccountActor.Resp>(AccountActor.Req("Ping!"))
-        assertThat(res.msg).isEqualTo("Pong!")
+        val res: Protocol.Req.Resp = ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!"))
+        assertThat(res.message).isEqualTo("Pong!")
         val actor: Actor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.stats().receivedMessages).isEqualTo(1)
         assertThat(actor.status()).isEqualTo(Actor.Status.READY)
@@ -97,7 +98,7 @@ class ActorLifecycleTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
-        assertFails { ref.tell(AccountActor.Req("Ping!")) }
+        assertFails { ref.tell(Protocol.Req("Ping!")) }
         delay(100) // Ensure that the actor shut down.
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
         assertThat(actor.stats().shutDownAt).isNotNull()
@@ -109,7 +110,7 @@ class ActorLifecycleTests {
         val ref = ActorSystem.get(SlowActivateWithErrorInActivationAccountActor::class, ACC0000)
         val errors = listOf(1, 2, 3, 4).map {
             async {
-                val res = runCatching { ref.ask<AccountActor.Resp>(AccountActor.Req("Ping!")) }.exceptionOrNull()
+                val res = runCatching { ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")) }.exceptionOrNull()
                 res?.message ?: ""
             }
         }.awaitAll()
@@ -127,7 +128,7 @@ class ActorLifecycleTests {
         ).awaitAll().first()
 
         val res = listOf(1, 2, 3, 4).map {
-            async { ref.ask<AccountActor.Resp>(AccountActor.Req("Ping!")).msg }
+            async { ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")).message }
         }.awaitAll()
 
         assertThat(registry.size()).isEqualTo(1)

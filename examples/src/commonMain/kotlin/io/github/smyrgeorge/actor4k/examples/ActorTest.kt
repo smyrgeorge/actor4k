@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
+import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
@@ -23,14 +24,19 @@ class AccountActor(override val key: String) : Actor(key) {
     }
 
     override suspend fun onReceive(m: Message, r: Response.Builder): Response {
-        val msg = m.cast<Req>()
+        val msg = m.cast<Protocol>()
         log.info("[${address()}] onReceive: $msg")
-        val res = Resp("Pong!")
+        val res = when (msg) {
+            is Protocol.Req -> Protocol.Req.Resp("Pong!")
+        }
         return r.value(res).build()
     }
 
-    data class Req(val msg: String)
-    data class Resp(val msg: String)
+    sealed class Protocol : Message() {
+        data class Req(val message: String) : Protocol() {
+            data class Resp(val message: String)
+        }
+    }
 }
 
 object Main {
@@ -48,9 +54,9 @@ object Main {
         // [Create/Get] the desired actor from the registry.
         val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
         // [Tell] something to the actor (asynchronous operation).
-        actor.tell(AccountActor.Req(msg = "[tell] Hello World!"))
+        actor.tell(Protocol.Req(message = "[tell] Hello World!"))
         // [Ask] something to the actor (synchronous operation).
-        val res = actor.ask<AccountActor.Resp>(AccountActor.Req(msg = "[ask] Ping!"))
+        val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!"))
         println(res)
 
         val a2 = ActorSystem.get(AccountActor::class, "ACC0010")
@@ -60,7 +66,7 @@ object Main {
 
         ActorSystem.get(AccountActor::class, "ACC0030")
 
-        val req = AccountActor.Req(msg = "[tell] Hello World!")
+        val req = Protocol.Req(message = "[tell] Hello World!")
         a2.tell(req) // Will re-create the actor.
     }
 }

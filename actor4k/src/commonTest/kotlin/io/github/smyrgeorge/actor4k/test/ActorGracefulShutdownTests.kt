@@ -9,7 +9,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.actor.AccountActor
+import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.test.actor.SlowProcessAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
 import kotlinx.coroutines.delay
@@ -30,7 +30,7 @@ class ActorGracefulShutdownTests {
     fun `Actor should graceful shutdown`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(SlowProcessAccountActor::class, ACC0000)
         assertThat(registry.size()).isEqualTo(1)
-        repeat(2) { ref.tell(AccountActor.Req("Ping!")) }
+        repeat(2) { ref.tell(Protocol.Req("Ping!")) }
         val actor: Actor = registry.getLocalActor(ref as LocalRef)
         delay(1000)
         actor.shutdown()
