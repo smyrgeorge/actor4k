@@ -37,7 +37,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     private var initializationFailed: Exception? = null
     private val address: Address by lazy { Address.of(this::class, key) }
     private val ref: LocalRef by lazy { LocalRef(address = address, actor = this) }
-    private val mail: Channel<Patterns<Req>> = Channel(capacity = ActorSystem.conf.actorQueueSize)
+    private val mail: Channel<Patterns<Req, Res>> = Channel(capacity = ActorSystem.conf.actorQueueSize)
 
     /**
      * Hook called before the actor is activated.
@@ -159,7 +159,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     suspend fun tell(msg: Message) {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         @Suppress("UNCHECKED_CAST") (msg as Req)
-        val tell = Patterns.Tell(msg)
+        val tell = Patterns.Tell<Req, Res>(msg)
         mail.send(tell)
     }
 
@@ -184,7 +184,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     suspend fun ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): Message.Response {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         @Suppress("UNCHECKED_CAST") (msg as Req)
-        val ask = Patterns.Ask(msg)
+        val ask = Patterns.Ask<Req, Res>(msg)
         return try {
             withTimeout(timeout) {
                 mail.send(ask)
@@ -205,7 +205,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @param pattern The `Ask` pattern containing the message payload and the channel for sending a response.
      * @param reply The result to be sent as a reply, encapsulated in a `Result` type.
      */
-    private suspend fun reply(operation: String, pattern: Patterns.Ask<*>, reply: Result<Res>) {
+    private suspend fun reply(operation: String, pattern: Patterns.Ask<Req, Res>, reply: Result<Res>) {
         try {
             // We should be able to reply immediately.
             withTimeout(2.seconds) {
@@ -327,7 +327,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * These patterns are consumed and processed within the `Actor` class's message handling logic.
      * Specifically, `Ask` allows sending responses back to the sender using its `replyTo` property.
      */
-    private sealed interface Patterns<Req : Message> {
+    private sealed interface Patterns<Req : Message, Res : Message.Response> {
         val msg: Req
 
         /**
@@ -341,9 +341,9 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
          *
          * @property msg The payload of the message being sent.
          */
-        class Tell<Req : Message>(
+        class Tell<Req : Message, Res : Message.Response>(
             override val msg: Req
-        ) : Patterns<Req>
+        ) : Patterns<Req, Res>
 
         /**
          * Represents a request-response communication pattern used for interactions between actors.
@@ -355,10 +355,10 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
          * @property replyTo A channel used to send the response back to the sender. The channel uses a rendezvous
          * approach to manage communication between the sender and recipient.
          */
-        class Ask<Req : Message>(
+        class Ask<Req : Message, Res : Message.Response>(
             override val msg: Req,
-            val replyTo: Channel<Result<Message.Response>> = Channel(Channel.RENDEZVOUS)
-        ) : Patterns<Req>
+            val replyTo: Channel<Result<Res>> = Channel(Channel.RENDEZVOUS)
+        ) : Patterns<Req, Res>
     }
 
     /**
@@ -435,7 +435,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
             stats.shutDownAt = Clock.System.now()
         }
 
-    private suspend fun replyActivationError(pattern: Patterns<*>) {
+    private suspend fun replyActivationError(pattern: Patterns<Req, Res>) {
         when (pattern) {
             is Patterns.Tell -> Unit
             is Patterns.Ask -> {
