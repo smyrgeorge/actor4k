@@ -119,7 +119,7 @@ abstract class Actor<M : Actor.Message>(
                     return@consumeEach
                 }
 
-                val msg = it.msg.apply { id = stats.receivedMessages }
+                val msg = it.msg.apply { setId(stats.receivedMessages) }
 
                 // Activation flow.
                 if (msg.isFirst()) {
@@ -287,14 +287,15 @@ abstract class Actor<M : Actor.Message>(
     fun ref(): LocalRef = ref
 
     /**
-     * Represents a base structure for a message that can be exchanged within the system.
+     * Represents an abstract message that can be used as a base class for custom message implementations.
      *
-     * This abstract class provides foundational elements for constructing and managing messages,
-     * including an identifier and creation timestamp. Subclasses may implement additional
-     * properties and behaviors specific to their use cases.
+     * The `Message` class provides functionality to manage an identifier (`id`) and track the creation
+     * timestamp of the message. It includes utility methods for determining message-specific states, such
+     * as whether it is the first message.
      */
     abstract class Message {
-        var id: Long = -1
+        private var _id: Long = -1
+        val id: Long get() = _id
 
         @Suppress("unused")
         val createdAt: Instant = Clock.System.now()
@@ -305,6 +306,15 @@ abstract class Actor<M : Actor.Message>(
          * @return `true` if the message's identifier (`id`) is `1L`, indicating it is the first message; `false` otherwise.
          */
         fun isFirst(): Boolean = id == 1L
+
+        /**
+         * Sets the unique identifier for the message.
+         *
+         * @param id the identifier to be assigned to the message. This value will be stored and can be retrieved using the `id` property.
+         */
+        internal fun setId(id: Long) {
+            _id = id
+        }
     }
 
     /**
