@@ -12,7 +12,6 @@ import io.github.smyrgeorge.actor4k.util.extentions.forever
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
-import kotlin.reflect.KClass
 
 /**
  * Abstract class responsible for managing the registry of `Actor` instances.
@@ -70,7 +69,7 @@ abstract class ActorRegistry {
      * @param key A unique string key associated with the actor.
      * @return An `ActorRef` corresponding to the requested actor type and key.
      */
-    open suspend fun <A : AnyActor> get(clazz: KClass<A>, key: String): ActorRef = getLocalActor(clazz, key).ref()
+    open suspend fun get(clazz: AnyActorClass, key: String): ActorRef = getLocalActor(clazz, key).ref()
 
     /**
      * Retrieves a local actor instance based on the provided `LocalRef`.
@@ -96,7 +95,7 @@ abstract class ActorRegistry {
      * @throws IllegalStateException If the ActorSystem is not in a READY state.
      * @throws Exception If an error occurs during the activation of a newly created actor.
      */
-    private suspend fun <A : AnyActor> getLocalActor(clazz: KClass<A>, key: String): AnyActor {
+    private suspend fun getLocalActor(clazz: AnyActorClass, key: String): AnyActor {
         // Calculate the actor address.
         val address: Address = Address.of(clazz, key)
 
