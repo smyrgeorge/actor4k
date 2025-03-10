@@ -69,8 +69,7 @@ abstract class ActorRegistry {
      * @param key A unique string key associated with the actor.
      * @return An `ActorRef` corresponding to the requested actor type and key.
      */
-    open suspend fun get(clazz: AnyActorClass, key: String): ActorRef =
-        getLocalActor(clazz, Address.of(clazz, key)).ref()
+    suspend fun get(clazz: AnyActorClass, key: String): ActorRef = get(clazz, Address.of(clazz, key))
 
     /**
      * Retrieves an `ActorRef` for the specified actor type and key.
