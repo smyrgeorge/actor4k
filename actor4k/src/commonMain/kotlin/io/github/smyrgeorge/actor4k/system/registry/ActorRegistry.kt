@@ -69,7 +69,17 @@ abstract class ActorRegistry {
      * @param key A unique string key associated with the actor.
      * @return An `ActorRef` corresponding to the requested actor type and key.
      */
-    open suspend fun get(clazz: AnyActorClass, key: String): ActorRef = getLocalActor(clazz, key).ref()
+    open suspend fun get(clazz: AnyActorClass, key: String): ActorRef =
+        getLocalActor(clazz, Address.of(clazz, key)).ref()
+
+    /**
+     * Retrieves an `ActorRef` for the specified actor type and key.
+     *
+     * @param clazz The class of the actor to be retrieved.
+     * @param address The address of the actor.
+     * @return An `ActorRef` corresponding to the requested actor type and key.
+     */
+    open suspend fun get(clazz: AnyActorClass, address: Address): ActorRef = getLocalActor(clazz, address).ref()
 
     /**
      * Retrieves a local actor instance based on the provided `LocalRef`.
@@ -80,7 +90,7 @@ abstract class ActorRegistry {
      * @param ref The `LocalRef` representing the actor, containing its class type and address key.
      * @return The actor instance corresponding to the provided `LocalRef`.
      */
-    internal suspend fun getLocalActor(ref: LocalRef): AnyActor = getLocalActor(ref.clazz, ref.address.key)
+    internal suspend fun getLocalActor(ref: LocalRef): AnyActor = getLocalActor(ref.clazz, ref.address)
 
     /**
      * Retrieves a local actor instance based on the specified actor class and unique key.
@@ -90,15 +100,12 @@ abstract class ActorRegistry {
      * it will be activated before being returned.
      *
      * @param clazz The class of the actor to be retrieved.
-     * @param key A unique string key identifying the actor instance.
+     * @param address The address of the actor.
      * @return The actor instance corresponding to the provided class type and key.
      * @throws IllegalStateException If the ActorSystem is not in a READY state.
      * @throws Exception If an error occurs during the activation of a newly created actor.
      */
-    private suspend fun getLocalActor(clazz: AnyActorClass, key: String): AnyActor {
-        // Calculate the actor address.
-        val address: Address = Address.of(clazz, key)
-
+    private suspend fun getLocalActor(clazz: AnyActorClass, address: Address): AnyActor {
         if (ActorSystem.status != ActorSystem.Status.READY)
             error("Failed to get $address, ActorSystem is ${ActorSystem.status}.")
 
@@ -109,7 +116,7 @@ abstract class ActorRegistry {
             registry[address]?.let { return@lock false to it }
 
             // Spawn the actor.
-            val a: AnyActor = factoryOf(clazz)(key)
+            val a: AnyActor = factoryOf(clazz)(address.key)
 
             // Store the [Actor] to the local storage.
             registry[address] = a
