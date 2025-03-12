@@ -25,6 +25,7 @@ import kotlinx.rpc.krpc.ktor.client.rpc as clientRpc
 import kotlinx.rpc.krpc.ktor.server.rpc as serverRpc
 
 class ClusterImpl(
+    proxy: Boolean = false,
     nodes: List<ClusterNode>,
     val current: ClusterNode,
     val loggerFactory: Logger.Factory,
@@ -35,8 +36,8 @@ class ClusterImpl(
     private val log: Logger = loggerFactory.getLogger(this::class)
 
     init {
-        if (current !in nodes) error("Current node must be part of the cluster nodes.")
-        log.info("Nodes: $nodes")
+        if (!proxy && current !in nodes) error("Current node must be part of the cluster nodes.")
+        log.info("Nodes (proxy=$proxy): $nodes")
     }
 
     /**

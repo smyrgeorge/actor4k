@@ -64,8 +64,12 @@ class AccountActor(
 fun main() {
     LoggerFactory.getLogger("microbank")
     val nodes = (System.getenv("ACTOR4K_NODES") ?: "bank-1::localhost:6000").split(",").map { ClusterNode.of(it) }
-    val current = (System.getenv("ACTOR4K_CURRENT_NODE") ?: "bank-1").let { alias -> nodes.first { it.alias == alias } }
-    println(">>> Current node: $current")
+    val proxy = (System.getenv("ACTOR4K_CURRENT_NODE_IS_PROXY") ?: "false").toBooleanStrict()
+    val current = (System.getenv("ACTOR4K_CURRENT_NODE") ?: "bank-1").let { alias ->
+        if (proxy) return@let ClusterNode.of("$alias::no-host:6000")
+        nodes.first { it.alias == alias }
+    }
+    println(">>> Current node (proxy=$proxy): $current")
 
     val loggerFactory = SimpleLoggerFactory()
 
@@ -73,6 +77,7 @@ fun main() {
         .factoryFor(AccountActor::class) { AccountActor(it) }
 
     val cluster = ClusterImpl(
+        proxy = proxy,
         nodes = nodes,
         current = current,
         loggerFactory = loggerFactory,
