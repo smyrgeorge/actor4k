@@ -90,7 +90,8 @@ fun main() {
             }
             post("/api/account/{accountNo}") {
                 val accountNo = call.parameters["accountNo"] ?: error("Missing accountNo from path.")
-                val req = call.receive<Protocol.ApplyTx>()
+                val body = call.receive<String>()
+                val req = Json.decodeFromString<Protocol.ApplyTx>(body)
                 val ref: ActorRef = ActorSystem.get(AccountActor::class, accountNo)
                 val res = ref.ask<Protocol.Account>(Protocol.ApplyTx(accountNo, req.value)).getOrThrow()
                 call.respond(Json.encodeToString(res), null)
