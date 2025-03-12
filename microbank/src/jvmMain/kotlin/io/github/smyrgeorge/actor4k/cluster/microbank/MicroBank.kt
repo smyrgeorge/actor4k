@@ -10,13 +10,12 @@ import io.github.smyrgeorge.actor4k.cluster.microbank.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
+import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.polymorphic
 import org.slf4j.LoggerFactory
-
-@Suppress("unused")
-class MicroBank
 
 class AccountActor(
     override val key: String
@@ -84,14 +83,17 @@ fun main() {
         routing = {
             // Add extra routing to the underlying HTTP server.
             get("/api/account/{accountNo}") {
-                val accountNo = call.parameters["accountNo"] ?: error("Missing accountNo from path.")
+                val accountNo: String = call.parameters["accountNo"] ?: error("Missing accountNo from path.")
                 val ref: ActorRef = ActorSystem.get(AccountActor::class, accountNo)
                 val res = ref.ask<Protocol.Account>(Protocol.GetAccount(accountNo)).getOrThrow()
-                call.respond(res.toString(), null)
+                call.respond(Json.encodeToString(res), null)
             }
             post("/api/account/{accountNo}") {
                 val accountNo = call.parameters["accountNo"] ?: error("Missing accountNo from path.")
-                ActorSystem.get(AccountActor::class, accountNo)
+                val req = call.receive<Protocol.ApplyTx>()
+                val ref: ActorRef = ActorSystem.get(AccountActor::class, accountNo)
+                val res = ref.ask<Protocol.Account>(Protocol.ApplyTx(accountNo, req.value)).getOrThrow()
+                call.respond(Json.encodeToString(res), null)
             }
         },
         serialization = {

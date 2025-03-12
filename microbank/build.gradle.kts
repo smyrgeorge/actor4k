@@ -15,8 +15,9 @@ kotlin {
         @Suppress("unused")
         val jvmMain by getting {
             dependencies {
-                implementation(libs.slf4j.reload4j)
                 implementation(project(":actor4k-cluster"))
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.slf4j.reload4j)
             }
         }
     }
