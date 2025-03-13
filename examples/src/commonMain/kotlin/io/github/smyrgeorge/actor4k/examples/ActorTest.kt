@@ -30,6 +30,13 @@ object ActorTest {
         val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!")).getOrThrow()
         println(res)
 
+        // [Create] the desired actor.
+        // We also need to manually [activate] the actor.
+        val detached = AccountActor("DETACHED").apply { activate() }
+        detached.tell(Protocol.Req(message = "[ask] Ping!"))
+        // This actor will never close until we call the shutdown method.
+        detached.shutdown()
+
         val a2 = ActorSystem.get(AccountActor::class, "ACC0010")
         println(a2.status())
         a2.shutdown()

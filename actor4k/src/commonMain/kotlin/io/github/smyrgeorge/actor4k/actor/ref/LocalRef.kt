@@ -50,7 +50,7 @@ class LocalRef : ActorRef {
      * @return a `Result` containing the response message of type `Res`, or an error if the operation fails or times out.
      */
     override suspend fun <Res : Actor.Message.Response> ask(msg: Actor.Message, timeout: Duration): Result<Res> =
-        @Suppress("UNCHECKED_CAST") (actor().ask(msg, timeout) as Result<Res>)
+        actor().ask(msg, timeout)
 
     /**
      * Retrieves the current status of the actor associated with this `LocalRef`.

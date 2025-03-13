@@ -149,7 +149,12 @@ useful in scenarios where you need fine-grained control over the actor's initial
 role that doesn't require the full orchestration provided by the system's registry mechanisms.
 
 ```kotlin
-val actor = AccountActor("ACC0000")
+// [Create] the desired actor.
+// We also need to manually [activate] the actor.
+val detached = AccountActor("DETACHED").apply { activate() }
+detached.tell(Protocol.Req(message = "[ask] Ping!"))
+// This actor will never close until we call the shutdown method.
+detached.shutdown()
 ```
 
 ## Build

@@ -177,10 +177,12 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @return A `Result` containing the response of type `Message.Response`, or an error if a failure occurs during processing.
      * @throws IllegalStateException If the actor is unable to accept messages due to its current status.
      */
-    suspend fun ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): Result<Message.Response> {
+    suspend fun <R : Res> ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): Result<R> {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         @Suppress("UNCHECKED_CAST") (msg as Req)
         val ask = Patterns.Ask<Req, Res>(msg)
+
+        @Suppress("UNCHECKED_CAST")
         return try {
             withTimeout(timeout) {
                 mail.send(ask)
@@ -188,7 +190,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
             }
         } finally {
             ask.replyTo.close()
-        }
+        } as Result<R>
     }
 
     /**
