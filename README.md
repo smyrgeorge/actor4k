@@ -42,6 +42,20 @@ requires robust fault isolation and maintainability.
 implementation("io.github.smyrgeorge:actor4k:x.y.z")
 ```
 
+### State of the project
+
+**Note:** This project is still under development, so you might encounter some incompatibilities along the way. I'm
+currently focusing on enhancing the `cluster` module (you can check it out [here](actor4k-cluster)). That said, the core
+module is already being used successfully in production, even in non-cluster environments.
+
+**What’s Next?**
+
+- **Enhance the basic actor API by adding:**
+  - Timers
+  - Stash
+  - Router
+- **Expand the cluster capabilities**
+
 ### Start up the Actor System
 
 `actor4k` tries to be multiplatform compatible, which means there is no support for reflection. Therefore, we must pass
@@ -111,6 +125,32 @@ println(res)
 ```
 
 See all the available examples [here](examples).
+
+### Actor registry
+
+The actor registry is a central component within an actor system that is responsible for managing the lifecycle of actor
+instances. It maintains a mapping between unique actor addresses and their corresponding instances, ensuring that each
+actor can be efficiently retrieved and managed. Additionally, the registry stores factory functions for various actor
+types, which are used to dynamically create new actors when requested. By handling registration, retrieval, and cleanup
+of actors in a thread-safe manner, the actor registry plays a crucial role in supporting the scalability and reliability
+of the overall system.
+
+```kotlin
+// [Create/Get] the desired actor from the registry.
+val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
+```
+
+### Detached actors
+
+A detached actor is an actor instance that is manually created by directly invoking its constructor, rather than being
+automatically instantiated and managed by the actor registry. This means that it stands apart from the typical lifecycle
+management and messaging infrastructure of the actor system until it is explicitly integrated. Detached actors are
+useful in scenarios where you need fine-grained control over the actor's initialization or when they play a specialized
+role that doesn't require the full orchestration provided by the system's registry mechanisms.
+
+```kotlin
+val actor = AccountActor("ACC0000")
+```
 
 ## Build
 
