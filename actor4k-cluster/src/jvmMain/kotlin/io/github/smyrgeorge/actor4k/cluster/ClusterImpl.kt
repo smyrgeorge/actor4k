@@ -35,6 +35,8 @@ class ClusterImpl(
 
     private val log: Logger = loggerFactory.getLogger(this::class)
 
+    private lateinit var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>
+
     init {
         if (!proxy && current !in nodes) error("Current node must be part of the cluster nodes.")
         log.info("Nodes (proxy=$proxy): $nodes")
@@ -60,18 +62,6 @@ class ClusterImpl(
         }
     }
 
-    private val server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> by lazy {
-        createServer()
-    }
-
-    private val clients: Array<KtorRpcClient?> by lazy {
-        nodes.map { node ->
-            // Do not create a client for current node.
-            if (node.alias == current.alias) null
-            else createClient(node)
-        }.toTypedArray()
-    }
-
     /**
      * Represents an array of lazy-initialized `ClusterRpcService` instances, corresponding to client services
      * within the cluster.
@@ -83,8 +73,12 @@ class ClusterImpl(
      * This property is typically used to facilitate interaction with remote services in the cluster through
      * RPC mechanisms, supporting communication and operation management between different nodes.
      */
-    val services: Array<ClusterRpcService?> by lazy {
-        clients.map { it?.withService<ClusterRpcService>() }.toTypedArray()
+    val services: Array<ClusterRpcService?> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
+        nodes.map { node ->
+            // Do not create a client for current node.
+            if (node.alias == current.alias) null
+            else createClient(node)
+        }.map { it?.withService<ClusterRpcService>() }.toTypedArray()
     }
 
     /**
@@ -110,6 +104,7 @@ class ClusterImpl(
      *             If `false`, it returns immediately after invoking the server's start mechanism.
      */
     override fun start(wait: Boolean) {
+        server = createServer()
         server.start(wait)
     }
 
@@ -127,19 +122,17 @@ class ClusterImpl(
 
     // https://kotlin.github.io/kotlinx-rpc/transport.html#ktor-transport
     private fun createClient(node: ClusterNode): KtorRpcClient = runBlocking {
-        HttpClient(clientCIO) {
-            installKrpc { waitForServices = true }
-        }.clientRpc("ws://${node.address}/cluster") {
-            rpcConfig {
-                waitForServices = false
-                serialization {
-                    @OptIn(ExperimentalSerializationApi::class)
-                    protobuf {
-                        serializersModule = this@ClusterImpl.serializersModule
+        HttpClient(clientCIO) { installKrpc() }
+            .clientRpc("ws://${node.address}/cluster") {
+                rpcConfig {
+                    serialization {
+                        @OptIn(ExperimentalSerializationApi::class)
+                        protobuf {
+                            serializersModule = this@ClusterImpl.serializersModule
+                        }
                     }
                 }
             }
-        }
     }
 
     private fun createServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> =
@@ -149,7 +142,6 @@ class ClusterImpl(
                 routing(this)
                 serverRpc("/cluster") {
                     rpcConfig {
-                        waitForServices = false
                         serialization {
                             @OptIn(ExperimentalSerializationApi::class)
                             protobuf {
