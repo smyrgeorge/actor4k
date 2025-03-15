@@ -13,3 +13,5 @@ actual fun registerShutdownHook() {
         }
     )
 }
+
+actual fun getEnv(key: String): String? = System.getenv(key)

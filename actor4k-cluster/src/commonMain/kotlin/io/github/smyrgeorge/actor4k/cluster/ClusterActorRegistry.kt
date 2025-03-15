@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.Address
+import io.github.smyrgeorge.actor4k.cluster.rpc.RpcSendService
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.util.extentions.ActorFactory
@@ -39,7 +40,7 @@ class ClusterActorRegistry : ActorRegistry() {
         // We use the key-hash to achieve efficient sharding between different actor types they share the same key.
         val nodeIdx = address.keyHash % cluster.nodes.size
         val node = cluster.nodes[nodeIdx]
-        val service: ClusterRpcService? = cluster.services[nodeIdx]
+        val service: RpcSendService? = cluster.services[nodeIdx]
         // If a service exists it means that we have to forward the message to another node.
         return if (service != null) ClusterActorRef(node, service, address)
         else super.get(clazz, address)

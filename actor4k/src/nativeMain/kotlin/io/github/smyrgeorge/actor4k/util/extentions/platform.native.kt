@@ -3,6 +3,7 @@ package io.github.smyrgeorge.actor4k.util.extentions
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.staticCFunction
+import kotlinx.cinterop.toKString
 import kotlinx.coroutines.runBlocking
 import platform.posix.SIGINT
 import platform.posix.atexit
@@ -21,3 +22,6 @@ actual fun registerShutdownHook() {
         }
     })
 }
+
+@OptIn(ExperimentalForeignApi::class)
+actual fun getEnv(key: String): String? = platform.posix.getenv(key)?.toKString()

@@ -27,6 +27,16 @@ data class ClusterNode(
         port.toInt()
     }
 
+    /**
+     * Returns the string representation of the `ClusterNode`.
+     *
+     * The representation is formatted as "alias::address", where `alias` is the node's human-readable label
+     * and `address` is its network location.
+     *
+     * @return A string representation of the `ClusterNode` in the format "alias::address".
+     */
+    override fun toString(): String = "$alias::$address"
+
     companion object {
         /**
          * Creates a `ClusterNode` instance by parsing a string representation into alias and address parts.

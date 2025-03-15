@@ -3,12 +3,13 @@ package io.github.smyrgeorge.actor4k.cluster
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.Address
-import io.github.smyrgeorge.actor4k.cluster.ClusterRpcService.ClusterMessage
+import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage
+import io.github.smyrgeorge.actor4k.cluster.rpc.RpcSendService
 import kotlin.time.Duration
 
 class ClusterActorRef(
     private val node: ClusterNode,
-    private val service: ClusterRpcService,
+    private val service: RpcSendService,
     address: Address
 ) : ActorRef(address) {
 

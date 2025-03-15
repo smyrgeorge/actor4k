@@ -19,8 +19,6 @@ assertk = "0.28.1"
 kotlinx-serialization = "1.8.0"
 # https://github.com/ktorio/ktor
 ktor = "3.1.1"
-# https://github.com/Kotlin/kotlinx-rpc
-krpc = "0.5.1"
 # https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
 shadow = "8.1.1"
 
@@ -38,17 +36,12 @@ slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-reload4j = { module = "org.slf4j:slf4j-reload4j", version.ref = "slf4j" }
 assertk = { module = "com.willowtreeapps.assertk:assertk", version.ref = "assertk" }
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
+ktor-server-websockets = { module = "io.ktor:ktor-server-websockets", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
-krpc-server = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-server", version.ref = "krpc" }
-krpc-client = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-client", version.ref = "krpc" }
-krpc-ktor-server = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-ktor-server", version.ref = "krpc" }
-krpc-ktor-client = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-ktor-client", version.ref = "krpc" }
-krpc-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-serialization-protobuf", version.ref = "krpc" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 pubhish = { id = "com.vanniktech.maven.publish", version.ref = "publish" }
-krpc = { id = "org.jetbrains.kotlinx.rpc.plugin", version.ref = "krpc" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
