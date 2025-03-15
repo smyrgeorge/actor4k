@@ -80,7 +80,7 @@ class ClusterImpl(
      * to an implementation of `ClusterRpcSendService`. The initialization is heavily reliant on the configuration
      * of the cluster, including node addresses, serialization protocols, and logging utilities.
      */
-    val services: Array<RpcSendService?> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
+    val services: Array<RpcSendService?> by lazy {
         this.nodes.map { node ->
             // Do not create a client for current node.
             if (node.alias == current.alias) null
