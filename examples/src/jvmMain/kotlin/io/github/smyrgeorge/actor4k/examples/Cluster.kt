@@ -3,7 +3,7 @@ package io.github.smyrgeorge.actor4k.examples
 import io.github.smyrgeorge.actor4k.actor.Actor.Message
 import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
-import io.github.smyrgeorge.actor4k.cluster.ClusterNode
+import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
 import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.stats.SimpleStats

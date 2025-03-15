@@ -1,11 +1,12 @@
 package io.github.smyrgeorge.actor4k.cluster
 
-import io.github.smyrgeorge.actor4k.cluster.http.HttpClientUtils
-import io.github.smyrgeorge.actor4k.cluster.http.HttpServerUtils
 import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcReceiveService
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcSendService
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcWebSocketSession
+import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
+import io.github.smyrgeorge.actor4k.cluster.util.http.HttpClientUtils
+import io.github.smyrgeorge.actor4k.cluster.util.http.HttpServerUtils
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.ktor.client.*
 import io.ktor.server.cio.*
@@ -31,7 +32,6 @@ class ClusterImpl(
 
     private lateinit var client: HttpClient
     private lateinit var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>
-
     private val serializersModule: SerializersModule = SerializersModule {
         serialization()
         polymorphic(ClusterMessage.Request::class) {

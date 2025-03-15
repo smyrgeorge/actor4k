@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.cluster.http
+package io.github.smyrgeorge.actor4k.cluster.util.http
 
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcReceiveService
 import io.ktor.server.application.*

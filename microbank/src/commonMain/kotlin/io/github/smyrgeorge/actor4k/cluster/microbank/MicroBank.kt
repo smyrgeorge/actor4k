@@ -5,8 +5,8 @@ import io.github.smyrgeorge.actor4k.actor.Actor.Message
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
-import io.github.smyrgeorge.actor4k.cluster.ClusterNode
 import io.github.smyrgeorge.actor4k.cluster.microbank.AccountActor.Protocol
+import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import io.github.smyrgeorge.actor4k.util.Logger

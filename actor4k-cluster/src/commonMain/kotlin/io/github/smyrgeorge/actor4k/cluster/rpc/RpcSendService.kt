@@ -71,13 +71,12 @@ class RpcSendService(
         return res
     }
 
-    suspend fun shutdown(addr: Address): Response.Empty {
+    suspend fun shutdown(addr: Address) {
         val req = Request.Shutdown(nextId(), addr)
         val res = rpc.request<Response.Empty>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
-        return res
     }
 
     suspend fun close(): Unit = session.close()

@@ -1,6 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.rpc
 
-import io.github.smyrgeorge.actor4k.cluster.ClusterNode
+import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*

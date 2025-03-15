@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.cluster
+package io.github.smyrgeorge.actor4k.cluster.util
 
 /**
  * Represents a node in a cluster with an alias and its associated address.
@@ -15,13 +15,13 @@ data class ClusterNode(
     val address: String
 ) {
     @Suppress("unused")
-    val host: String by lazy {
+    val host: String = let {
         val host = address.substringBeforeLast(":", "")
         if (host.isEmpty()) error("Invalid address: $address")
         host
     }
 
-    val port: Int by lazy {
+    val port: Int = let {
         val port = address.substringAfterLast(":", "")
         if (port.isEmpty()) error("Invalid address: $address")
         port.toInt()

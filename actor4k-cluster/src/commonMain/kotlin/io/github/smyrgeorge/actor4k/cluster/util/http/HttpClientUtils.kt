@@ -1,4 +1,4 @@
-package io.github.smyrgeorge.actor4k.cluster.http
+package io.github.smyrgeorge.actor4k.cluster.util.http
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
