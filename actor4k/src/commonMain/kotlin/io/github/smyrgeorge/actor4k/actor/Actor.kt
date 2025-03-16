@@ -21,6 +21,8 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Abstract class representing an actor with basic functionality for message handling,
@@ -74,6 +76,20 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @return The response of type [Res] generated after processing the message.
      */
     abstract suspend fun onReceive(m: Req): Res
+
+    /**
+     * Hook invoked during the shutdown sequence of the actor.
+     *
+     * This method provides an opportunity to perform finalization tasks such as resource cleanup,
+     * state persistence, or any other operations required before the actor is completely shut down.
+     *
+     * It is executed as part of the actor's shutdown process, after its status is set to `SHUTTING_DOWN`
+     * and the mailbox is closed to prevent further message handling.
+     *
+     * Override this method in a subclass to implement custom shutdown logic. The function suspends
+     * and allows for asynchronous operations to be performed during the shutdown phase.
+     */
+    open suspend fun onShutdown() {}
 
     /**
      * Activates the actor and starts the message consumption process.
@@ -258,6 +274,8 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
         stats.triggeredShutDownAt = Clock.System.now()
         status = Status.SHUTTING_DOWN
         mail.close()
+        // Trigger the shutdown hook.
+        launch { onShutdown() }
     }
 
     /**
@@ -457,6 +475,17 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
 
         private fun launch(f: suspend () -> Unit) {
             ActorScope.launch(Dispatchers.Default) { f() }
+        }
+
+        /**
+         * Generates a unique random key as a string, which includes a "key-" prefix followed by a hash code
+         * derived from a randomly generated UUID.
+         *
+         * @return A unique random key string in the format "key-{hashCode}".
+         */
+        fun randomKey(prefix: String = "key"): String {
+            @OptIn(ExperimentalUuidApi::class)
+            return "$prefix-${Uuid.random().hashCode()}"
         }
     }
 }
