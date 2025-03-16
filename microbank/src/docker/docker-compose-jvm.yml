@@ -1,9 +1,10 @@
 services:
-  nginx:
-    image: nginx:stable-alpine
+  haproxy:
+    image: haproxytech/haproxy-alpine
     restart: unless-stopped
     ports:
       - "9000:80"
+      - "8404:8404"
     networks:
       - loadbalancing
     depends_on:
@@ -11,7 +12,7 @@ services:
       - bank-2
       - bank-3
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
 
   bank-1:
     image: microbank-jvm
