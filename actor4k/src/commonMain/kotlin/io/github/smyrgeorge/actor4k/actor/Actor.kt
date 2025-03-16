@@ -36,7 +36,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
 
     private val stats: Stats = Stats()
-    private var status = Status.ACTIVATING
+    private var status = Status.CREATED
     private var initializationFailed: Exception? = null
     private val address: Address by lazy { Address.of(this::class, key) }
     private val ref: LocalRef by lazy { LocalRef(address = address, actor = this) }
@@ -115,6 +115,9 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * from the actor's mailbox until shutdown.
      */
     suspend fun activate() {
+        if (status != Status.CREATED) return
+
+        status = Status.ACTIVATING
         onBeforeActivate()
 
         // Start the mail consumer.
@@ -380,23 +383,24 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     }
 
     /**
-     * Represents the lifecycle status of an actor.
+     * Represents the lifecycle status of an actor and determines its ability to accept messages.
      *
-     * This enum defines the various stages that an actor can be in during its lifecycle, along with
-     * whether the actor can accept incoming messages in each stage. The status is primarily
-     * used to determine the actor's current state and its ability to handle messages:
+     * Each state in the `Status` enum carries a `canAcceptMessages` property that indicates whether
+     * the actor can process incoming messages while in that specific state.
      *
-     * - `ACTIVATING`: The actor is in the process of becoming ready and is preparing for operation.
-     * - `READY`: The actor is fully activated and ready to process messages.
-     * - `SHUTTING_DOWN`: The actor is in the process of shutting down and cannot accept new messages.
-     * - `SHUT_DOWN`: The actor has completed the shutdown process and is no longer active.
+     * The possible states of the actor are as follows:
      *
-     * @property canAcceptMessages Indicates whether the actor can process incoming messages in this state.
+     * - `CREATED`: The actor is created but not yet activated. Messages can be accepted during this state.
+     * - `ACTIVATING`: The actor is in the process of being activated. Messages can be accepted during this state.
+     * - `READY`: The actor is fully initialized and ready to process messages. Messages can be accepted during this state.
+     * - `SHUTTING_DOWN`: The actor is in the process of shutting down. Messages cannot be accepted during this state.
+     * - `SHUT_DOWN`: The actor has completed the shutdown process. Messages cannot be accepted during this state.
      */
     @Serializable
     enum class Status(
         val canAcceptMessages: Boolean
     ) {
+        CREATED(true),
         ACTIVATING(true),
         READY(true),
         SHUTTING_DOWN(false),
