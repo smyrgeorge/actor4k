@@ -3,6 +3,7 @@ $dokka.linkExtension:html
 
 module:actor4k
 io.github.smyrgeorge.actor4k.actor
+io.github.smyrgeorge.actor4k.actor.impl
 io.github.smyrgeorge.actor4k.actor.ref
 io.github.smyrgeorge.actor4k.cluster
 io.github.smyrgeorge.actor4k.system
