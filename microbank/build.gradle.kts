@@ -31,7 +31,7 @@ kotlin {
 }
 
 application {
-    mainClass.set("io.github.smyrgeorge.actor4k.cluster.microbank.MainKt")
+    mainClass.set("io.github.smyrgeorge.actor4k.cluster.microbank.MicrobankMainKt")
 }
 
 tasks.withType<ShadowJar> {

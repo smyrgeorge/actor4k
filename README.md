@@ -55,6 +55,8 @@ core module is already being used in production with great results (in a non-clu
   - Stash
   - Router
 - **Expand the cluster capabilities**
+  - Node configuration loader
+  - Dynamic node management and discovery
 
 ### Start up the Actor System
 

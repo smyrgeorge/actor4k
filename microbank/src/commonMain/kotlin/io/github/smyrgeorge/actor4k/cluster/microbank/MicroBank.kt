@@ -14,57 +14,11 @@ import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 import io.github.smyrgeorge.actor4k.util.extentions.getEnv
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.polymorphic
 
-class AccountActor(
-    override val key: String
-) : Actor<Protocol, Protocol.Response>(key) {
-
-    private val account = Account(key, Int.MIN_VALUE)
-
-    override suspend fun onActivate(m: Protocol) {
-        // Initialize the account balance here.
-        // E.g. fetch the data from the DB.
-        // In this case we will assume that the balance is equal to '0'.
-        account.balance = 0
-        log.info("Activated: $account")
-    }
-
-    override suspend fun onReceive(m: Protocol): Protocol.Response {
-        val res = when (m) {
-            is Protocol.GetAccount -> account
-            is Protocol.ApplyTx -> {
-                account.balance += m.value
-                account
-            }
-        }
-
-        return Protocol.Account(res)
-    }
-
-    @Serializable
-    data class Account(val accountNo: String, var balance: Int)
-
-    sealed class Protocol : Message() {
-        sealed class Response : Message.Response()
-
-        @Serializable
-        data class GetAccount(val accountNo: String) : Protocol()
-
-        @Serializable
-        data class ApplyTx(val accountNo: String, val value: Int) : Protocol()
-
-        @Serializable
-        data class Account(val account: AccountActor.Account) : Response()
-    }
-}
-
 object MicroBank {
     val loggerFactory = SimpleLoggerFactory()
-
-    @Suppress("unused")
     val log: Logger = loggerFactory.getLogger(this::class)
 
     fun main() {
@@ -75,7 +29,7 @@ object MicroBank {
                 ?: error("The current node '$alias' should also be in the list of nodes.")
         }
 
-        println(">>> Current node (proxy=$proxy): $current")
+        log.info("Current node (proxy=$proxy): $current")
 
         val registry = ClusterActorRegistry()
             .factoryFor(AccountActor::class) { AccountActor(it) }
