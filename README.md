@@ -76,7 +76,6 @@ val registry = SimpleActorRegistry()
 // Start the actor system.
 ActorSystem
     .register(SimpleLoggerFactory())
-    .register(SimpleStats())
     .register(registry) // You can override the registry implementation here.
     .start()
 ```

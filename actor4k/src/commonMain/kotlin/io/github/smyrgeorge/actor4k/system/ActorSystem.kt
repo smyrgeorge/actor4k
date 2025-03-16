@@ -4,6 +4,7 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.Cluster
 import io.github.smyrgeorge.actor4k.system.ActorSystem.conf
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
+import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import io.github.smyrgeorge.actor4k.system.stats.Stats
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
@@ -27,23 +28,20 @@ object ActorSystem {
     private var _conf = Conf()
     private var _type: Type = Type.SIMPLE
     private var _status: Status = Status.NOT_READY
-    private lateinit var _stats: Stats
+    private var _stats: Stats = SimpleStats()
     private lateinit var _cluster: Cluster
     private lateinit var _registry: ActorRegistry
     private lateinit var _loggerFactory: Logger.Factory
 
-    private val log: Logger by lazy {
-        if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.")
-        loggerFactory.getLogger(this::class)
-    }
+    private val log: Logger by lazy { loggerFactory.getLogger(this::class) }
 
     val conf: Conf get() = _conf
     val type: Type get() = _type
     val status: Status get() = _status
     val stats: Stats get() = _stats
-    val cluster: Cluster get() = _cluster
-    val registry: ActorRegistry get() = _registry
-    val loggerFactory: Logger.Factory get() = _loggerFactory
+    val cluster: Cluster get() = if (!this::_cluster.isInitialized) error("Please register a cluster.") else _cluster
+    val registry: ActorRegistry get() = if (!this::_registry.isInitialized) error("Please register an actor registry.") else _registry
+    val loggerFactory: Logger.Factory get() = if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.") else _loggerFactory
 
     init {
         registerShutdownHook()
@@ -148,7 +146,6 @@ object ActorSystem {
     fun start(wait: Boolean = false) {
         if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
         if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.")
-        if (!this::_stats.isInitialized) error("Please register a stats collector.")
         if (!this::_registry.isInitialized) error("Please register an actor registry.")
         log.info("Starting actor system...")
         _status = Status.READY
@@ -171,8 +168,10 @@ object ActorSystem {
         log.info("Received shutdown signal, will shutdown...")
         _status = Status.SHUTTING_DOWN
 
+        // Shutdown the actor registry.
         registry.shutdown()
 
+        // Shutdown the cluster.
         if (isCluster()) cluster.shutdown()
 
         // Wait for all actors to finish.

@@ -6,7 +6,6 @@ import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
 import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -41,7 +40,6 @@ fun main() = runBlocking {
     // Start the actor system.
     ActorSystem
         .register(loggerFactory)
-        .register(SimpleStats())
         .register(registry)
         .register(cluster)
         .start()

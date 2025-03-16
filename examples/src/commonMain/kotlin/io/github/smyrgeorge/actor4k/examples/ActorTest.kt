@@ -4,7 +4,6 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
-import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -18,7 +17,6 @@ object ActorTest {
         // Start the actor system.
         ActorSystem
             .register(SimpleLoggerFactory())
-            .register(SimpleStats())
             .register(registry)
             .start()
 
