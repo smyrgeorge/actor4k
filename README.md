@@ -53,7 +53,6 @@ core module is already being used in production with great results (in a non-clu
 - **Enhance the basic actor API by adding:**
   - Timers
   - Stash
-  - Router
 - **Expand the cluster capabilities**
   - Node configuration loader
   - Dynamic node management and discovery
@@ -125,7 +124,7 @@ val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!")).ge
 println(res)
 ```
 
-See all the available examples [here](examples).
+See all the available examples [here](examples/src).
 
 ### Actor registry
 
@@ -157,6 +156,54 @@ detached.tell(Protocol.Req(message = "[ask] Ping!"))
 // This actor will never close until we call the shutdown method.
 detached.shutdown()
 ```
+
+## Actor types
+
+### Generic Actor
+
+The generic actor serves as an abstract foundation for creating actors tailored specifically to your application's
+requirements. Defined through the [Actor](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/actor/Actor.kt)
+abstract class, it provides a structured way to implement essential behaviors needed in concurrent environments.
+By extending the `Actor` base class, you gain access to built-in lifecycle hooks such as:
+
+- **`onBeforeActivate`**: opens a hook prior to activation, ideal for initial configuration or asynchronous
+  preparations.
+- **`onActivate`**: a method triggered upon receiving the first initialization message, enabling state initialization
+  or custom setup logic.
+- **`onReceive`**: a central message handler, mandatory for defining an actor’s response logic.
+- **`onShutdown`**: a finalization hook useful for closing resources, saving state, or performing cleanup procedures
+  while gracefully shutting down.
+
+Each actor instance encapsulates its unique state and interacts exclusively through asynchronous message passing,
+ensuring thread-safe operation and simplifying concurrency management.
+
+### Router Actor
+
+A [Router Actor](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/actor/impl/RouterActor.kt) is an actor
+designed to distribute received messages among multiple child actors according to a defined routing strategy. This
+pattern simplifies concurrent and parallel message handling, effectively supporting greater scalability and throughput.
+The RouterActor provides mechanisms for dynamic management and structured communication patterns with its child
+actors, encapsulating common strategies useful in concurrent systems.
+
+#### Key Features and Responsibilities
+
+The `RouterActor` extends the foundational `Actor` abstraction, managing several essential roles:
+
+- **Message Routing**: It efficiently forwards messages it receives to its registered child actors based on a selected
+  routing strategy.
+- **Child Actor Management**:
+  - Initiates and manages the lifecycle of child actors, ensuring they are appropriately activated, maintained, and
+    gracefully shut down.
+  - Supports dynamic registration of additional child actors at runtime.
+
+#### Supported Routing Strategies:
+
+The Router Actor provides three routing strategies:
+
+- **RANDOM**: Routes an incoming message randomly to one of its child actors.
+- **BROADCAST**: Sends the same message simultaneously to all child actors.
+- **ROUND_ROBIN**: Sequentially routes incoming messages in a cyclic manner across its children, balancing the load
+  evenly.
 
 ## Build
 
