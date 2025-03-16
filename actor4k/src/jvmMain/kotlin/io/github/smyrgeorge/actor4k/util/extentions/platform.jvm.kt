@@ -6,10 +6,8 @@ import kotlin.concurrent.thread
 
 actual fun registerShutdownHook() {
     Runtime.getRuntime().addShutdownHook(
-        thread(start = false) {
-            runBlocking {
-                ActorSystem.shutdown()
-            }
+        thread(name = "shutdown", start = false) {
+            runBlocking { ActorSystem.shutdown() }
         }
     )
 }

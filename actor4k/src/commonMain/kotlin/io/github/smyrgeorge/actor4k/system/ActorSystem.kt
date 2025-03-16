@@ -185,6 +185,7 @@ object ActorSystem {
         // Reset cluster's status.
         _status = Status.NOT_READY
         log.info("Shutdown complete.")
+        delay(100.milliseconds)
     }
 
     /**
