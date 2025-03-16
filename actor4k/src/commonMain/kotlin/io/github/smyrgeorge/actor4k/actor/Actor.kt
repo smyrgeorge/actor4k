@@ -210,11 +210,12 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
                 pattern.replyTo.send(reply)
             }
         } catch (_: TimeoutCancellationException) {
-            log.warn("[$address::$operation] Could not reply in time.")
+            log.warn("[$address::$operation] Could not reply in time (timeout) (the message was processed successfully).")
         } catch (_: ClosedSendChannelException) {
-            log.warn("[$address::$operation] Could not reply, the channel is closed.")
+            log.warn("[$address::$operation] Could not reply, the channel is closed (the message was processed successfully).")
         } catch (e: Exception) {
-            log.warn("[$address::$operation] Could not reply. {}", e.message ?: "Unknown error.")
+            val error = e.message ?: "Unknown error."
+            log.warn("[$address::$operation] Could not reply (the message was processed successfully). {}", error)
         }
     }
 

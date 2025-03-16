@@ -21,24 +21,13 @@ class RpcWebSocketSession(
 
     private val address: String = node.address
     private var closed = false
-    private val retrySendMillis = 100L
     private val retryConnectMillis = 200L
+    private val retrySendMillis = 100L
     private val retrySendMaxAttempts = 10
     private var session: DefaultClientWebSocketSession? = null
 
     init {
-        launch {
-            var retryCount = 0
-            while (session == null) {
-                try {
-                    create()
-                } catch (e: Exception) {
-                    log.warn("WebSocket connection failed for $node, retrying...", e)
-                }
-                delay(retryConnectMillis * (retryCount + 1))
-                retryCount++
-            }
-        }
+        launch { create() }
     }
 
     suspend fun send(payload: ByteArray) {
@@ -59,18 +48,30 @@ class RpcWebSocketSession(
 
     private suspend fun create() {
         if (closed) return
-        client.webSocket("ws://$address/cluster") {
-            log.info("WebSocket connection established to $node")
-            session = this
+
+        session = null
+        var retryCount = 0
+        while (session == null) {
             try {
-                for (e in incoming) {
-                    if (e !is Frame.Binary) continue
-                    runCatching { RpcSendService.rpcHandleResponse(e.data) }
+                client.webSocket("ws://$address/cluster") {
+                    log.info("Connection established with $node")
+                    session = this
+                    try {
+                        for (e in incoming) {
+                            if (e !is Frame.Binary) continue
+                            runCatching { RpcSendService.rpcHandleResponse(e.data) }
+                        }
+                    } catch (e: Exception) {
+                        log.error("Connection error for $node (${e.message}), reopening...")
+                        // Reopen session
+                        launch { create() }
+                    }
                 }
             } catch (e: Exception) {
-                log.error("WebSocket connection error ($node): ${e.message}", e)
-                launch { create() } // Reopen session
+                log.warn("Connection failed for $node (${e.message ?: ""}), retrying...")
             }
+            delay(retryConnectMillis * (retryCount + 1))
+            retryCount++
         }
     }
 

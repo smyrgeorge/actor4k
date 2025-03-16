@@ -20,9 +20,9 @@ import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.protobuf.ProtoBuf
 
 class ClusterImpl(
-    proxy: Boolean = false,
     nodes: List<ClusterNode>,
     val current: ClusterNode,
+    val proxy: Boolean = false,
     val loggerFactory: Logger.Factory,
     val routing: Routing.() -> Unit = {},
     val serialization: SerializersModuleBuilder.() -> Unit = {}
@@ -69,28 +69,16 @@ class ClusterImpl(
     val nodes: Array<ClusterNode>
 
     /**
-     * Represents a lazily initialized array of `ClusterRpcSendService` for all cluster nodes, except the current node.
+     * Represents an array of RPC send services used within the cluster for
+     * communication. Each element corresponds to a specific instance of the
+     * `RpcSendService`, facilitating interactions such as sending messages,
+     * querying status, or managing the lifecycle of the cluster nodes.
      *
-     * This variable initializes a client service for nodes in the cluster, allowing remote procedure calls (RPCs) between nodes.
-     *
-     * Each element of the array corresponds to a `ClusterRpcSendService` instance for a specific node or `null` for the current node,
-     * as RPCs are not required for the local node. The initialization leverages `LazyThreadSafetyMode.SYNCHRONIZED` to ensure thread safety.
-     *
-     * The service initialization involves creating a `ClusterRpcWebSocketSession` for each remote node and attaching it
-     * to an implementation of `ClusterRpcSendService`. The initialization is heavily reliant on the configuration
-     * of the cluster, including node addresses, serialization protocols, and logging utilities.
+     * The array is retrieved using a custom getter to provide controlled access
+     * to the underlying private field `_services`.
      */
-    val services: Array<RpcSendService?> by lazy {
-        this.nodes.map { node ->
-            // Do not create a client for current node.
-            if (node.alias == current.alias) null
-            else {
-                val session = RpcWebSocketSession(loggerFactory, client, node)
-                @OptIn(ExperimentalSerializationApi::class)
-                RpcSendService(loggerFactory, protoBuf, session)
-            }
-        }.toTypedArray()
-    }
+    val services: Array<RpcSendService?> get() = _services
+    private lateinit var _services: Array<RpcSendService?>
 
     /**
      * Handles communication with other nodes in the cluster using remote procedure calls (RPC) over WebSocket.
@@ -113,10 +101,9 @@ class ClusterImpl(
     }
 
     init {
-        if (current !in nodes) error("Current node must be part of the configuration nodes.")
+        if (current !in nodes) error("The current node '${current.alias}' should also be in the list of nodes.")
         this.nodes = if (proxy) nodes.filter { it.alias != current.alias }.toTypedArray()
         else nodes.toTypedArray()
-        log.info("Nodes (proxy=$proxy): ${this.nodes.joinToString(", ") { it.toString() }}")
     }
 
     /**
@@ -130,8 +117,21 @@ class ClusterImpl(
      *             If false, it will return immediately after starting the server.
      */
     override fun start(wait: Boolean) {
+        log.info("Starting cluster with ${nodes.size} nodes.")
+        log.info("Nodes (proxy-only=$proxy): ${nodes.joinToString(", ") { it.toString() }}")
         client = HttpClientUtils.create()
         server = HttpServerUtils.create(current.port, routing, receive)
+
+        _services = nodes.map { node ->
+            // Do not create a client for current node.
+            if (node.alias == current.alias) null
+            else {
+                val session = RpcWebSocketSession(loggerFactory, client, node)
+                @OptIn(ExperimentalSerializationApi::class)
+                RpcSendService(loggerFactory, protoBuf, session)
+            }
+        }.toTypedArray()
+
         server.start(wait)
     }
 
@@ -153,7 +153,6 @@ class ClusterImpl(
     override fun shutdown() {
         try {
             runBlocking {
-                self.close()
                 services.forEach { it?.close() }
             }
             server.stop(1_000, 2_000)

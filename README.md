@@ -44,9 +44,9 @@ implementation("io.github.smyrgeorge:actor4k:x.y.z")
 
 ### State of the project
 
-**Note:** This project is still under development, so you might encounter some incompatibilities along the way. I'm
-currently focusing on enhancing the `cluster` module (you can check it out [here](actor4k-cluster)). That said, the core
-module is already being used successfully in production, even in non-cluster environments.
+**Note:** This project is still under heavy development, so you might encounter some incompatibilities along the way.
+I'm currently focusing on enhancing the `cluster` module (you can check it out [here](actor4k-cluster)). That said, the
+core module is already being used in production with great results (in a non-cluster environment).
 
 **What’s Next?**
 

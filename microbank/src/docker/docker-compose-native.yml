@@ -49,7 +49,7 @@ services:
     environment:
       ACTOR4K_CURRENT_NODE: bank-4
       ACTOR4K_CURRENT_NODE_IS_PROXY: true
-      ACTOR4K_NODES: bank-1::bank-1:6000,bank-2::bank-2:6000,bank-3::bank-3:6000
+      ACTOR4K_NODES: bank-1::bank-1:6000,bank-2::bank-2:6000,bank-3::bank-3:6000,bank-4::bank-4:6000
     ports:
       - "9004:6000"
     networks:

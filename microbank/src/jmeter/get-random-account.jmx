@@ -22,7 +22,7 @@
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET random account">
           <stringProp name="TestPlan.comments">Will produce traffic to all nodes.</stringProp>
           <intProp name="HTTPSampler.concurrentPool">6</intProp>
-          <stringProp name="HTTPSampler.path">http://localhost:9003/api/account/ACC${__Random(0,1000,)}</stringProp>
+          <stringProp name="HTTPSampler.path">http://localhost:6000/api/account/ACC${__Random(0,10000,)}</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
           <boolProp name="HTTPSampler.use_keepalive">true</boolProp>

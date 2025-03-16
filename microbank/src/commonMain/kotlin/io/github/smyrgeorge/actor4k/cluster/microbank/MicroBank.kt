@@ -70,7 +70,11 @@ object MicroBank {
     fun main() {
         val proxy = (getEnv("ACTOR4K_CURRENT_NODE_IS_PROXY") ?: "false").toBooleanStrict()
         val nodes = (getEnv("ACTOR4K_NODES") ?: "bank-1::localhost:6000").split(",").map { ClusterNode.of(it) }
-        val current = (getEnv("ACTOR4K_CURRENT_NODE") ?: "bank-1").let { alias -> nodes.first { it.alias == alias } }
+        val current = (getEnv("ACTOR4K_CURRENT_NODE") ?: "bank-1").let { alias ->
+            nodes.firstOrNull { it.alias == alias }
+                ?: error("The current node '$alias' should also be in the list of nodes.")
+        }
+
         println(">>> Current node (proxy=$proxy): $current")
 
         val registry = ClusterActorRegistry()

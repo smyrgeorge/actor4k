@@ -2,29 +2,23 @@ package io.github.smyrgeorge.actor4k.system.stats
 
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 
-data class SimpleStats(
-    override var actors: Int = 0,
-    var totalMessages: Long = 0,
-    var lastCollectPeriodMessages: Long = 0,
-) : Stats {
+class SimpleStats : Stats {
+    override var actors: Int = 0
+    private var totalMessages: Long = 0
+    private var currentPeriodMessages: Long = 0
+
     override fun collect() {
         actors = ActorSystem.registry.size()
         val totalMessages = ActorSystem.registry.totalMessages()
-        lastCollectPeriodMessages = totalMessages - this.totalMessages
-        if (lastCollectPeriodMessages < 0) lastCollectPeriodMessages = 0
+        currentPeriodMessages = totalMessages - this.totalMessages
+        if (currentPeriodMessages < 0) currentPeriodMessages = 0
         this.totalMessages = totalMessages
     }
 
-    override fun toString(): String =
-        buildString {
-            append("[actors=")
-            append(actors)
-            append(", messages(last ")
-            append(ActorSystem.conf.systemCollectStatsEvery)
-            append(")=")
-            append(lastCollectPeriodMessages)
-            append(", total=")
-            append(totalMessages)
-            append("]")
-        }
+    override fun toString(): String {
+        val every = ActorSystem.conf.systemCollectStatsEvery
+        val messages = currentPeriodMessages
+        val rps = (currentPeriodMessages * 1000) / every.inWholeMilliseconds
+        return "[actors=$actors, messages-last-${every.inWholeSeconds}-seconds=$messages ($rps req/sec)]"
+    }
 }

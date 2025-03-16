@@ -150,6 +150,7 @@ object ActorSystem {
         if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.")
         if (!this::_stats.isInitialized) error("Please register a stats collector.")
         if (!this::_registry.isInitialized) error("Please register an actor registry.")
+        log.info("Starting actor system...")
         _status = Status.READY
         if (isCluster()) cluster.start(wait)
     }
@@ -183,6 +184,7 @@ object ActorSystem {
 
         // Reset cluster's status.
         _status = Status.NOT_READY
+        log.info("Shutdown complete.")
     }
 
     /**
@@ -232,7 +234,7 @@ object ActorSystem {
     data class Conf(
         val actorQueueSize: Int = Channel.UNLIMITED,
         val actorAskTimeout: Duration = 30.seconds,
-        val actorExpiresAfter: Duration = 15.minutes,
+        val actorExpiresAfter: Duration = 5.minutes,
         val systemCollectStatsEvery: Duration = 5.seconds,
         val systemLogStatsEvery: Duration = 30.seconds,
         val registryCleanupEvery: Duration = 30.seconds,
