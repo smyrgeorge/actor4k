@@ -86,6 +86,9 @@ object MicroBank {
             current = current,
             loggerFactory = loggerFactory,
             routing = {
+                get("/api/health") {
+                    call.respond("OK", null)
+                }
                 get("/api/account/{accountNo}") {
                     val accountNo: String = call.parameters["accountNo"] ?: error("Missing accountNo from path.")
                     val ref: ActorRef = ActorSystem.get(AccountActor::class, accountNo)

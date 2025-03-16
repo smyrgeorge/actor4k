@@ -13,7 +13,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":actor4k"))
-                implementation(libs.kotlinx.serialization.protobuf)
+                api(libs.kotlinx.serialization.protobuf)
                 api(libs.ktor.server.cio)
                 api(libs.ktor.server.websockets)
                 api(libs.ktor.client.cio)
