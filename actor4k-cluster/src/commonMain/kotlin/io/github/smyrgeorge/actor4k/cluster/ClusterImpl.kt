@@ -19,6 +19,23 @@ import kotlinx.serialization.modules.SerializersModuleBuilder
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.protobuf.ProtoBuf
 
+/**
+ * Implementation of the `Cluster` interface for managing and orchestrating distributed systems.
+ *
+ * This class is responsible for setting up the communication infrastructure, handling RPC,
+ * and managing lifecycle operations (startup, shutdown) across a cluster of nodes.
+ * It provides utilities for interacting with other nodes in the cluster, sending requests,
+ * and receiving responses in a structured manner.
+ *
+ * @constructor Creates a new instance of `ClusterImpl` with the specified parameters.
+ *
+ * @param nodes The list of `ClusterNode` instances representing all the nodes in the cluster.
+ * @param current The current node in the cluster, representing the local instance of this implementation.
+ * @param proxy Indicates whether the current node operates as a proxy; if true, it excludes the current node from the list of managed nodes.
+ * @param loggerFactory A factory for creating loggers used throughout the cluster implementation.
+ * @param routing A configuration block for setting up routing within the HTTP server.
+ * @param serialization A configuration block for customizing the serialization module.
+ */
 class ClusterImpl(
     nodes: List<ClusterNode>,
     val current: ClusterNode,

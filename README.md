@@ -36,13 +36,7 @@ resilience come from the ability to isolate errors within individual actors thro
 fitting choice for applications such as real-time data processing, microservices architectures, and any system that
 requires robust fault isolation and maintainability.
 
-## Usage
-
-```kotlin
-implementation("io.github.smyrgeorge:actor4k:x.y.z")
-```
-
-### State of the project
+###State of the project
 
 **Note:** This project is still under heavy development, so you might encounter some incompatibilities along the way.
 I'm currently focusing on enhancing the `cluster` module (you can check it out [here](actor4k-cluster)). That said, the
@@ -53,9 +47,25 @@ core module is already being used in production with great results (in a non-clu
 - **Enhance the basic actor API by adding:**
   - Timers
   - Stash
+- **Other utils:**
+  - Event Sourcing tooling (Persistent Actor)
 - **Expand the cluster capabilities**
   - Node configuration loader
   - Dynamic node management and discovery
+
+## Actors in Cluster
+
+Cluster support in the `actor4k` provides essential capabilities for building robust, scalable, and highly available
+systems. By enabling actors to seamlessly communicate and coordinate across multiple nodes, clustering significantly
+enhances fault tolerance, ensures workload distribution efficiency, and maintains stable performance in distributed and
+high-concurrency environments. This functionality is currently under active development; you can follow its progress and
+contribute to its advancement through the [actor4k-cluster](actor4k-cluster) module.
+
+## Usage
+
+```kotlin
+implementation("io.github.smyrgeorge:actor4k:x.y.z")
+```
 
 ### Start up the Actor System
 
@@ -204,6 +214,8 @@ The Router Actor provides three routing strategies:
 - **BROADCAST**: Sends the same message simultaneously to all child actors.
 - **ROUND_ROBIN**: Sequentially routes incoming messages in a cyclic manner across its children, balancing the load
   evenly.
+
+Check an example [here](examples/src/jvmMain/kotlin/io/github/smyrgeorge/actor4k/examples/RouterActorMain.kt).
 
 ## Build
 

@@ -15,6 +15,19 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
+/**
+ * Handles receipt and processing of RPC requests in a clustered system.
+ *
+ * This service is responsible for decoding incoming binary WebSocket frames into specific request types,
+ * dispatching the requests to appropriate handlers, and sending back the response. It employs structured
+ * logging for diagnostic purposes and makes use of coroutines for concurrent processing.
+ *
+ * @constructor
+ * Creates an instance of RpcReceiveService.
+ *
+ * @param loggerFactory Factory for creating logger instances for this service.
+ * @param protoBuf Instance of ProtoBuf for (de)serialization of request and response messages.
+ */
 @OptIn(ExperimentalSerializationApi::class)
 class RpcReceiveService(
     loggerFactory: Logger.Factory,
@@ -23,6 +36,12 @@ class RpcReceiveService(
 
     private val log = loggerFactory.getLogger(this::class)
 
+    /**
+     * Handles incoming WebSocket frames and processes RPC requests.
+     *
+     * @param session the active WebSocket session through which the frame is received and responses are sent.
+     * @param frame the WebSocket frame containing the data to be processed. Only binary frames are supported.
+     */
     fun receive(session: WebSocketSession, frame: Frame) {
         launch {
             if (frame !is Frame.Binary) {
@@ -42,8 +61,22 @@ class RpcReceiveService(
         }
     }
 
+    /**
+     * Processes an Echo request and generates a corresponding Echo response.
+     *
+     * @param msg the Echo request containing an id and a payload string.
+     * @return the Echo response with the same id and the payload.
+     */
     fun echo(msg: Request.Echo): Response.Echo = Response.Echo(msg.id, msg.payload)
 
+    /**
+     * Processes a Tell request, sending a message to the specified actor.
+     *
+     * Handles errors during the process and returns a corresponding response.
+     *
+     * @param msg the Tell request containing the message id, actor address, and payload to send.
+     * @return an Empty response if the operation succeeds, or a Failure response if an error occurs.
+     */
     suspend fun tell(msg: Request.Tell): Response {
         return try {
             registry.get(msg.addr).tell(msg.payload)
@@ -53,6 +86,14 @@ class RpcReceiveService(
         }
     }
 
+    /**
+     * Processes an Ask request by sending a message to a specified actor and awaiting a response.
+     * Constructs a Response based on the outcome of the actor invocation.
+     *
+     * @param msg the Ask request containing the message id, actor address, and payload to send.
+     * @return a Success response if the actor processes the message successfully,
+     *         or a Failure response if an error occurs or the message is not processed.
+     */
     suspend fun ask(msg: Request.Ask): Response {
         val res = registry.get(msg.addr).ask<Actor.Message.Response>(msg.payload)
         return when {
@@ -65,16 +106,39 @@ class RpcReceiveService(
         }
     }
 
+    /**
+     * Retrieves the current status of an actor associated with the provided address in the request.
+     *
+     * @param msg the Status request containing the message id and the address of the actor.
+     * @return a Response.Status object containing the message id and the current status of the actor.
+     */
     suspend fun status(msg: Request.Status): Response.Status {
         val res = registry.get(msg.addr).status()
         return Response.Status(msg.id, res)
     }
 
+    /**
+     * Processes a Stats request and retrieves statistical information about the actor
+     * associated with the specified address.
+     *
+     * @param msg the Stats request containing the message id and the address of the actor.
+     * @return a Response.Stats object containing the message id and the statistical data for the actor.
+     */
     suspend fun stats(msg: Request.Stats): Response.Stats {
         val res = registry.get(msg.addr).stats()
         return Response.Stats(msg.id, res)
     }
 
+    /**
+     * Processes a Shutdown request by shutting down the actor associated with the specified address.
+     *
+     * This method retrieves the actor instance linked to the provided address from the registry
+     * and initiates its shutdown process. The method ensures the actor transitions to a state
+     * where it ceases operations and releases its allocated resources.
+     *
+     * @param msg the Shutdown request containing the message id and the address of the actor to shut down.
+     * @return an Empty response indicating the shutdown operation was initiated.
+     */
     suspend fun shutdown(msg: Request.Shutdown): Response.Empty {
         registry.get(msg.addr).shutdown()
         return Response.Empty(msg.id)

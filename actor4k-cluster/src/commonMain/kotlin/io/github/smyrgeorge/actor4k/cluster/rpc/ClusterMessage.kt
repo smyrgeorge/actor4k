@@ -4,6 +4,9 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.Address
 import kotlinx.serialization.Serializable
 
+/**
+ * A base interface representing messages exchanged in a clustered actor system.
+ */
 interface ClusterMessage {
     val id: Long
 
@@ -28,6 +31,10 @@ interface ClusterMessage {
         data class Shutdown(override val id: Long, val addr: Address) : Request
     }
 
+    /**
+     * Represents the base type for response messages in a clustered actor system.
+     * A response carries information about the outcome or state related to a requested operation.
+     */
     @Serializable
     sealed interface Response : ClusterMessage {
         @Serializable

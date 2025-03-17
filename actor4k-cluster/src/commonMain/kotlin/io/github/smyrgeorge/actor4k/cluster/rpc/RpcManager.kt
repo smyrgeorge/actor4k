@@ -8,6 +8,17 @@ import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * Manages Remote Procedure Call (RPC) communication within the system.
+ *
+ * Provides support for making requests, handling responses, and managing active communication channels
+ * with built-in timeout capabilities. This class also ensures proper handling of opened channels by
+ * closing or removing them to prevent resource leaks.
+ *
+ * @param R The type of response that the RPC expects.
+ * @param loggerFactory Factory for creating a logger instance for structured logging.
+ * @param timeout The duration to wait for a request to complete before timing out.
+ */
 class RpcManager<R>(
     loggerFactory: Logger.Factory,
     private val timeout: Duration
@@ -26,6 +37,15 @@ class RpcManager<R>(
         return channel
     }
 
+    /**
+     * Sends a request, waits for its response, and manages the lifecycle of the communication channel.
+     *
+     * @param reqId The unique identifier for the request.
+     * @param f The suspendable function to be executed as part of the request.
+     * @return The response of the requested type [T], received through the communication channel.
+     * @throws TimeoutCancellationException If the request times out.
+     * @throws Exception If an error occurs during the execution of the request or response handling.
+     */
     suspend fun <T> request(reqId: Long, f: suspend () -> Unit): T {
         // Open channel here.
         val channel: Channel<R> = open(reqId)
@@ -52,8 +72,10 @@ class RpcManager<R>(
     }
 
     /**
-     * Finds the corresponding [Channel] and send the [Result]
-     * Ignores messages for unknown (or missing) [Channel]s.
+     * Handles sending a response to a specific request and manages potential timeouts or errors.
+     *
+     * @param reqId The unique identifier for the request to which the response corresponds.
+     * @param res The response object of type [R] to be sent to the waiting clients.
      */
     suspend fun response(reqId: Long, res: R) {
         try {
