@@ -25,13 +25,19 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**
- * Abstract class representing an actor with basic functionality for message handling,
- * activation, and status management.
+ * Represents an actor in an actor-based concurrency model.
  *
- * @property key the key identifying the actor.
+ * An actor is a fundamental unit of computation that encapsulates state and behavior,
+ * processes messages asynchronously, and communicates solely through message-passing.
+ * This class implements various methods for managing the lifecycle, messaging, and
+ * processing logic of an actor.
+ *
+ * @param key A unique identifier for the actor used for addressing and tracking.
+ * @param capacity Indicates the actor's mailbox capacity (if mail is full, any attempt to send will suspend, back-pressure).
  */
 abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
-    open val key: String
+    open val key: String,
+    capacity: Int = ActorSystem.conf.actorQueueSize,
 ) {
     protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
 
@@ -40,7 +46,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     private var initializationFailed: Exception? = null
     private val address: Address by lazy { Address.of(this::class, key) }
     private val ref: LocalRef by lazy { LocalRef(address = address, actor = this) }
-    private val mail: Channel<Patterns<Req, Res>> = Channel(capacity = ActorSystem.conf.actorQueueSize)
+    private val mail: Channel<Patterns<Req, Res>> = Channel(capacity = capacity)
 
     /**
      * Hook called before the actor is activated.
