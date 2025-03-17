@@ -36,7 +36,7 @@ resilience come from the ability to isolate errors within individual actors thro
 fitting choice for applications such as real-time data processing, microservices architectures, and any system that
 requires robust fault isolation and maintainability.
 
-###State of the project
+### State of the project
 
 **Note:** This project is still under heavy development, so you might encounter some incompatibilities along the way.
 I'm currently focusing on enhancing the `cluster` module (you can check it out [here](actor4k-cluster)). That said, the
@@ -47,15 +47,15 @@ core module is already being used in production with great results (in a non-clu
 - **Enhance the basic actor API by adding:**
   - Timers
   - Stash
-- **Other utils:**
-  - Event Sourcing tooling (Persistent Actor)
 - **Expand the cluster capabilities**
   - Node configuration loader
   - Dynamic node management and discovery
+- **Other**
+  - Event Sourcing tooling (Persistent Actor)
 
 ## Actors in Cluster
 
-Cluster support in the `actor4k` provides essential capabilities for building robust, scalable, and highly available
+Cluster support in the **actor4k** provides essential capabilities for building robust, scalable, and highly available
 systems. By enabling actors to seamlessly communicate and coordinate across multiple nodes, clustering significantly
 enhances fault tolerance, ensures workload distribution efficiency, and maintains stable performance in distributed and
 high-concurrency environments. This functionality is currently under active development; you can follow its progress and
@@ -69,7 +69,8 @@ implementation("io.github.smyrgeorge:actor4k:x.y.z")
 
 ### Start up the Actor System
 
-`actor4k` tries to be multiplatform compatible, which means there is no support for reflection. Therefore, we must pass
+**actor4k** tries to be multiplatform compatible, which means there is no support for reflection. Therefore, we must
+pass
 the factories to the registry for each Actor class in our project (see the example below).
 
 ```kotlin
@@ -186,6 +187,14 @@ By extending the `Actor` base class, you gain access to built-in lifecycle hooks
 
 Each actor instance encapsulates its unique state and interacts exclusively through asynchronous message passing,
 ensuring thread-safe operation and simplifying concurrency management.
+
+#### Back-Pressure
+
+The [Actor](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/actor/Actor.kt) class includes a `capacity`
+property, which determines the maximum number of messages allowed in an actor's mailbox. By default, this is set to
+unlimited. Adjusting this property enables you to control mailbox capacity explicitly. If the mailbox reaches its
+maximum capacity, any subsequent attempts to send messages will suspend until space becomes available. Leveraging this
+behavior provides an effective way to implement a back-pressure strategy within your actor-based application.
 
 ### Router Actor
 
