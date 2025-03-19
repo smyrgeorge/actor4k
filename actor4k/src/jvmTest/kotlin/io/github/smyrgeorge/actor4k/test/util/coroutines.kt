@@ -1,7 +1,6 @@
 package io.github.smyrgeorge.actor4k.test.util
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
