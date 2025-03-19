@@ -28,7 +28,7 @@ class TestRouterChild : RouterActor.Child<TestProtocol>() {
 }
 
 
-fun main() = runBlocking {
+fun main(): Unit = runBlocking {
     val registry = SimpleActorRegistry()
         .factoryFor(RoundRobinTestRouter::class) {
             RoundRobinTestRouter("router-1")

@@ -1,3 +1,3 @@
 package io.github.smyrgeorge.actor4k.cluster.microbank
 
-fun main() = MicroBank.main()
+fun main(): Unit = MicroBank.main()

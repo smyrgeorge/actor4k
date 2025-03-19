@@ -11,7 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.modules.polymorphic
 
-fun main() = runBlocking {
+fun main(): Unit = runBlocking {
     val current = ClusterNode.of("node1::localhost:6000")
     val nodes = listOf(current)
 
