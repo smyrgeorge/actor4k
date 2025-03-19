@@ -14,6 +14,8 @@
 ![](https://img.shields.io/static/v1?label=&message=Windows&color=blue)
 ![](https://img.shields.io/static/v1?label=&message=iOS&color=blue)
 ![](https://img.shields.io/static/v1?label=&message=Android&color=blue)
+![](https://img.shields.io/static/v1?label=&message=wasmJs&color=blue)
+![](https://img.shields.io/static/v1?label=&message=wasmWasi&color=blue)
 
 A small actor system written in kotlin using Coroutines.
 

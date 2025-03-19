@@ -1,5 +1,5 @@
 plugins {
-    id("io.github.smyrgeorge.actor4k.multiplatform")
+    id("io.github.smyrgeorge.actor4k.multiplatform.cluster")
     id("io.github.smyrgeorge.actor4k.publish")
     alias(libs.plugins.kotlin.serialization)
 }

@@ -8,6 +8,10 @@ gradlePlugin {
             id = "io.github.smyrgeorge.actor4k.multiplatform"
             implementationClass = "io.github.smyrgeorge.actor4k.multiplatform.MultiplatformConventions"
         }
+        create("multiplatform.cluster") {
+            id = "io.github.smyrgeorge.actor4k.multiplatform.cluster"
+            implementationClass = "io.github.smyrgeorge.actor4k.multiplatform.MultiplatformClusterConventions"
+        }
         create("multiplatform.jvm") {
             id = "io.github.smyrgeorge.actor4k.multiplatform.jvm"
             implementationClass = "io.github.smyrgeorge.actor4k.multiplatform.MultiplatformJvmConventions"

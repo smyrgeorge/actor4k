@@ -2,7 +2,11 @@ package io.github.smyrgeorge.actor4k.actor.impl
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor.Protocol
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * Represents an actor that routes messages to a group of child actors using a defined routing strategy.
@@ -27,7 +31,7 @@ abstract class RouterActor<Req : Actor.Message>(
     private var childs: Array<Child<Req>> = childs.toTypedArray()
 
     init {
-        runBlocking {
+        launch {
             if (autoActivation) activate()
             childs.forEach { it.activate() }
         }
@@ -75,7 +79,7 @@ abstract class RouterActor<Req : Actor.Message>(
      */
     fun register(vararg actors: Child<Req>): RouterActor<Req> {
         childs = actors.toList().toTypedArray()
-        runBlocking { childs.forEach { it.activate() } }
+        childs.forEach { launch { it.activate() } }
         return this
     }
 
@@ -130,4 +134,15 @@ abstract class RouterActor<Req : Actor.Message>(
      * inherit from the `Message` class.
      */
     abstract class Child<Req : Message> : Actor<Req, Protocol.Ok>(randomKey())
+
+    companion object {
+        private object RouterActorScope : CoroutineScope {
+            override val coroutineContext: CoroutineContext
+                get() = EmptyCoroutineContext
+        }
+
+        private fun launch(f: suspend () -> Unit) {
+            RouterActorScope.launch(Dispatchers.Default) { f() }
+        }
+    }
 }

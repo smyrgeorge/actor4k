@@ -42,5 +42,19 @@ kotlin {
                 api(libs.log4k)
             }
         }
+
+        @Suppress("unused")
+        val wasmJsMain by getting {
+            dependencies {
+                api(libs.log4k)
+            }
+        }
+
+        @Suppress("unused")
+        val wasmWasiMain by getting {
+            dependencies {
+                api(libs.log4k)
+            }
+        }
     }
 }
