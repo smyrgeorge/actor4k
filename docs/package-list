@@ -1,6 +1,6 @@
 $dokka.format:html-v1
 $dokka.linkExtension:html
-
+$dokka.location:io.github.smyrgeorge.actor4k.util/SimpleLogger/logger/#/PointingToDeclaration/actor4k/io.github.smyrgeorge.actor4k.util/-simple-logger/[wasm-wasi]logger.html
 module:actor4k
 io.github.smyrgeorge.actor4k.actor
 io.github.smyrgeorge.actor4k.actor.impl
