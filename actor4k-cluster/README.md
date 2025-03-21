@@ -32,15 +32,7 @@ The actor4k library extends the actor model with robust clustering capabilities,
 seamlessly across multiple nodes in a distributed system. This clustering functionality enables building resilient,
 scalable applications that can span multiple servers or containers.
 
-## Node Management
-
-In this early version of the project we only support clusters with `static` size.
-
-The cluster is initialized with a fixed number of nodes, and any changes to the network will not be applied. For
-instance, if a node restarts or stops, the other nodes will continue sending traffic to that node. This mode can be a
-suitable option for small clusters (e.g., 2-5 nodes) as it simplifies the cluster's operation and management.
-
-### Key Cluster Features
+## Key Cluster Features
 
 - **Distributed Actor Registry**: Through `ClusterActorRegistry`, actors can be registered once and referenced from any
   node in the cluster
@@ -51,7 +43,28 @@ suitable option for small clusters (e.g., 2-5 nodes) as it simplifies the cluste
   serialization modules
 - **RPC Communication**: Underlying HTTP/WebSocket-based communication layer for reliable message passing between nodes
 
-### Setting Up a Cluster
+## Node Management
+
+**actor4k** currently implements a static clustering model where the node configuration is defined at initialization and
+remains fixed throughout the cluster's lifecycle.
+
+### Key Characteristics
+
+- **Fixed Node Membership**: The cluster operates with a predefined set of nodes
+- **No Dynamic Discovery**: Nodes joining or leaving the cluster aren't automatically detected
+- **Consistent Configuration Requirement**: All cluster nodes must maintain identical configurations
+
+### Considerations for Production Use
+
+- **Ideal Cluster Size**: Best suited for small, stable clusters of 2-5 nodes
+- **Failure Handling**: Messages directed to unavailable nodes will continue to be sent but won't be processed
+- **Configuration Management**: Changes to node topology require coordinated restart of all cluster nodes
+
+> [!WARNING]
+> Configuration consistency across all nodes is critical. The current implementation doesn't provide automatic
+> verification of configuration alignment between nodes.
+
+## Setting Up a Cluster
 
 Creating a cluster with actor4k is straightforward:
 
@@ -118,14 +131,14 @@ actorRef.tell(YourMessage("Hello from another node!"))
 val response = actorRef.ask<ResponseType>(YourQuestion("What's the status?"))
 ```
 
-### Fault Tolerance
+## Fault Tolerance
 
 The cluster implementation handles node failures gracefully:
 
 - Automatic reconnection attempts when a node becomes unavailable.
 - Message delivery guarantees with retry mechanisms.
 
-### Implementation Details
+## Implementation Details
 
 Under the hood, the cluster implementation uses:
 
