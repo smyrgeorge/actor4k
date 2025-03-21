@@ -238,5 +238,5 @@ abstract class ActorRegistry {
      * @param f The suspend function to be executed within the lock.
      * @return Unit
      */
-    private suspend fun <T> lock(f: suspend () -> T): T = mutex.withLock { f() }
+    private suspend inline fun <T> lock(f: suspend () -> T): T = mutex.withLock { f() }
 }
