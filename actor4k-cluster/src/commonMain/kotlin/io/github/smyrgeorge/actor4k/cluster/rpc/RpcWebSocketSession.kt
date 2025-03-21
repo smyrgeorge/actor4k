@@ -30,7 +30,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 class RpcWebSocketSession(
     loggerFactory: Logger.Factory,
     private val client: HttpClient,
-    private val node: ClusterNode
+    internal val node: ClusterNode
 ) {
     private val log: Logger = loggerFactory.getLogger(this::class)
 

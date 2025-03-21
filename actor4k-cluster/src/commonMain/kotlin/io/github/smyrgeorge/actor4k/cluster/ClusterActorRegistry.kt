@@ -47,12 +47,8 @@ class ClusterActorRegistry : ActorRegistry() {
      * @return An [ActorRef] representing either a local or cluster-based reference to the actor.
      */
     override suspend fun get(clazz: AnyActorClass, address: Address): ActorRef {
-        // We use the key-hash to achieve efficient sharding between different actor types they share the same key.
-        val nodeIdx = address.keyHash % cluster.nodes.size
-        val node = cluster.nodes[nodeIdx]
-        val service: RpcSendService? = cluster.services[nodeIdx]
-        // If a service exists it means that we have to forward the message to another node.
-        return if (service != null) ClusterActorRef(node, service, address)
+        val service: RpcSendService? = cluster.getServiceFor(address)
+        return if (service != null) ClusterActorRef(service.session.node, service, address)
         else super.get(clazz, address)
     }
 

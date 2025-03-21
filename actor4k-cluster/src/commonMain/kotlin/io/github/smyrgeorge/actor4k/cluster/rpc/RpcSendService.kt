@@ -49,7 +49,7 @@ import kotlin.time.Duration.Companion.seconds
 class RpcSendService(
     loggerFactory: Logger.Factory,
     private val protoBuf: ProtoBuf,
-    private val session: RpcWebSocketSession
+    internal val session: RpcWebSocketSession
 ) {
 
     @Suppress("unused")

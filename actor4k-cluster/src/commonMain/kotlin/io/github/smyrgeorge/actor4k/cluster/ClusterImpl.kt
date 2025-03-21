@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster
 
+import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcReceiveService
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcSendService
@@ -159,6 +160,22 @@ class ClusterImpl(
         }.toTypedArray()
 
         server.start(wait)
+    }
+
+    /**
+     * Retrieves the RPC send service associated with a given address.
+     *
+     * The method determines the appropriate service by computing the hash of the address key
+     * and using it to shard across the available nodes in the cluster.
+     *
+     * @param address The address used to locate the associated RPC send service.
+     *                It contains the unique key and name identifying the actor within the system.
+     * @return The corresponding [RpcSendService] if a matching service is found, or null if no service exists for the given address.
+     */
+    fun getServiceFor(address: Address): RpcSendService? {
+        // We use the key-hash to achieve efficient sharding between different actor types they share the same key.
+        val nodeIdx = address.keyHash % nodes.size
+        return services[nodeIdx]
     }
 
     /**
