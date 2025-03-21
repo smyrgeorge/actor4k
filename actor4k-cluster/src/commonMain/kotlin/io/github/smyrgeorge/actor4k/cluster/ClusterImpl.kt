@@ -118,9 +118,17 @@ class ClusterImpl(
     }
 
     init {
+        if (nodes.isEmpty()) error("The cluster must have at least one node.")
         if (current !in nodes) error("The current node '${current.alias}' should also be in the list of nodes.")
-        this.nodes = if (proxy) nodes.filter { it.alias != current.alias }.toTypedArray()
-        else nodes.toTypedArray()
+        val nodes = if (proxy) nodes.filter { it.alias != current.alias } else nodes
+        // IMPORTANT: All nodes must have the same exact (sorted) list of nodes.
+        // This is very crucial for correct routing of the cluster messages.
+        this.nodes = nodes.sortedBy { it.hashCode() }.toTypedArray()
+        if (this.nodes.size == 1) log.warn("The cluster has only one node. This is not recommended for production.")
+        log.info("Proxy only: $proxy")
+        log.info("Current node: $current")
+        log.info("Number of nodes: ${this.nodes.size}")
+        log.info("Cluster nodes: ${this.nodes.joinToString(", ") { it.toString() }}")
     }
 
     /**
@@ -135,7 +143,6 @@ class ClusterImpl(
      */
     override fun start(wait: Boolean) {
         log.info("Starting cluster with ${nodes.size} nodes.")
-        log.info("Nodes (proxy-only=$proxy): ${nodes.joinToString(", ") { it.toString() }}")
         client = HttpClientUtils.create()
         server = HttpServerUtils.create(current.port, routing, receive)
 
