@@ -37,6 +37,7 @@ object MicroBank {
             proxy = proxy,
             nodes = nodes,
             current = current,
+            registry = registry,
             loggerFactory = loggerFactory,
             routing = {
                 get("/api/health") {

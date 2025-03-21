@@ -3,7 +3,6 @@ package io.github.smyrgeorge.actor4k.cluster
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcSendService
-import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.util.extentions.ActorFactory
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
@@ -16,6 +15,17 @@ import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
  * facilitate actor lifecycle management, remote actor communication, and distribution across a cluster.
  */
 class ClusterActorRegistry : ActorRegistry() {
+
+    /**
+     * Represents the cluster implementation used for managing distributed actors in the registry.
+     * This variable holds a reference to the cluster implementation that facilitates operations
+     * such as actor registration, retrieval, and interaction within a distributed system.
+     *
+     * The `cluster` is initialized lazily and depends on the `register` method call to associate
+     * the cluster implementation with the actor registry.
+     */
+    private lateinit var cluster: ClusterImpl
+
     /**
      * A registry mapping actor class names to their respective definitions within the cluster.
      *
@@ -66,13 +76,21 @@ class ClusterActorRegistry : ActorRegistry() {
      * @return The updated [ActorRegistry] after registering the actor class with the factory.
      * @throws IllegalStateException If the provided actor class has no simple name (i.e., is an anonymous class).
      */
-    override fun factoryFor(actor: AnyActorClass, factory: ActorFactory): ActorRegistry {
+    override fun factoryFor(actor: AnyActorClass, factory: ActorFactory): ClusterActorRegistry {
         val name = actor.simpleName ?: error("Anonymous classes are not supported, $actor")
         classes[name] = actor
-        return super.factoryFor(actor, factory)
+        super.factoryFor(actor, factory)
+        return this
     }
 
-    companion object {
-        private val cluster: ClusterImpl by lazy { ActorSystem.cluster as ClusterImpl }
+    /**
+     * Registers the given cluster implementation with the actor registry.
+     *
+     * @param cluster The cluster implementation to be registered.
+     * @return The updated instance of [ClusterActorRegistry].
+     */
+    fun register(cluster: ClusterImpl): ClusterActorRegistry {
+        this.cluster = cluster
+        return this
     }
 }

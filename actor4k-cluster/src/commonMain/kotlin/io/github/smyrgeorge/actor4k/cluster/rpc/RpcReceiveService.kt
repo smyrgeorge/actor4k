@@ -4,7 +4,6 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Request
 import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Response
-import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
@@ -16,25 +15,25 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 /**
- * Handles receipt and processing of RPC requests in a clustered system.
+ * Service responsible for handling RPC requests received via WebSocket frames.
  *
- * This service is responsible for decoding incoming binary WebSocket frames into specific request types,
- * dispatching the requests to appropriate handlers, and sending back the response. It employs structured
- * logging for diagnostic purposes and makes use of coroutines for concurrent processing.
+ * The service processes RPC requests, interacts with actors for the requested operations,
+ * and returns appropriate responses. Utilizes a registry to manage actor instances and ensure
+ * proper delegation of requests to the corresponding actors.
  *
- * @constructor
- * Creates an instance of RpcReceiveService.
- *
- * @param loggerFactory Factory for creating logger instances for this service.
- * @param protoBuf Instance of ProtoBuf for (de)serialization of request and response messages.
+ * @constructor Initializes the service with the necessary dependencies for processing requests.
+ * @param loggerFactory Factory for creating logger instances used for logging activities.
+ * @param protoBuf Serializer/deserializer for encoding and decoding RPC requests and responses.
+ * @param registry Registry for managing actor instances and resolving actor addresses to their objects.
  */
 @OptIn(ExperimentalSerializationApi::class)
 class RpcReceiveService(
     loggerFactory: Logger.Factory,
-    private val protoBuf: ProtoBuf
+    private val protoBuf: ProtoBuf,
+    private val registry: ClusterActorRegistry
 ) {
 
-    private val log = loggerFactory.getLogger(this::class)
+    private val log: Logger = loggerFactory.getLogger(this::class)
 
     /**
      * Handles incoming WebSocket frames and processes RPC requests.
@@ -145,8 +144,6 @@ class RpcReceiveService(
     }
 
     companion object {
-        private val registry: ClusterActorRegistry by lazy { ActorSystem.registry as ClusterActorRegistry }
-
         private object ClusterRpcReceiveServiceScope : CoroutineScope {
             override val coroutineContext: CoroutineContext
                 get() = EmptyCoroutineContext

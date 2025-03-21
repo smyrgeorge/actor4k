@@ -41,6 +41,7 @@ class ClusterImpl(
     val current: ClusterNode,
     val proxy: Boolean = false,
     val loggerFactory: Logger.Factory,
+    val registry: ClusterActorRegistry,
     val routing: Routing.() -> Unit = {},
     val serialization: SerializersModuleBuilder.() -> Unit = {}
 ) : Cluster {
@@ -75,7 +76,7 @@ class ClusterImpl(
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    private val receive = RpcReceiveService(loggerFactory, protoBuf)
+    private val receive = RpcReceiveService(loggerFactory, protoBuf, registry)
 
     /**
      * An array containing all nodes in the cluster.
@@ -118,6 +119,7 @@ class ClusterImpl(
     }
 
     init {
+        registry.register(this) // Register the cluster to the actor-registry.
         if (nodes.isEmpty()) error("The cluster must have at least one node.")
         if (current !in nodes) error("The current node '${current.alias}' should also be in the list of nodes.")
         val nodes = if (proxy) nodes.filter { it.alias != current.alias } else nodes

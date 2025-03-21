@@ -53,7 +53,7 @@ class RpcSendService(
 ) {
 
     @Suppress("unused")
-    private val log = loggerFactory.getLogger(this::class)
+    private val log: Logger = loggerFactory.getLogger(this::class)
 
     init {
         RpcSendService.protoBuf = protoBuf

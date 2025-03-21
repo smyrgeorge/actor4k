@@ -23,6 +23,7 @@ fun main(): Unit = runBlocking {
     val cluster = ClusterImpl(
         nodes = nodes,
         current = current,
+        registry = registry,
         loggerFactory = loggerFactory,
         routing = {
             // Add extra routing to the underlying HTTP server.
