@@ -19,6 +19,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.SerializersModuleBuilder
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.protobuf.ProtoBuf
+import kotlin.math.absoluteValue
 
 /**
  * Implementation of the `Cluster` interface for managing and orchestrating distributed systems.
@@ -174,7 +175,7 @@ class ClusterImpl(
      */
     fun getServiceFor(address: Address): RpcSendService? {
         // We use the key's hash-code to achieve efficient sharding between different actor types they share the same key.
-        val nodeIdx = address.key.hashCode() % nodes.size
+        val nodeIdx = address.key.hashCode().absoluteValue % nodes.size
         return services[nodeIdx]
     }
 

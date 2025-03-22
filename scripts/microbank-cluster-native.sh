@@ -3,7 +3,7 @@
 set -e
 
 # Build the project.
-./gradlew :microbank:linkReleaseExecutableLinuxArm64 -Ptargets=jvm,linuxArm64
+./gradlew :microbank:linkReleaseExecutableLinuxArm64 -Ptargets=jvm,wasmJs,wasmWasi,linuxArm64
 
 # Build docker image.
 docker build . -t microbank-native -f microbank/src/docker/native.Dockerfile

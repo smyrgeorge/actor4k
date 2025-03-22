@@ -12,7 +12,6 @@ kotlin {
         configureEach {
             languageSettings.progressiveMode = true
         }
-
         @Suppress("unused")
         val commonMain by getting {
             dependencies {
@@ -20,7 +19,6 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
             }
         }
-
         @Suppress("unused")
         val jvmMain by getting {
             dependencies {
