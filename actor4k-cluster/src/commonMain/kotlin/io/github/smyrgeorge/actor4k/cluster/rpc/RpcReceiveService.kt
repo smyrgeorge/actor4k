@@ -69,19 +69,19 @@ class RpcReceiveService(
     fun echo(msg: Request.Echo): Response.Echo = Response.Echo(msg.id, msg.payload)
 
     /**
-     * Processes a Tell request, sending a message to the specified actor.
+     * Processes a Tell request by sending a message to a specified actor without awaiting a response.
+     * Constructs a Response based on the outcome of the actor invocation.
      *
-     * Handles errors during the process and returns a corresponding response.
-     *
-     * @param msg the Tell request containing the message id, actor address, and payload to send.
-     * @return an Empty response if the operation succeeds, or a Failure response if an error occurs.
+     * @param msg the Tell request containing the message ID, the address of the actor, and the payload to send.
+     * @return an Empty response if the message is successfully sent to the actor,
+     *         or a Failure response if an exception occurs during the process.
      */
     suspend fun tell(msg: Request.Tell): Response {
         return try {
             registry.get(msg.addr).tell(msg.payload)
             Response.Empty(msg.id)
-        } catch (ex: Throwable) {
-            Response.Failure(msg.id, ex.message ?: "", ex.cause?.message)
+        } catch (e: Exception) {
+            Response.Failure(msg.id, e.message, e.cause?.message)
         }
     }
 
@@ -94,53 +94,61 @@ class RpcReceiveService(
      *         or a Failure response if an error occurs or the message is not processed.
      */
     suspend fun ask(msg: Request.Ask): Response {
-        val res = registry.get(msg.addr).ask<Actor.Message.Response>(msg.payload)
-        return when {
-            res.isSuccess -> Response.Success(msg.id, res.getOrThrow())
-            else -> Response.Failure(
-                id = msg.id,
-                message = res.exceptionOrNull()?.message ?: "",
-                cause = res.exceptionOrNull()?.cause?.message
-            )
+        val res = try {
+            registry.get(msg.addr).ask<Actor.Message.Response>(msg.payload)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+        return if (res.isSuccess) Response.Success(msg.id, res.getOrThrow())
+        else Response.Failure(msg.id, res.exceptionOrNull()?.message, res.exceptionOrNull()?.cause?.message)
+    }
+
+    /**
+     * Processes a Status request to retrieve the current status of an actor associated with the specified address.
+     *
+     * @param msg the Status request containing the message ID and the address of the actor.
+     * @return a Response.Status object containing the message ID and the actor's current status if successful,
+     *         or a Response.Failure object if an error occurs during the process.
+     */
+    suspend fun status(msg: Request.Status): Response {
+        return try {
+            val status = registry.get(msg.addr).status()
+            Response.Status(msg.id, status)
+        } catch (e: Exception) {
+            Response.Failure(msg.id, e.message, e.cause?.message)
         }
     }
 
     /**
-     * Retrieves the current status of an actor associated with the provided address in the request.
+     * Processes a Stats request to retrieve statistical data for the actor associated with the specified address.
      *
-     * @param msg the Status request containing the message id and the address of the actor.
-     * @return a Response.Status object containing the message id and the current status of the actor.
+     * @param msg the Stats request containing the message ID and the address of the actor.
+     * @return a Response.Stats object containing the message ID and the actor's statistics if successful,
+     *         or a Response.Failure object if an error occurs during the process.
      */
-    suspend fun status(msg: Request.Status): Response.Status {
-        val res = registry.get(msg.addr).status()
-        return Response.Status(msg.id, res)
+    suspend fun stats(msg: Request.Stats): Response {
+        return try {
+            val stats = registry.get(msg.addr).stats()
+            Response.Stats(msg.id, stats)
+        } catch (e: Exception) {
+            Response.Failure(msg.id, e.message, e.cause?.message)
+        }
     }
 
     /**
-     * Processes a Stats request and retrieves statistical information about the actor
-     * associated with the specified address.
+     * Handles a shutdown request for an actor identified by its address.
+     * Attempts to stop the associated actor and returns a response indicating the success or failure of the operation.
      *
-     * @param msg the Stats request containing the message id and the address of the actor.
-     * @return a Response.Stats object containing the message id and the statistical data for the actor.
+     * @param msg The `Shutdown` request containing the unique message ID and the address of the actor to shut down.
+     * @return A `Response.Empty` if the shutdown operation completes successfully, or a `Response.Failure` if any error occurs during the process.
      */
-    suspend fun stats(msg: Request.Stats): Response.Stats {
-        val res = registry.get(msg.addr).stats()
-        return Response.Stats(msg.id, res)
-    }
-
-    /**
-     * Processes a Shutdown request by shutting down the actor associated with the specified address.
-     *
-     * This method retrieves the actor instance linked to the provided address from the registry
-     * and initiates its shutdown process. The method ensures the actor transitions to a state
-     * where it ceases operations and releases its allocated resources.
-     *
-     * @param msg the Shutdown request containing the message id and the address of the actor to shut down.
-     * @return an Empty response indicating the shutdown operation was initiated.
-     */
-    suspend fun shutdown(msg: Request.Shutdown): Response.Empty {
-        registry.get(msg.addr).shutdown()
-        return Response.Empty(msg.id)
+    suspend fun shutdown(msg: Request.Shutdown): Response {
+        return try {
+            registry.get(msg.addr).shutdown()
+            Response.Empty(msg.id)
+        } catch (e: Exception) {
+            Response.Failure(msg.id, e.message, e.cause?.message)
+        }
     }
 
     companion object {

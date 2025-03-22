@@ -55,7 +55,7 @@ fun main(): Unit = runBlocking {
     }
 
     repeat(2) {
-        val echo = cluster.self.echo("Ping!")
+        val echo = cluster.self.echo("Ping!").getOrThrow()
         println(">>> echo($it): ${echo.msg}")
         delay(1000)
     }

@@ -60,19 +60,18 @@ class RpcSendService(
     }
 
     /**
-     * Sends an echo request with the provided message and awaits the corresponding echo response.
+     * Sends an echo request containing a string message and awaits the corresponding echo response.
      *
-     * @param msg The message payload to be sent as part of the echo request.
-     * @return A response object of type [Response.Echo] containing the echoed message and request ID.
-     * @throws IllegalStateException if the response ID does not match the request ID.
+     * @param msg The string message to be sent in the echo request.
+     * @return A [Result] containing the [Response.Echo] object if the request is successful, or an exception if it fails.
      */
-    suspend fun echo(msg: String): Response.Echo {
+    suspend fun echo(msg: String): Result<Response.Echo> = runCatching {
         val req = Request.Echo(nextId(), msg)
         val res = rpc.request<Response.Echo>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
-        return res
+        res
     }
 
     /**
@@ -114,9 +113,9 @@ class RpcSendService(
      * @return A [Response.Status] object containing the status information of the specified actor.
      * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun status(addr: Address): Response.Status {
+    suspend fun status(addr: Address): Response {
         val req = Request.Status(nextId(), addr)
-        val res = rpc.request<Response.Status>(req.id) {
+        val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
@@ -131,9 +130,9 @@ class RpcSendService(
      * @return A [Response.Stats] object containing statistical information about the specified actor.
      * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun stats(addr: Address): Response.Stats {
+    suspend fun stats(addr: Address): Response {
         val req = Request.Stats(nextId(), addr)
-        val res = rpc.request<Response.Stats>(req.id) {
+        val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
@@ -146,12 +145,13 @@ class RpcSendService(
      * @param addr The address of the actor to be shut down.
      * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun shutdown(addr: Address) {
+    suspend fun shutdown(addr: Address): Response {
         val req = Request.Shutdown(nextId(), addr)
-        val res = rpc.request<Response.Empty>(req.id) {
+        val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
+        return res
     }
 
     /**

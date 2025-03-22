@@ -40,13 +40,7 @@ class ClusterActorRef(
 
         return when (res) {
             is ClusterMessage.Response.Empty -> Result.success(Unit)
-            is ClusterMessage.Response.Failure -> {
-                val ex: IllegalStateException = if (res.cause != null) {
-                    IllegalStateException(res.message, Exception(res.cause))
-                } else IllegalStateException(res.message)
-                Result.failure(ex)
-            }
-
+            is ClusterMessage.Response.Failure -> Result.failure(res.buildException())
             else -> Result.failure(IllegalStateException("Unexpected response $res for tell command."))
         }
     }
@@ -63,16 +57,8 @@ class ClusterActorRef(
         val res = if (result.isFailure) return Result.failure(result.exceptionOrNull()!!) else result.getOrThrow()
 
         return when (res) {
-            is ClusterMessage.Response.Success ->
-                @Suppress("UNCHECKED_CAST") Result.success(res.response as Res)
-
-            is ClusterMessage.Response.Failure -> {
-                val ex: IllegalStateException = if (res.cause != null) {
-                    IllegalStateException(res.message, Exception(res.cause))
-                } else IllegalStateException(res.message)
-                Result.failure(ex)
-            }
-
+            is ClusterMessage.Response.Success -> @Suppress("UNCHECKED_CAST") Result.success(res.response as Res)
+            is ClusterMessage.Response.Failure -> Result.failure(res.buildException())
             else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
         }
     }
@@ -82,14 +68,28 @@ class ClusterActorRef(
      *
      * @return The current status of the actor as an instance of [Actor.Status].
      */
-    override suspend fun status(): Actor.Status = service.status(address).status
+    override suspend fun status(): Actor.Status {
+        val res = service.status(address)
+        return when (res) {
+            is ClusterMessage.Response.Status -> res.status
+            is ClusterMessage.Response.Failure -> throw res.buildException()
+            else -> throw IllegalStateException("Unexpected response $res for ask command.")
+        }
+    }
 
     /**
      * Retrieves the statistical data of the actor associated with the specified address.
      *
      * @return Statistical information about the actor as an instance of [Actor.Stats].
      */
-    override suspend fun stats(): Actor.Stats = service.stats(address).stats
+    override suspend fun stats(): Actor.Stats {
+        val res = service.stats(address)
+        return when (res) {
+            is ClusterMessage.Response.Stats -> res.stats
+            is ClusterMessage.Response.Failure -> throw res.buildException()
+            else -> throw IllegalStateException("Unexpected response $res for ask command.")
+        }
+    }
 
     /**
      * Initiates the shutdown process for the actor associated with the specified address.
@@ -98,7 +98,14 @@ class ClusterActorRef(
      *
      * @return Unit signaling the completion of the shutdown process.
      */
-    override suspend fun shutdown(): Unit = service.shutdown(address)
+    override suspend fun shutdown() {
+        val res = service.shutdown(address)
+        when (res) {
+            is ClusterMessage.Response.Empty -> Unit
+            is ClusterMessage.Response.Failure -> throw res.buildException()
+            else -> throw IllegalStateException("Unexpected response $res for ask command.")
+        }
+    }
 
     /**
      * Provides a string representation of the `ClusterActorRef` instance.

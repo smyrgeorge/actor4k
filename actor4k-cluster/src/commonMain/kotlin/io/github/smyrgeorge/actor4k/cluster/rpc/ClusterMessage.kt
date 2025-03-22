@@ -53,6 +53,11 @@ interface ClusterMessage {
         class Success(override val id: Long, val response: Actor.Message.Response) : Response
 
         @Serializable
-        class Failure(override val id: Long, val message: String, val cause: String?) : Response
+        class Failure(override val id: Long, val message: String?, val cause: String?) : Response {
+            fun buildException(): Exception {
+                return if (cause != null) IllegalStateException(message, Exception(cause))
+                else IllegalStateException(message)
+            }
+        }
     }
 }
