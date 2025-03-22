@@ -28,7 +28,7 @@ class RpcManager<R>(
     // Map that keeps in track the active (waiting response) channels.
     private val channels = ConcurrentMap<Long, Channel<R>>(1_000)
 
-    private fun open(reqId: Long): Channel<R> {
+    internal fun open(reqId: Long): Channel<R> {
         // Create channel.
         val channel = Channel<R>()
         // Save the channel to the [channels] Map.
@@ -46,7 +46,7 @@ class RpcManager<R>(
      * @throws TimeoutCancellationException If the request times out.
      * @throws Exception If an error occurs during the execution of the request or response handling.
      */
-    suspend fun <T> request(reqId: Long, f: suspend () -> Unit): T {
+    internal suspend inline fun <T> request(reqId: Long, crossinline f: suspend () -> Unit): T {
         // Open channel here.
         val channel: Channel<R> = open(reqId)
 

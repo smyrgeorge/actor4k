@@ -81,15 +81,14 @@ class RpcSendService(
      * @param addr The target address of the actor to which the message should be sent.
      * @param msg The message to be sent to the target actor.
      * @return A [Response] object containing the acknowledgment or result from the actor.
-     * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun tell(addr: Address, msg: Actor.Message): Response {
+    suspend fun tell(addr: Address, msg: Actor.Message): Result<Response> = runCatching {
         val req = Request.Tell(nextId(), addr, msg)
         val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
-        return res
+        res
     }
 
     /**
@@ -98,15 +97,14 @@ class RpcSendService(
      * @param addr The target address of the actor to which the message should be sent.
      * @param msg The message to be sent to the target actor.
      * @return A [Response] object containing the result or acknowledgment from the actor.
-     * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun ask(addr: Address, msg: Actor.Message): Response {
+    suspend fun ask(addr: Address, msg: Actor.Message): Result<Response> = runCatching {
         val req = Request.Ask(nextId(), addr, msg)
         val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
-        return res
+        res
     }
 
     /**

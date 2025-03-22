@@ -35,7 +35,9 @@ class ClusterActorRef(
      * @param msg The message to be sent to the actor.
      */
     override suspend fun tell(msg: Actor.Message): Result<Unit> {
-        val res: ClusterMessage.Response = service.tell(address, msg)
+        val result: Result<ClusterMessage.Response> = service.tell(address, msg)
+        val res = if (result.isFailure) return Result.failure(result.exceptionOrNull()!!) else result.getOrThrow()
+
         return when (res) {
             is ClusterMessage.Response.Empty -> Result.success(Unit)
             is ClusterMessage.Response.Failure -> {
@@ -57,7 +59,9 @@ class ClusterActorRef(
      * @return A [Result] containing the actor's response of type [Res] if successful, or a failure if an error occurs.
      */
     override suspend fun <Res : Actor.Message.Response> ask(msg: Actor.Message, timeout: Duration): Result<Res> {
-        val res: ClusterMessage.Response = service.ask(address, msg)
+        val result: Result<ClusterMessage.Response> = service.ask(address, msg)
+        val res = if (result.isFailure) return Result.failure(result.exceptionOrNull()!!) else result.getOrThrow()
+
         return when (res) {
             is ClusterMessage.Response.Success ->
                 @Suppress("UNCHECKED_CAST") Result.success(res.response as Res)
