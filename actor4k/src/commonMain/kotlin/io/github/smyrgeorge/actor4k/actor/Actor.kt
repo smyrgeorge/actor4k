@@ -190,22 +190,28 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     }
 
     /**
-     * Sends a message to an actor and awaits a response.
+     * Sends a message to an actor and waits for a response within a specified timeout.
      *
-     * This method ensures that the actor is in a state to accept messages before attempting to send. If the
-     * actor is not in a suitable state to process messages, an error is thrown. It uses the `Ask` pattern
-     * to send the message and receive a response. The operation is limited by a specified timeout, and the
-     * response is returned as a result of type `Message.Response`.
+     * This function validates that the actor can accept messages and sends the provided message
+     * as part of an Ask communication pattern. The response is awaited within the specified timeout,
+     * and the result is returned upon successful reception of the reply. If an error occurs or the
+     * timeout is exceeded, the function returns a failure result.
      *
-     * @param msg The message to be sent to the actor. It must be an instance of the `Message` class or its subclass.
-     * @param timeout The duration within which the response must be received. Defaults to `ActorSystem.conf.actorAskTimeout`.
-     * @return A `Result` containing the response of type `Message.Response`, or an error if a failure occurs during processing.
-     * @throws IllegalStateException If the actor is unable to accept messages due to its current status.
+     * @param msg The message to be sent to the actor. It must be an instance of the expected message type.
+     * @param timeout The duration to wait for a response before timing out. The default value is the
+     * actor's configured timeout.
+     * @return A [Result] containing the actor's response of type [R], or a failure if an exception occurs or the timeout expires.
      */
     suspend fun <R : Res> ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): Result<R> {
-        if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
-        @Suppress("UNCHECKED_CAST") (msg as Req)
-        val ask = Patterns.Ask<Req, Res>(msg)
+        val ask: Patterns.Ask<Req, Res> = runCatching {
+            if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
+            @Suppress("UNCHECKED_CAST") (msg as Req)
+            Patterns.Ask<Req, Res>(msg)
+        }.let {
+            // If is failure, return immediately.
+            if (it.isFailure) return Result.failure(it.exceptionOrNull() ?: Exception("Unknown error."))
+            it.getOrThrow()
+        }
 
         @Suppress("UNCHECKED_CAST")
         return try {
@@ -213,6 +219,8 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
                 mail.send(ask)
                 ask.replyTo.receive()
             }
+        } catch (e: Exception) {
+            Result.failure(e)
         } finally {
             ask.replyTo.close()
         } as Result<R>
