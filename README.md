@@ -97,12 +97,12 @@ ActorSystem
 ```kotlin
 class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onBeforeActivate() {
-      // Optional override.
+        // Optional override.
         log.info("[${address()}] onBeforeActivate")
     }
 
     override suspend fun onActivate(m: Protocol) {
-      // Optional override.
+        // Optional override.
         log.info("[${address()}] onActivate: $m")
     }
 
@@ -114,10 +114,10 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
         return res
     }
 
-  override suspend fun onShutdown() {
-    // Optional override.
-    log.info("[${address()}] onShutdown")
-  }
+    override suspend fun onShutdown() {
+        // Optional override.
+        log.info("[${address()}] onShutdown")
+    }
 
     sealed class Protocol : Message() {
         sealed class Response : Message.Response()
