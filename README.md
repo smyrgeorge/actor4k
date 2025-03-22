@@ -97,10 +97,12 @@ ActorSystem
 ```kotlin
 class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onBeforeActivate() {
+      // Optional override.
         log.info("[${address()}] onBeforeActivate")
     }
 
     override suspend fun onActivate(m: Protocol) {
+      // Optional override.
         log.info("[${address()}] onActivate: $m")
     }
 
@@ -111,6 +113,11 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
         }
         return res
     }
+
+  override suspend fun onShutdown() {
+    // Optional override.
+    log.info("[${address()}] onShutdown")
+  }
 
     sealed class Protocol : Message() {
         sealed class Response : Message.Response()
@@ -124,8 +131,6 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
 Now let's send some messages:
 
 ```kotlin
-import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
-
 // [Create/Get] the desired actor from the registry.
 val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
 // [Tell] something to the actor (asynchronous operation).

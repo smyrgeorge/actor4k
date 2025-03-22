@@ -6,10 +6,12 @@ import kotlinx.serialization.Serializable
 
 class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onBeforeActivate() {
+        // Optional override.
         log.info("[${address()}] onBeforeActivate")
     }
 
     override suspend fun onActivate(m: Protocol) {
+        // Optional override.
         log.info("[${address()}] onActivate: $m")
     }
 
@@ -19,6 +21,11 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
             is Protocol.Req -> Protocol.Req.Resp("Pong!")
         }
         return res
+    }
+
+    override suspend fun onShutdown() {
+        // Optional override.
+        log.info("[${address()}] onShutdown")
     }
 
     sealed class Protocol : Message() {
