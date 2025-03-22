@@ -149,13 +149,13 @@ abstract class ActorRegistry {
      * @return Unit The completion of the operation.
      */
     internal suspend fun unregister(ref: LocalRef): Unit = lock {
-        val address = ref.address
-        registry[address]?.let {
-            registry.remove(address)
-            log.info("Unregistered actor $address.")
-        }
         // Invalidate the shared LocalRef.
         ref.invalidate()
+        // Remove it from the registry.
+        registry[ref.address]?.let {
+            registry.remove(ref.address)
+            log.info("Unregistered actor ${ref.address}.")
+        }
     }
 
     /**
