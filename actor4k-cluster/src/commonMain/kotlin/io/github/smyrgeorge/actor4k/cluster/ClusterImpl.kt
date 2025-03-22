@@ -173,8 +173,8 @@ class ClusterImpl(
      * @return The corresponding [RpcSendService] if a matching service is found, or null if no service exists for the given address.
      */
     fun getServiceFor(address: Address): RpcSendService? {
-        // We use the key-hash to achieve efficient sharding between different actor types they share the same key.
-        val nodeIdx = address.keyHash % nodes.size
+        // We use the key's hash-code to achieve efficient sharding between different actor types they share the same key.
+        val nodeIdx = address.key.hashCode() % nodes.size
         return services[nodeIdx]
     }
 

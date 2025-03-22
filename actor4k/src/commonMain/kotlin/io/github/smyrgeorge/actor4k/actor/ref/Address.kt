@@ -2,7 +2,6 @@ package io.github.smyrgeorge.actor4k.actor.ref
 
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
 import kotlinx.serialization.Serializable
-import kotlin.math.absoluteValue
 
 /**
  * Represents a unique address within the actor system, used to identify
@@ -17,9 +16,7 @@ data class Address(
     val key: String
 ) {
 
-    val keyHash: Int by lazy { key.hashCode().absoluteValue }
-    private val address: String by lazy { "$name-$key" }
-    private val hash: Int by lazy { address.hashCode() }
+    private val address: String = "$name-$key"
 
     /**
      * Returns the string representation of the address.
@@ -40,7 +37,7 @@ data class Address(
         return true
     }
 
-    override fun hashCode(): Int = hash
+    override fun hashCode(): Int = address.hashCode()
 
     companion object {
         /**

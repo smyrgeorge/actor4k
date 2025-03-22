@@ -3,9 +3,7 @@ package io.github.smyrgeorge.actor4k.test.actor
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
 
-open class AccountActor(
-    override val key: String
-) : Actor<Protocol, Protocol.Response>(key) {
+open class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onBeforeActivate() {
         log.info("[${address()}] onBeforeActivate")
     }

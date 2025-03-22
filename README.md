@@ -95,9 +95,7 @@ ActorSystem
 ### Let's define an Actor!
 
 ```kotlin
-class AccountActor(
-    override val key: String
-) : Actor<Protocol, Protocol.Response>(key) {
+class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onBeforeActivate() {
         log.info("[${address()}] onBeforeActivate")
     }

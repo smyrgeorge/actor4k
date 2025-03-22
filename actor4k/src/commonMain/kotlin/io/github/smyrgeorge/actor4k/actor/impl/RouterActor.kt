@@ -22,7 +22,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  * @param childs Initial list of child actors to be registered with this router.
  */
 abstract class RouterActor<Req : Actor.Message>(
-    override val key: String = randomKey("router"),
+    key: String = randomKey("router"),
     val strategy: Strategy,
     autoActivation: Boolean = false,
     childs: List<Child<Req>> = emptyList()

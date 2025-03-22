@@ -99,9 +99,9 @@ class ActorLifecycleTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
-        assertFails { ref.tell(Protocol.Req("Ping!")).getOrThrow() }
         delay(100) // Ensure that the actor shut down.
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
+        assertFails { actor.tell(Protocol.Req("Ping!")).getOrThrow() }
         assertThat(actor.stats().shutDownAt).isNotNull()
         assertThat(registry.size()).isZero()
     }

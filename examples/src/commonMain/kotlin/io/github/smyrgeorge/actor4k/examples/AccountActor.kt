@@ -4,9 +4,7 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
 import kotlinx.serialization.Serializable
 
-class AccountActor(
-    override val key: String
-) : Actor<Protocol, Protocol.Response>(key) {
+class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onBeforeActivate() {
         log.info("[${address()}] onBeforeActivate")
     }

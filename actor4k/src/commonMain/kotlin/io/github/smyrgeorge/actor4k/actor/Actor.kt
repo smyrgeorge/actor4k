@@ -36,7 +36,7 @@ import kotlin.uuid.Uuid
  * @param capacity Indicates the actor's mailbox capacity (if mail is full, any attempt to send will suspend, back-pressure).
  */
 abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
-    open val key: String,
+    val key: String,
     capacity: Int = ActorSystem.conf.actorQueueSize,
 ) {
     protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
@@ -44,8 +44,8 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     private val stats: Stats = Stats()
     private var status = Status.CREATED
     private var initializationFailed: Exception? = null
-    private val address: Address by lazy { Address.of(this::class, key) }
-    private val ref: LocalRef by lazy { LocalRef(address = address, actor = this) }
+    private val address: Address = Address.of(this::class, key)
+    private val ref: LocalRef = LocalRef(address = address, actor = this)
     private val mail: Channel<Patterns<Req, Res>> = Channel(capacity = capacity)
 
     /**
@@ -207,9 +207,11 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
             @Suppress("UNCHECKED_CAST") (msg as Req)
             Patterns.Ask<Req, Res>(msg)
         }.let {
-            // If is failure, return immediately.
-            if (it.isFailure) return Result.failure(it.exceptionOrNull() ?: Exception("Unknown error."))
-            it.getOrThrow()
+            when {
+                // If is failure, return immediately.
+                it.isFailure -> return Result.failure(it.exceptionOrNull() ?: Exception("Unknown error."))
+                else -> it.getOrThrow()
+            }
         }
 
         @Suppress("UNCHECKED_CAST")
