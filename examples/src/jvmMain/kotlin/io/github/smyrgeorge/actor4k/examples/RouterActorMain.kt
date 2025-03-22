@@ -47,7 +47,7 @@ fun main(): Unit = runBlocking {
     delay(1000)
     println("RoundRobinTestRouter (attached) router:")
     val r1 = ActorSystem.get(RoundRobinTestRouter::class, "router-1")
-    r1.tell(TestProtocol.Test)
+    r1.tell(TestProtocol.Test).getOrThrow()
     delay(1000)
 
     delay(1000)
@@ -58,6 +58,6 @@ fun main(): Unit = runBlocking {
             TestRouterChild(),
             TestRouterChild()
         )
-    r2.tell(TestProtocol.Test)
+    r2.tell(TestProtocol.Test).getOrThrow()
     delay(1000)
 }

@@ -125,10 +125,10 @@ Once your cluster is set up, you can work with remote actors just like local one
 val actorRef = registry.get(YourActorClass::class, "unique-actor-id")
 
 // Send a fire-and-forget message
-actorRef.tell(YourMessage("Hello from another node!"))
+actorRef.tell(YourMessage("Hello from another node!")).getOrThrow()
 
 // Send a message and wait for a response
-val response = actorRef.ask<ResponseType>(YourQuestion("What's the status?"))
+val response = actorRef.ask<ResponseType>(YourQuestion("What's the status?")).getOrThrow()
 ```
 
 ## Fault Tolerance

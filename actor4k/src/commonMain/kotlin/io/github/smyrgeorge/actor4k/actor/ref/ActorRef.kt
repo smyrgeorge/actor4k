@@ -15,11 +15,12 @@ abstract class ActorRef(
     val address: Address
 ) {
     /**
-     * Send a message to the actor referenced by this `ActorRef`.
+     * Sends a message to the actor associated with this `ActorRef`.
      *
      * @param msg The message to be sent to the actor.
+     * @return A `Result` indicating the completion of the operation, either `Unit` on success or an error on failure.
      */
-    abstract suspend fun tell(msg: Actor.Message)
+    abstract suspend fun tell(msg: Actor.Message): Result<Unit>
 
     /**
      * Sends a message to the actor and waits for a response within the specified timeout.

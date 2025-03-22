@@ -10,7 +10,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration.Companion.seconds
 
 object ActorTest {
-    fun run() = runBlocking {
+    fun run(): Unit = runBlocking {
         val registry = SimpleActorRegistry()
             .factoryFor(AccountActor::class) { AccountActor(it) }
 
@@ -23,7 +23,7 @@ object ActorTest {
         // [Create/Get] the desired actor from the registry.
         val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
         // [Tell] something to the actor (asynchronous operation).
-        actor.tell(Protocol.Req(message = "[tell] Hello World!"))
+        actor.tell(Protocol.Req(message = "[tell] Hello World!")).getOrThrow()
         // [Ask] something to the actor (synchronous operation).
         val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!")).getOrThrow()
         println(res)
@@ -31,7 +31,7 @@ object ActorTest {
         // [Create] the desired actor.
         // We also need to manually [activate] the actor.
         val detached = AccountActor("DETACHED").apply { activate() }
-        detached.tell(Protocol.Req(message = "[ask] Ping!"))
+        detached.tell(Protocol.Req(message = "[ask] Ping!")).getOrThrow()
         // This actor will never close until we call the shutdown method.
         detached.shutdown()
 
@@ -43,6 +43,6 @@ object ActorTest {
         ActorSystem.get(AccountActor::class, "ACC0030")
 
         val req = Protocol.Req(message = "[tell] Hello World!")
-        a2.tell(req) // Will re-create the actor.
+        a2.tell(req).getOrThrow() // Will re-create the actor.
     }
 }

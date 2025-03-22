@@ -131,7 +131,7 @@ import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
 // [Create/Get] the desired actor from the registry.
 val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
 // [Tell] something to the actor (asynchronous operation).
-actor.tell(Protocol.Req(message = "[tell] Hello World!"))
+actor.tell(Protocol.Req(message = "[tell] Hello World!")).getOrThrow()
 // [Ask] something to the actor (synchronous operation).
 val res = actor.ask<Protocol.Req.Resp>(Protocol.Req(message = "[ask] Ping!")).getOrThrow()
 println(res)

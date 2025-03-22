@@ -34,8 +34,19 @@ class ClusterActorRef(
      *
      * @param msg The message to be sent to the actor.
      */
-    override suspend fun tell(msg: Actor.Message) {
-        service.tell(address, msg)
+    override suspend fun tell(msg: Actor.Message): Result<Unit> {
+        val res: ClusterMessage.Response = service.tell(address, msg)
+        return when (res) {
+            is ClusterMessage.Response.Empty -> Result.success(Unit)
+            is ClusterMessage.Response.Failure -> {
+                val ex: IllegalStateException = if (res.cause != null) {
+                    IllegalStateException(res.message, Exception(res.cause))
+                } else IllegalStateException(res.message)
+                Result.failure(ex)
+            }
+
+            else -> Result.failure(IllegalStateException("Unexpected response $res for tell command."))
+        }
     }
 
     /**

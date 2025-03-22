@@ -37,10 +37,10 @@ class LocalRef : ActorRef {
     /**
      * Sends a message to the actor associated with this `LocalRef`.
      *
-     * @param msg the message to be sent
-     * @return Unit
+     * @param msg the message to be sent to the actor.
+     * @return a `Result` indicating success or failure of the operation.
      */
-    override suspend fun tell(msg: Actor.Message): Unit = actor().tell(msg)
+    override suspend fun tell(msg: Actor.Message): Result<Unit> = actor().tell(msg)
 
     /**
      * Sends a message to the actor associated with this `LocalRef` and waits for a response.

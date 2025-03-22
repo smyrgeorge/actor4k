@@ -170,19 +170,18 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     }
 
     /**
-     * Sends a message to the actor in a fire-and-forget communication manner.
+     * Sends a message to the actor in a "fire-and-forget" manner.
      *
-     * This function ensures that the actor is in a state to accept messages before attempting to send.
-     * It validates the message's type to ensure it matches the expected type for the actor.
-     * If the actor cannot accept messages or the message type is incorrect, an error is thrown.
-     * Upon successful validation, the message is encapsulated in a `Tell` pattern
-     * and dispatched via the actor's mailbox.
+     * This function attempts to deliver the provided message to the actor,
+     * ensuring it is in a state that can accept messages. If the actor cannot
+     * accept messages, the function fails with an error. The message is sent
+     * using the `Tell` communication pattern.
      *
-     * @param msg The message to be sent to the actor. It must be an instance of the expected message type.
-     * @throws IllegalStateException If the actor is unable to accept messages due to its current status.
-     * @throws ClassCastException If the message cannot be cast to the expected type.
+     * @param msg The message to be sent, which must inherit from [Message].
+     * @return A [Result] wrapping a successful operation as [Unit], or a failure
+     * if the message could not be sent or the actor is unavailable.
      */
-    suspend fun tell(msg: Message) {
+    suspend fun tell(msg: Message): Result<Unit> = runCatching {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         @Suppress("UNCHECKED_CAST") (msg as Req)
         val tell = Patterns.Tell<Req, Res>(msg)
