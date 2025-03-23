@@ -19,15 +19,14 @@ import kotlin.time.Duration
  * of network communication and providing a unified interface for interaction.
  *
  * @constructor Creates a `ClusterActorRef` instance.
- * @param node The node in the cluster that hosts the referenced actor.
- * @param service The RPC service used to communicate with the remote actor.
  * @param address The network address of the actor within the cluster.
+ * @param service The RPC service used to communicate with the remote actor.
  */
 class ClusterActorRef(
-    private val node: ClusterNode,
-    private val service: RpcSendService,
-    address: Address
+    address: Address,
+    private val service: RpcSendService
 ) : ActorRef(address) {
+    private val node: ClusterNode = service.session.node
 
     /**
      * Sends a message to the actor identified by the given address.

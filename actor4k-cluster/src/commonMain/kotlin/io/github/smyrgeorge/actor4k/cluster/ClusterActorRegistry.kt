@@ -52,20 +52,19 @@ class ClusterActorRegistry(loggerFactory: Logger.Factory) : ActorRegistry(logger
      */
     override suspend fun get(clazz: AnyActorClass, address: Address): ActorRef {
         val service: RpcSendService? = cluster.getServiceFor(address)
-        return if (service != null) ClusterActorRef(service.session.node, service, address)
+        return if (service != null) ClusterActorRef(address, service)
         else super.get(clazz, address)
     }
 
     /**
-     * Retrieves a reference to an actor associated with the given address.
+     * Retrieves an actor reference associated with the given address.
      *
-     * @param address The unique address of the actor to be retrieved.
-     * @return An [ActorRef] representing the actor associated with the provided address.
-     * @throws IllegalStateException If no actor class is found associated with the address.
+     * @param address The unique address identifying the actor to retrieve.
+     * @return A [Result] containing the [ActorRef] if successful, or an error if the operation fails.
      */
-    internal suspend fun get(address: Address): ActorRef {
+    internal suspend fun get(address: Address): Result<ActorRef> = runCatching {
         val clazz = classes[address.name] ?: error("No actor class found for $address")
-        return get(clazz, address)
+        get(clazz, address)
     }
 
     /**

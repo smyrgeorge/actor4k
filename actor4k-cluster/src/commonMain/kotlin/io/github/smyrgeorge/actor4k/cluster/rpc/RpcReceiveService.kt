@@ -77,11 +77,10 @@ class RpcReceiveService(
      *         or a Failure response if an exception occurs during the process.
      */
     suspend fun tell(msg: Request.Tell): Response {
-        try {
-            registry.get(msg.addr).tell(msg.payload)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        registry.get(msg.addr)
+            .getOrElse { return it.failure(msg.id) }
+            .tell(msg.payload)
+            .getOrElse { return it.failure(msg.id) }
         return Response.Empty(msg.id)
     }
 
@@ -94,11 +93,10 @@ class RpcReceiveService(
      *         or a Failure response if an error occurs or the message is not processed.
      */
     suspend fun ask(msg: Request.Ask): Response {
-        val res = try {
-            registry.get(msg.addr).ask<Actor.Message.Response>(msg.payload)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        val res = registry.get(msg.addr)
+            .getOrElse { return it.failure(msg.id) }
+            .ask<Actor.Message.Response>(msg.payload)
+            .getOrElse { return it.failure(msg.id) }
         return Response.Success(msg.id, res)
     }
 
@@ -110,11 +108,10 @@ class RpcReceiveService(
      *         or a Response.Failure object if an error occurs during the process.
      */
     suspend fun status(msg: Request.Status): Response {
-        val status = try {
-            registry.get(msg.addr).status()
-        } catch (e: Exception) {
-            Result.failure(e)
-        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        val status = registry.get(msg.addr)
+            .getOrElse { return it.failure(msg.id) }
+            .status()
+            .getOrElse { return it.failure(msg.id) }
         return Response.Status(msg.id, status)
     }
 
@@ -126,11 +123,10 @@ class RpcReceiveService(
      *         or a Response.Failure object if an error occurs during the process.
      */
     suspend fun stats(msg: Request.Stats): Response {
-        val stats = try {
-            registry.get(msg.addr).stats()
-        } catch (e: Exception) {
-            Result.failure(e)
-        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        val stats = registry.get(msg.addr)
+            .getOrElse { return it.failure(msg.id) }
+            .stats()
+            .getOrElse { return it.failure(msg.id) }
         return Response.Stats(msg.id, stats)
     }
 
@@ -142,15 +138,17 @@ class RpcReceiveService(
      * @return A `Response.Empty` if the shutdown operation completes successfully, or a `Response.Failure` if any error occurs during the process.
      */
     suspend fun shutdown(msg: Request.Shutdown): Response {
-        try {
-            registry.get(msg.addr).shutdown()
-        } catch (e: Exception) {
-            Result.failure(e)
-        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        registry.get(msg.addr)
+            .getOrElse { return it.failure(msg.id) }
+            .shutdown()
+            .getOrElse { return it.failure(msg.id) }
         return Response.Empty(msg.id)
     }
 
     companion object {
+        private fun Throwable.failure(id: Long): Response.Failure =
+            Response.Failure(id, message, cause?.message)
+
         private object ClusterRpcReceiveServiceScope : CoroutineScope {
             override val coroutineContext: CoroutineContext
                 get() = EmptyCoroutineContext
