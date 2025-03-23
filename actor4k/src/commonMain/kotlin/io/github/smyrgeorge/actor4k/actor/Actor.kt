@@ -206,13 +206,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
             if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
             @Suppress("UNCHECKED_CAST") (msg as Req)
             Patterns.Ask<Req, Res>(msg)
-        }.let {
-            when {
-                // If is failure, return immediately.
-                it.isFailure -> return Result.failure(it.exceptionOrNull() ?: Exception("Unknown error."))
-                else -> it.getOrThrow()
-            }
-        }
+        }.getOrElse { return Result.failure(it) }
 
         @Suppress("UNCHECKED_CAST")
         return try {

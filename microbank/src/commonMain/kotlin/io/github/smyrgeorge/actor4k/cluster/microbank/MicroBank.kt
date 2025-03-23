@@ -30,7 +30,7 @@ object MicroBank {
 
         log.info("Current node (proxy=$proxy): $current")
 
-        val registry = ClusterActorRegistry()
+        val registry = ClusterActorRegistry(loggerFactory)
             .factoryFor(AccountActor::class) { AccountActor(it) }
 
         val cluster = ClusterImpl(
@@ -52,19 +52,19 @@ object MicroBank {
                 get("/api/account/{accountNo}/status") {
                     val accountNo: String = call.parameters["accountNo"] ?: error("Missing accountNo from path.")
                     val ref: ActorRef = ActorSystem.get(AccountActor::class, accountNo)
-                    val res: Actor.Status = ref.status()
+                    val res: Actor.Status = ref.status().getOrThrow()
                     call.respond(Json.encodeToString(res), null)
                 }
                 get("/api/account/{accountNo}/stats") {
                     val accountNo: String = call.parameters["accountNo"] ?: error("Missing accountNo from path.")
                     val ref: ActorRef = ActorSystem.get(AccountActor::class, accountNo)
-                    val res: Actor.Stats = ref.stats()
+                    val res: Actor.Stats = ref.stats().getOrThrow()
                     call.respond(Json.encodeToString(res), null)
                 }
                 get("/api/account/{accountNo}/shutdown") {
                     val accountNo: String = call.parameters["accountNo"] ?: error("Missing accountNo from path.")
                     val ref: ActorRef = ActorSystem.get(AccountActor::class, accountNo)
-                    val res: Unit = ref.shutdown()
+                    val res: Unit = ref.shutdown().getOrThrow()
                     call.respond(Json.encodeToString(res), null)
                 }
                 post("/api/account/{accountNo}") {

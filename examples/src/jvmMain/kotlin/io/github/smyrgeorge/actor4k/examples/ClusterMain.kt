@@ -17,7 +17,7 @@ fun main(): Unit = runBlocking {
 
     val loggerFactory = SimpleLoggerFactory()
 
-    val registry = ClusterActorRegistry()
+    val registry = ClusterActorRegistry(loggerFactory)
         .factoryFor(AccountActor::class) { AccountActor(it) }
 
     val cluster = ClusterImpl(

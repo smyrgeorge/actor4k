@@ -76,8 +76,10 @@ pass
 the factories to the registry for each Actor class in our project (see the example below).
 
 ```kotlin
+// Create the Logger Factory.
+val loggerFactory = SimpleLoggerFactory()
 // Create the Actor Registry.
-val registry = SimpleActorRegistry()
+val registry = SimpleActorRegistry(loggerFactory)
     .factoryFor(AccountActor::class) { key ->
         AccountActor(key) // You can define how an Actor is created.
         // You can also pass other arguments to the Actor at this point like for example:
@@ -87,7 +89,7 @@ val registry = SimpleActorRegistry()
 
 // Start the actor system.
 ActorSystem
-    .register(SimpleLoggerFactory())
+  .register(loggerFactory)
     .register(registry) // You can override the registry implementation here.
     .start()
 ```

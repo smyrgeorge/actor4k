@@ -29,7 +29,9 @@ class TestRouterChild : RouterActor.Child<TestProtocol>() {
 
 
 fun main(): Unit = runBlocking {
-    val registry = SimpleActorRegistry()
+    val loggerFactory = SimpleLoggerFactory()
+
+    val registry = SimpleActorRegistry(loggerFactory)
         .factoryFor(RoundRobinTestRouter::class) {
             RoundRobinTestRouter("router-1")
                 .register(
@@ -40,7 +42,7 @@ fun main(): Unit = runBlocking {
         }
 
     ActorSystem
-        .register(SimpleLoggerFactory())
+        .register(loggerFactory)
         .register(registry)
         .start()
 

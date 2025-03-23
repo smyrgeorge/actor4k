@@ -28,11 +28,12 @@ class RpcManager<R>(
     // Map that keeps in track the active (waiting response) channels.
     private val channels = ConcurrentMap<Long, Channel<R>>(1_000)
 
-    internal fun open(reqId: Long): Channel<R> {
+    internal fun <T : R> open(reqId: Long): Channel<T> {
         // Create channel.
-        val channel = Channel<R>()
+        val channel = Channel<T>()
         // Save the channel to the [channels] Map.
-        channels[reqId] = channel
+        @Suppress("UNCHECKED_CAST")
+        channels[reqId] = channel as Channel<R>
         // Return the channel to the client.
         return channel
     }
@@ -46,9 +47,9 @@ class RpcManager<R>(
      * @throws TimeoutCancellationException If the request times out.
      * @throws Exception If an error occurs during the execution of the request or response handling.
      */
-    internal suspend inline fun <T> request(reqId: Long, crossinline f: suspend () -> Unit): T {
+    internal suspend inline fun <T : R> request(reqId: Long, crossinline f: suspend () -> Unit): T {
         // Open channel here.
-        val channel: Channel<R> = open(reqId)
+        val channel: Channel<T> = open(reqId)
 
         return try {
             val res = withTimeout(timeout) {
@@ -57,8 +58,7 @@ class RpcManager<R>(
                 channel.receive()
             }
             // Return the response to the client.
-            @Suppress("UNCHECKED_CAST")
-            res as? T ?: error("Cannot cast to given type.")
+            res
         } catch (e: TimeoutCancellationException) {
             cancel(reqId, channel, e)
             throw e
@@ -89,7 +89,7 @@ class RpcManager<R>(
         }
     }
 
-    private fun cancel(reqId: Long, channel: Channel<R>, e: TimeoutCancellationException?) {
+    private fun <T : R> cancel(reqId: Long, channel: Channel<T>, e: TimeoutCancellationException?) {
         channels.remove(reqId)
         channel.cancel(e)
     }

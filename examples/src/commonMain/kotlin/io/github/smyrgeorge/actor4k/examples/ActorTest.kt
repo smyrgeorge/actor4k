@@ -11,12 +11,14 @@ import kotlin.time.Duration.Companion.seconds
 
 object ActorTest {
     fun run(): Unit = runBlocking {
-        val registry = SimpleActorRegistry()
+        val loggerFactory = SimpleLoggerFactory()
+
+        val registry = SimpleActorRegistry(loggerFactory)
             .factoryFor(AccountActor::class) { AccountActor(it) }
 
         // Start the actor system.
         ActorSystem
-            .register(SimpleLoggerFactory())
+            .register(loggerFactory)
             .register(registry)
             .start()
 

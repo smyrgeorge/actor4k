@@ -40,7 +40,8 @@ class LocalRef : ActorRef {
      * @param msg the message to be sent to the actor.
      * @return a `Result` indicating success or failure of the operation.
      */
-    override suspend fun tell(msg: Actor.Message): Result<Unit> = actor().tell(msg)
+    override suspend fun tell(msg: Actor.Message): Result<Unit> =
+        actor().getOrElse { return Result.failure(it) }.tell(msg)
 
     /**
      * Sends a message to the actor associated with this `LocalRef` and waits for a response.
@@ -50,31 +51,41 @@ class LocalRef : ActorRef {
      * @return a `Result` containing the response message of type `Res`, or an error if the operation fails or times out.
      */
     override suspend fun <Res : Actor.Message.Response> ask(msg: Actor.Message, timeout: Duration): Result<Res> =
-        actor().ask(msg, timeout)
+        actor().getOrElse { return Result.failure(it) }.ask(msg, timeout)
 
     /**
      * Retrieves the current status of the actor associated with this `LocalRef`.
      *
-     * @return the current status of the actor.
+     * @return A `Result` containing the `Actor.Status` if successful, or an error if the operation fails.
      */
-    override suspend fun status(): Actor.Status = actor().status()
+    override suspend fun status(): Result<Actor.Status> {
+        val status = actor().getOrElse { return Result.failure(it) }.status()
+        return Result.success(status)
+    }
 
     /**
-     * Retrieves statistical information about the actor associated with this `LocalRef`.
+     * Retrieves the statistical information of the actor associated with this `LocalRef`.
      *
-     * @return An instance of `Actor.Stats` containing statistics related to the actor.
+     * @return A `Result` containing the `Actor.Stats` if successful, or an error in case of failure.
      */
-    override suspend fun stats(): Actor.Stats = actor().stats()
+    override suspend fun stats(): Result<Actor.Stats> {
+        val stats = actor().getOrElse { return Result.failure(it) }.stats()
+        return Result.success(stats)
+    }
 
     /**
-     * Shuts down the actor associated with this `LocalRef`.
+     * Initiates the shutdown process for the actor associated with this `LocalRef`.
      *
-     * This method retrieves the actor instance from the registry and initiates
-     * its shutdown process. Once invoked, the actor transitions to a shutting down
-     * state and ceases processing messages. The actor's resources, such as its mailbox,
-     * are released during this process.
+     * This method triggers the shutdown mechanism in the associated actor, ensuring
+     * a graceful release of resources and a transition into the shutting down state.
+     *
+     * @return A `Result` indicating the completion of the shutdown operation. Returns `Result.success(Unit)` if successful,
+     * or `Result.failure` with an error if the operation fails.
      */
-    override suspend fun shutdown() = actor().shutdown()
+    override suspend fun shutdown(): Result<Unit> {
+        actor().getOrElse { return Result.failure(it) }.shutdown()
+        return Result.success(Unit)
+    }
 
     /**
      * Invalidates the current actor reference by setting it to `null`.
@@ -93,7 +104,8 @@ class LocalRef : ActorRef {
      *
      * @return The actor instance associated with this `LocalRef`.
      */
-    private suspend fun actor(): AnyActor = actor ?: ActorSystem.registry.getLocalActor(this)
+    private suspend fun actor(): Result<AnyActor> =
+        runCatching { actor ?: ActorSystem.registry.getLocalActor(this) }
 
     /**
      * Provides the string representation of the `LocalRef` instance.

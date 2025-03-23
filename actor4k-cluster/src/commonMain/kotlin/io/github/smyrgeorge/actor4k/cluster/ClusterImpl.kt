@@ -86,19 +86,15 @@ class ClusterImpl(
      * This array represents the collection of `ClusterNode` instances that are part of the cluster.
      * It is used to manage and interact with the individual nodes constituting the cluster.
      */
-    val nodes: Array<ClusterNode>
+    private val nodes: Array<ClusterNode>
 
     /**
      * Represents an array of RPC send services used within the cluster for
      * communication. Each element corresponds to a specific instance of the
      * `RpcSendService`, facilitating interactions such as sending messages,
      * querying status, or managing the lifecycle of the cluster nodes.
-     *
-     * The array is retrieved using a custom getter to provide controlled access
-     * to the underlying private field `_services`.
      */
-    val services: Array<RpcSendService?> get() = _services
-    private lateinit var _services: Array<RpcSendService?>
+    private lateinit var services: Array<RpcSendService?>
 
     /**
      * Handles communication with other nodes in the cluster using remote procedure calls (RPC) over WebSocket.
@@ -150,7 +146,7 @@ class ClusterImpl(
         client = HttpClientUtils.create()
         server = HttpServerUtils.create(current.port, routing, receive)
 
-        _services = nodes.map { node ->
+        services = nodes.map { node ->
             // Do not create a client for current node.
             if (node.alias == current.alias) null
             else {

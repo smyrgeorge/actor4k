@@ -11,7 +11,9 @@ import io.github.smyrgeorge.actor4k.test.actor.SlowProcessAccountActor
 import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 
 object Registry {
-    val registry = SimpleActorRegistry()
+    val loggerFactory = SimpleLoggerFactory()
+
+    val registry = SimpleActorRegistry(loggerFactory)
         .factoryFor(AccountActor::class) { AccountActor(it) }
         .factoryFor(InitMethodFailsAccountActor::class) { InitMethodFailsAccountActor(it) }
         .factoryFor(OnBeforeActivateFailsAccountActor::class) { OnBeforeActivateFailsAccountActor(it) }
@@ -23,7 +25,7 @@ object Registry {
 
     init {
         ActorSystem
-            .register(SimpleLoggerFactory())
+            .register(loggerFactory)
             .register(registry)
     }
 }

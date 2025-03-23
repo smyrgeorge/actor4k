@@ -14,19 +14,18 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 
 /**
- * Abstract class responsible for managing the registry of `Actor` instances.
- * This class provides mechanisms for storing, retrieving, unregistering, and shutting down actors,
- * ensuring thread-safety and consistency through a mutex lock.
+ * Represents an abstract registry for managing actor instances in an actor system.
+ *
+ * The `ActorRegistry` is responsible for the lifecycle management, registration, retrieval,
+ * and shutdown of actors. It supports both locally managed actors and dynamic actor creation
+ * through factories. The registry ensures thread-safe operations on stored actor instances.
+ *
+ * @constructor Initializes the `ActorRegistry` with a provided `Logger.Factory` for logging purposes.
+ * @param loggerFactory The factory used to obtain a logger instance for logging operations.
  */
-abstract class ActorRegistry {
+abstract class ActorRegistry(loggerFactory: Logger.Factory) {
 
-    val log: Logger by lazy {
-        try {
-            ActorSystem.loggerFactory.getLogger(this::class)
-        } catch (_: Exception) {
-            error("Please register first a Logger.Factory to the ActorSystem.")
-        }
-    }
+    val log: Logger = loggerFactory.getLogger(this::class)
 
     // Mutex for the create operation.
     private val mutex = Mutex()

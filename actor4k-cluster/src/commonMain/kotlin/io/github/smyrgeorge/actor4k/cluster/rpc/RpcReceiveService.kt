@@ -77,12 +77,12 @@ class RpcReceiveService(
      *         or a Failure response if an exception occurs during the process.
      */
     suspend fun tell(msg: Request.Tell): Response {
-        return try {
+        try {
             registry.get(msg.addr).tell(msg.payload)
-            Response.Empty(msg.id)
         } catch (e: Exception) {
-            Response.Failure(msg.id, e.message, e.cause?.message)
-        }
+            Result.failure(e)
+        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        return Response.Empty(msg.id)
     }
 
     /**
@@ -98,9 +98,8 @@ class RpcReceiveService(
             registry.get(msg.addr).ask<Actor.Message.Response>(msg.payload)
         } catch (e: Exception) {
             Result.failure(e)
-        }
-        return if (res.isSuccess) Response.Success(msg.id, res.getOrThrow())
-        else Response.Failure(msg.id, res.exceptionOrNull()?.message, res.exceptionOrNull()?.cause?.message)
+        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        return Response.Success(msg.id, res)
     }
 
     /**
@@ -111,12 +110,12 @@ class RpcReceiveService(
      *         or a Response.Failure object if an error occurs during the process.
      */
     suspend fun status(msg: Request.Status): Response {
-        return try {
-            val status = registry.get(msg.addr).status()
-            Response.Status(msg.id, status)
+        val status = try {
+            registry.get(msg.addr).status()
         } catch (e: Exception) {
-            Response.Failure(msg.id, e.message, e.cause?.message)
-        }
+            Result.failure(e)
+        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        return Response.Status(msg.id, status)
     }
 
     /**
@@ -127,12 +126,12 @@ class RpcReceiveService(
      *         or a Response.Failure object if an error occurs during the process.
      */
     suspend fun stats(msg: Request.Stats): Response {
-        return try {
-            val stats = registry.get(msg.addr).stats()
-            Response.Stats(msg.id, stats)
+        val stats = try {
+            registry.get(msg.addr).stats()
         } catch (e: Exception) {
-            Response.Failure(msg.id, e.message, e.cause?.message)
-        }
+            Result.failure(e)
+        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        return Response.Stats(msg.id, stats)
     }
 
     /**
@@ -143,12 +142,12 @@ class RpcReceiveService(
      * @return A `Response.Empty` if the shutdown operation completes successfully, or a `Response.Failure` if any error occurs during the process.
      */
     suspend fun shutdown(msg: Request.Shutdown): Response {
-        return try {
+        try {
             registry.get(msg.addr).shutdown()
-            Response.Empty(msg.id)
         } catch (e: Exception) {
-            Response.Failure(msg.id, e.message, e.cause?.message)
-        }
+            Result.failure(e)
+        }.getOrElse { return Response.Failure(msg.id, it.message, it.cause?.message) }
+        return Response.Empty(msg.id)
     }
 
     companion object {

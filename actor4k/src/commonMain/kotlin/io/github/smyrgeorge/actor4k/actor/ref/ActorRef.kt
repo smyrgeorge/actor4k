@@ -41,28 +41,31 @@ abstract class ActorRef(
         ask(msg, ActorSystem.conf.actorAskTimeout)
 
     /**
-     * Retrieves the current status of the actor associated with this `LocalRef`.
+     * Retrieves the current status of the actor associated with this `ActorRef`.
      *
-     * @return the current status of the actor.
+     * @return A `Result` containing the actor's status of type [Actor.Status] if the operation is successful,
+     * or an error if the status could not be retrieved.
      */
-    abstract suspend fun status(): Actor.Status
+    abstract suspend fun status(): Result<Actor.Status>
 
     /**
-     * Retrieves the statistical data for the actor associated with this `ActorRef`.
+     * Retrieves the statistics of the actor associated with this `ActorRef`.
      *
-     * @return the statistical information of the actor represented as an `Actor.Stats` object.
+     * @return A `Result` containing the actor's statistics of type [Actor.Stats] if the operation is successful,
+     * or an error if the statistics could not be retrieved.
      */
-    abstract suspend fun stats(): Actor.Stats
+    abstract suspend fun stats(): Result<Actor.Stats>
 
     /**
-     * Shuts down the actor associated with this `LocalRef`.
+     * Initiates the shutdown process for the actor associated with this `ActorRef`.
      *
-     * This method retrieves the actor instance from the registry and initiates
-     * its shutdown process. Once invoked, the actor transitions to a shutting down
-     * state and ceases processing messages. The actor's resources, such as its mailbox,
-     * are released during this process.
+     * This method signals the actor to transition into a shutting down state and
+     * release its resources. The actor will stop processing messages after this
+     * operation is completed.
+     *
+     * @return A `Result` indicating the completion of the shutdown operation, either `Unit` on success or an error on failure.
      */
-    abstract suspend fun shutdown()
+    abstract suspend fun shutdown(): Result<Unit>
 
     /**
      * Returns the string representation of the actor reference.

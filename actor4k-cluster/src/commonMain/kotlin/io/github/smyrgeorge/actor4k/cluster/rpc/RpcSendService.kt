@@ -60,10 +60,11 @@ class RpcSendService(
     }
 
     /**
-     * Sends an echo request containing a string message and awaits the corresponding echo response.
+     * Sends an echo request with a given message and awaits a response.
      *
-     * @param msg The string message to be sent in the echo request.
-     * @return A [Result] containing the [Response.Echo] object if the request is successful, or an exception if it fails.
+     * @param msg The message to be sent as part of the echo request.
+     * @return A [Result] containing the [Response.Echo] received in response, or an error if the operation fails.
+     * @throws IllegalStateException if the response ID does not match the request ID.
      */
     suspend fun echo(msg: String): Result<Response.Echo> = runCatching {
         val req = Request.Echo(nextId(), msg)
@@ -75,11 +76,12 @@ class RpcSendService(
     }
 
     /**
-     * Sends a message to a specified actor address and awaits a response.
+     * Sends a message to a specified actor address and waits for a response.
      *
      * @param addr The target address of the actor to which the message should be sent.
-     * @param msg The message to be sent to the target actor.
-     * @return A [Response] object containing the acknowledgment or result from the actor.
+     * @param msg The message to be delivered to the target actor.
+     * @return A [Result] containing the [Response] received in reply, or an error if the operation fails.
+     * @throws IllegalStateException if the response ID does not match the request ID.
      */
     suspend fun tell(addr: Address, msg: Actor.Message): Result<Response> = runCatching {
         val req = Request.Tell(nextId(), addr, msg)
@@ -91,11 +93,13 @@ class RpcSendService(
     }
 
     /**
-     * Sends a message to a specified actor address and awaits a response.
+     * Sends a message to a specified actor address and waits for a response,
+     * ensuring the response corresponds to the sent request.
      *
-     * @param addr The target address of the actor to which the message should be sent.
-     * @param msg The message to be sent to the target actor.
-     * @return A [Response] object containing the result or acknowledgment from the actor.
+     * @param addr The address of the target actor to which the message should be sent.
+     * @param msg The message to deliver to the target actor.
+     * @return A [Result] containing the [Response] received in reply, or an error if the operation fails.
+     * @throws IllegalStateException if the response ID does not match the request ID.
      */
     suspend fun ask(addr: Address, msg: Actor.Message): Result<Response> = runCatching {
         val req = Request.Ask(nextId(), addr, msg)
@@ -107,51 +111,52 @@ class RpcSendService(
     }
 
     /**
-     * Sends a request to retrieve the status of a specified actor and awaits the corresponding status response.
+     * Sends a status request to the specified actor address and awaits the corresponding response.
      *
-     * @param addr The address of the actor whose status is to be retrieved.
-     * @return A [Response.Status] object containing the status information of the specified actor.
+     * @param addr The address of the actor for which the status is being requested.
+     * @return A [Result] containing the [Response] (typically a [Response.Status]) received in response, or an error if the operation fails.
      * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun status(addr: Address): Response {
+    suspend fun status(addr: Address): Result<Response> = runCatching {
         val req = Request.Status(nextId(), addr)
         val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
-        return res
+        res
     }
 
     /**
-     * Retrieves statistics of the specified actor by sending a `Stats` request to the target actor address
-     * and awaiting the corresponding `Stats` response.
+     * Sends a stats request to the specified actor address and waits for the corresponding response.
      *
-     * @param addr The address of the actor whose statistics are to be retrieved.
-     * @return A [Response.Stats] object containing statistical information about the specified actor.
+     * @param addr The address of the actor for which the stats are being requested.
+     * @return A [Result] containing the [Response] (typically a [Response.Stats]) received in response, or an error if the operation fails.
      * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun stats(addr: Address): Response {
+    suspend fun stats(addr: Address): Result<Response> = runCatching {
         val req = Request.Stats(nextId(), addr)
         val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
-        return res
+        res
     }
 
     /**
-     * Sends a shutdown request to the specified actor address and waits for an acknowledgment response.
+     * Sends a shutdown request to the specified actor address and waits for the response.
      *
      * @param addr The address of the actor to be shut down.
+     * @return A [Result] containing the [Response] received in response to the shutdown request,
+     * or an error if the operation fails.
      * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun shutdown(addr: Address): Response {
+    suspend fun shutdown(addr: Address): Result<Response> = runCatching {
         val req = Request.Shutdown(nextId(), addr)
         val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())
         }
         if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
-        return res
+        res
     }
 
     /**
@@ -165,8 +170,16 @@ class RpcSendService(
      */
     suspend fun close(): Unit = session.close()
 
-    private fun Request.serialize(): ByteArray =
-        protoBuf.encodeToByteArray(Request.serializer(), this)
+    /**
+     * Serializes the current [Request] instance into a [ByteArray].
+     *
+     * This method uses the provided protobuf serialization mechanism to convert
+     * the [Request] into a compact byte array representation suitable for transmission
+     * or storage.
+     *
+     * @return A [ByteArray] containing the serialized representation of the [Request].
+     */
+    private fun Request.serialize(): ByteArray = protoBuf.encodeToByteArray(Request.serializer(), this)
 
     companion object {
         private lateinit var protoBuf: ProtoBuf

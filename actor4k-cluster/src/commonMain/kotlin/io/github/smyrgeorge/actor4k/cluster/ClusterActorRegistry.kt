@@ -4,17 +4,21 @@ import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcSendService
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
+import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.ActorFactory
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
 
 /**
- * A specialized actor registry implementation for managing and retrieving actor references within a cluster.
+ * A specialized actor registry that integrates with cluster-based implementations for managing distributed actors.
  *
- * This class extends the base functionality of [ActorRegistry] by providing cluster-aware features,
- * enabling seamless resolution of actor references both locally and across cluster nodes. It is used to
- * facilitate actor lifecycle management, remote actor communication, and distribution across a cluster.
+ * This class extends the functionality of a base actor registry by adding support for cluster-specific features such
+ * as actor lookups, registration, and references within a distributed system. It utilizes a cluster implementation to
+ * communicate and interact with actors that may not reside in the local process but are part of the distributed cluster.
+ *
+ * @constructor Creates a new instance of the cluster actor registry associated with a specified logger factory.
+ * @param loggerFactory The factory used for creating loggers to facilitate structured logging for the registry.
  */
-class ClusterActorRegistry : ActorRegistry() {
+class ClusterActorRegistry(loggerFactory: Logger.Factory) : ActorRegistry(loggerFactory) {
 
     /**
      * Represents the cluster implementation used for managing distributed actors in the registry.

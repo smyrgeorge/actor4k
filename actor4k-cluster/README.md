@@ -79,7 +79,7 @@ val nodes = listOf(current)
 val loggerFactory = SimpleLoggerFactory()
 
 // Set up the actor registry with your actor classes
-val registry = ClusterActorRegistry()
+val registry = ClusterActorRegistry(loggerFactory)
     .factoryFor(AccountActor::class) { AccountActor(it) }
 
 // Initialize the cluster implementation
