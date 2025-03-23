@@ -1,5 +1,6 @@
 package io.github.smyrgeorge.actor4k.util.extentions
 
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -15,16 +16,19 @@ private object EmptyScope : CoroutineScope {
 }
 
 /**
- * Launches a new coroutine in a default context to execute a given suspendable function.
+ * Launches a coroutine within the context of the provided dispatcher or a default dispatcher.
  *
- * This function is intended to simplify coroutine launching for asynchronous operations.
- * It starts a coroutine in a predefined scope with the default dispatcher.
+ * This function starts a new coroutine and executes the given suspendable function `f`. It uses
+ * a specified coroutine dispatcher or defaults to `ActorSystem.dispatcher` if none is provided.
  *
- * @param f The suspend function to be executed within the launched coroutine.
- * @return A [Job] representing the coroutine, which can be used to monitor and manage its execution.
+ * @param dispatcher The coroutine dispatcher to be used for launching the coroutine. Defaults to `ActorSystem.dispatcher`.
+ * @param f The suspendable function to be executed within the launched coroutine.
+ * @return A `Job` representing the coroutine's lifecycle.
  */
-fun launch(dispatcher: CoroutineDispatcher = defaultDispatcher, f: suspend () -> Unit): Job =
-    EmptyScope.launch(dispatcher) { f() }
+fun launch(
+    dispatcher: CoroutineDispatcher = ActorSystem.dispatcher,
+    f: suspend () -> Unit
+): Job = EmptyScope.launch(dispatcher) { f() }
 
 /**
  * Continuously executes a suspendable function `f` at a specified time interval defined by `delay`.

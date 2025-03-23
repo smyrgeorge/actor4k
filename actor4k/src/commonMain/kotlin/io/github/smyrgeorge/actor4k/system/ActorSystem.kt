@@ -8,8 +8,10 @@ import io.github.smyrgeorge.actor4k.system.stats.SimpleStats
 import io.github.smyrgeorge.actor4k.system.stats.Stats
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
+import io.github.smyrgeorge.actor4k.util.extentions.defaultDispatcher
 import io.github.smyrgeorge.actor4k.util.extentions.forever
 import io.github.smyrgeorge.actor4k.util.extentions.registerShutdownHook
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlin.time.Duration
@@ -29,6 +31,7 @@ object ActorSystem {
     private var _type: Type = Type.SIMPLE
     private var _status: Status = Status.NOT_READY
     private var _stats: Stats = SimpleStats()
+    private var _dispatcher: CoroutineDispatcher = defaultDispatcher
     private lateinit var _cluster: Cluster
     private lateinit var _registry: ActorRegistry
     private lateinit var _loggerFactory: Logger.Factory
@@ -39,6 +42,7 @@ object ActorSystem {
     val type: Type get() = _type
     val status: Status get() = _status
     val stats: Stats get() = _stats
+    val dispatcher: CoroutineDispatcher get() = _dispatcher
     val cluster: Cluster get() = if (!this::_cluster.isInitialized) error("Please register a cluster.") else _cluster
     val registry: ActorRegistry get() = if (!this::_registry.isInitialized) error("Please register an actor registry.") else _registry
     val loggerFactory: Logger.Factory get() = if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.") else _loggerFactory
@@ -100,6 +104,17 @@ object ActorSystem {
      */
     fun register(stats: Stats): ActorSystem {
         _stats = stats
+        return this
+    }
+
+    /**
+     * Registers a provided CoroutineDispatcher to the ActorSystem.
+     *
+     * @param dispatcher The CoroutineDispatcher to be assigned for execution control.
+     * @return The current instance of the ActorSystem.
+     */
+    fun register(dispatcher: CoroutineDispatcher): ActorSystem {
+        _dispatcher = dispatcher
         return this
     }
 
