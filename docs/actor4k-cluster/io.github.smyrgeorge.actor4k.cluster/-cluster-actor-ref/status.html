@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">0.54.0
+        <div class="library-version" id="library-version">0.55.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -95,7 +95,7 @@
   <div class="cover ">
     <h1 class="cover"><span><span>status</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="status.html"><span class="token function">status</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.actor/-actor/-status/index.html">Actor.Status</a></div><p class="paragraph">Retrieves the status of the actor associated with the specified address.</p><span class="kdoc-tag"><h4 class="">Return</h4><p class="paragraph">The current status of the actor as an instance of <a href="../../../actor4k/io.github.smyrgeorge.actor4k.actor/-actor/-status/index.html">Actor.Status</a>.</p></span></div></div>
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="status.html"><span class="token function">status</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-result/index.html">Result</a><span class="token operator">&lt;</span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.actor/-actor/-status/index.html">Actor.Status</a><span class="token operator">&gt;</span></div><p class="paragraph">Retrieves the current status of the actor.</p><p class="paragraph">This method sends a request to the actor's service to obtain its status. Depending on the response, it either returns the status successfully, constructs an exception for a failure response, or raises an error if the response is unexpected.</p><span class="kdoc-tag"><h4 class="">Return</h4><p class="paragraph">A <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-result/index.html">Result</a> containing the actor's <a href="../../../actor4k/io.github.smyrgeorge.actor4k.actor/-actor/-status/index.html">Actor.Status</a> if the operation is successful, or a failure if an error occurs.</p></span></div></div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>

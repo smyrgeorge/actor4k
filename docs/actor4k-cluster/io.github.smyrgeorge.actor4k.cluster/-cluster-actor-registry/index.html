@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">0.54.0
+        <div class="library-version" id="library-version">0.55.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -94,43 +94,24 @@
   <div class="breadcrumbs"><a href="../../index.html">actor4k-cluster</a><span class="delimiter">/</span><a href="../index.html">io.github.smyrgeorge.actor4k.cluster</a><span class="delimiter">/</span><span class="current">ClusterActorRegistry</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Cluster</span><wbr><span>Actor</span><wbr><span><span>Registry</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">ClusterActorRegistry</a> : <a href="../../../actor4k/io.github.smyrgeorge.actor4k.system.registry/-actor-registry/index.html">ActorRegistry</a></div><p class="paragraph">A specialized actor registry implementation for managing and retrieving actor references within a cluster.</p><p class="paragraph">This class extends the base functionality of <a href="../../../actor4k/io.github.smyrgeorge.actor4k.system.registry/-actor-registry/index.html">ActorRegistry</a> by providing cluster-aware features, enabling seamless resolution of actor references both locally and across cluster nodes. It is used to facilitate actor lifecycle management, remote actor communication, and distribution across a cluster.</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">ClusterActorRegistry</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">loggerFactory<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util/-logger/-factory/index.html">Logger.Factory</a></span></span><span class="token punctuation">)</span> : <a href="../../../actor4k/io.github.smyrgeorge.actor4k.system.registry/-actor-registry/index.html">ActorRegistry</a></div><p class="paragraph">A specialized actor registry that integrates with cluster-based implementations for managing distributed actors.</p><p class="paragraph">This class extends the functionality of a base actor registry by adding support for cluster-specific features such as actor lookups, registration, and references within a distributed system. It utilizes a cluster implementation to communicate and interact with actors that may not reside in the local process but are part of the distributed cluster.</p><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":actor4k-cluster:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>logger</span><wbr><span><span>Factory</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The factory used for creating loggers to facilitate structured logging for the registry.</p></div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="">Constructors</h2>
-        <div class="table"><a data-name="334616254%2FConstructors%2F-1464340628" anchor-label="ClusterActorRegistry" id="334616254%2FConstructors%2F-1464340628" data-filterable-set=":actor4k-cluster:dokkaHtmlPartial/commonMain"></a>
+        <div class="table"><a data-name="-790228671%2FConstructors%2F-1464340628" anchor-label="ClusterActorRegistry" id="-790228671%2FConstructors%2F-1464340628" data-filterable-set=":actor4k-cluster:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":actor4k-cluster:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k-cluster:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-cluster-actor-registry.html"><span>Cluster</span><wbr><span>Actor</span><wbr><span><span>Registry</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="334616254%2FConstructors%2F-1464340628"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-790228671%2FConstructors%2F-1464340628"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div data-togglable="TYPE">
-        <h2 class="">Types</h2>
-        <div class="table"><a data-name="17920267%2FClasslikes%2F-1464340628" anchor-label="Companion" id="17920267%2FClasslikes%2F-1464340628" data-filterable-set=":actor4k-cluster:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":actor4k-cluster:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k-cluster:dokkaHtmlPartial/commonMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="17920267%2FClasslikes%2F-1464340628"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">loggerFactory<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util/-logger/-factory/index.html">Logger.Factory</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Creates a new instance of the cluster actor registry associated with a specified logger factory.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -168,7 +149,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="factory-for.html"><span class="token function">factoryFor</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">actor<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util.extentions/-any-actor-class/index.html">AnyActorClass</a><span class="token punctuation">, </span></span><span class="parameter ">factory<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util.extentions/-actor-factory/index.html">ActorFactory</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.system.registry/-actor-registry/index.html">ActorRegistry</a></div><div class="brief "><p class="paragraph">Registers the actor class with the provided factory and returns the updated actor registry.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="factory-for.html"><span class="token function">factoryFor</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">actor<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util.extentions/-any-actor-class/index.html">AnyActorClass</a><span class="token punctuation">, </span></span><span class="parameter ">factory<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util.extentions/-actor-factory/index.html">ActorFactory</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">ClusterActorRegistry</a></div><div class="brief "><p class="paragraph">Registers the actor class with the provided factory and returns the updated actor registry.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -184,6 +165,21 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get.html"><span class="token function">get</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">clazz<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util.extentions/-any-actor-class/index.html">AnyActorClass</a><span class="token punctuation">, </span></span><span class="parameter ">address<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.actor.ref/-address/index.html">Address</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.actor.ref/-actor-ref/index.html">ActorRef</a></div><div class="brief "><p class="paragraph">Retrieves an actor reference for the specified actor class and address.</p></div><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="index.html#-1925729511%2FFunctions%2F-1464340628"><span class="token function">get</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">clazz<span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.util.extentions/-any-actor-class/index.html">AnyActorClass</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../actor4k/io.github.smyrgeorge.actor4k.actor.ref/-actor-ref/index.html">ActorRef</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1859297096%2FFunctions%2F-1464340628" anchor-label="register" id="1859297096%2FFunctions%2F-1464340628" data-filterable-set=":actor4k-cluster:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":actor4k-cluster:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k-cluster:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="register.html"><span><span>register</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1859297096%2FFunctions%2F-1464340628"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="register.html"><span class="token function">register</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">cluster<span class="token operator">: </span><a href="../-cluster-impl/index.html">ClusterImpl</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">ClusterActorRegistry</a></div><div class="brief "><p class="paragraph">Registers the given cluster implementation with the actor registry.</p></div></div></div>
                 </div>
               </div>
             </div>
