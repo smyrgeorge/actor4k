@@ -2,15 +2,12 @@ package io.github.smyrgeorge.actor4k.cluster.rpc
 
 import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
 import io.github.smyrgeorge.actor4k.util.Logger
+import io.github.smyrgeorge.actor4k.util.extentions.launch
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * Maintains a WebSocket connection to a remote node and provides mechanisms for sending and
@@ -102,17 +99,6 @@ class RpcWebSocketSession(
             }
             delay(retryConnectMillis * (retryCount + 1))
             retryCount++
-        }
-    }
-
-    companion object {
-        private object WebSocketSessionScope : CoroutineScope {
-            override val coroutineContext: CoroutineContext
-                get() = EmptyCoroutineContext
-        }
-
-        private fun launch(f: suspend () -> Unit) {
-            WebSocketSessionScope.launch(Dispatchers.Default) { f() }
         }
     }
 }

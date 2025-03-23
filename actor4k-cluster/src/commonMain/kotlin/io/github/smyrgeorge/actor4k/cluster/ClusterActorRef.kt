@@ -37,7 +37,7 @@ class ClusterActorRef(
         val res = service.tell(address, msg).getOrElse { return Result.failure(it) }
         return when (res) {
             is ClusterMessage.Response.Empty -> Result.success(Unit)
-            is ClusterMessage.Response.Failure -> Result.failure(res.buildException())
+            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for tell command."))
         }
     }
@@ -59,7 +59,7 @@ class ClusterActorRef(
                 Result.success(res.response)
             }
 
-            is ClusterMessage.Response.Failure -> Result.failure(res.buildException())
+            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
         }
     }
@@ -78,7 +78,7 @@ class ClusterActorRef(
         val res = service.status(address).getOrElse { return Result.failure(it) }
         return when (res) {
             is ClusterMessage.Response.Status -> Result.success(res.status)
-            is ClusterMessage.Response.Failure -> Result.failure(res.buildException())
+            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
         }
     }
@@ -97,7 +97,7 @@ class ClusterActorRef(
         val res = service.stats(address).getOrElse { return Result.failure(it) }
         return when (res) {
             is ClusterMessage.Response.Stats -> Result.success(res.stats)
-            is ClusterMessage.Response.Failure -> Result.failure(res.buildException())
+            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
         }
     }
@@ -113,7 +113,7 @@ class ClusterActorRef(
         val res = service.shutdown(address).getOrElse { return Result.failure(it) }
         return when (res) {
             is ClusterMessage.Response.Empty -> Result.success(Unit)
-            is ClusterMessage.Response.Failure -> Result.failure(res.buildException())
+            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
         }
     }

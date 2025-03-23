@@ -4,21 +4,17 @@ import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
-import kotlinx.coroutines.CoroutineScope
+import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
@@ -481,15 +477,6 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     }
 
     companion object {
-        private object ActorScope : CoroutineScope {
-            override val coroutineContext: CoroutineContext
-                get() = EmptyCoroutineContext
-        }
-
-        private fun launch(f: suspend () -> Unit) {
-            ActorScope.launch(Dispatchers.Default) { f() }
-        }
-
         /**
          * Generates a unique random key as a string, which includes a "key-" prefix followed by a hash code
          * derived from a randomly generated UUID.

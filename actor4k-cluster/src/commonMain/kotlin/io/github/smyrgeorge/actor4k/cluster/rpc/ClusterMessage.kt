@@ -54,7 +54,13 @@ interface ClusterMessage {
 
         @Serializable
         class Failure(override val id: Long, val message: String?, val cause: String?) : Response {
-            fun buildException(): Exception {
+            /**
+             * Constructs an exception based on the message and cause properties.
+             *
+             * @return A newly constructed [IllegalStateException]. If the `cause` property is not null,
+             * it wraps the cause into an inner [Exception]; otherwise, the exception includes only the message.
+             */
+            fun exception(): Exception {
                 return if (cause != null) IllegalStateException(message, Exception(cause))
                 else IllegalStateException(message)
             }

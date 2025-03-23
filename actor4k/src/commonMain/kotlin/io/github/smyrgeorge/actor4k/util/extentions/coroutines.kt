@@ -14,7 +14,16 @@ private object EmptyScope : CoroutineScope {
         get() = EmptyCoroutineContext
 }
 
-private fun launch(f: suspend () -> Unit): Job =
+/**
+ * Launches a new coroutine in a default context to execute a given suspendable function.
+ *
+ * This function is intended to simplify coroutine launching for asynchronous operations.
+ * It starts a coroutine in a predefined scope with the default dispatcher.
+ *
+ * @param f The suspend function to be executed within the launched coroutine.
+ * @return A [Job] representing the coroutine, which can be used to monitor and manage its execution.
+ */
+fun launch(f: suspend () -> Unit): Job =
     EmptyScope.launch(Dispatchers.Default) { f() }
 
 /**

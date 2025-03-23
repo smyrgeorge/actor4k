@@ -5,14 +5,10 @@ import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Request
 import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Response
 import io.github.smyrgeorge.actor4k.util.Logger
+import io.github.smyrgeorge.actor4k.util.extentions.launch
 import io.ktor.websocket.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.protobuf.ProtoBuf
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * Service responsible for handling RPC requests received via WebSocket frames.
@@ -148,14 +144,5 @@ class RpcReceiveService(
     companion object {
         private fun Throwable.failure(id: Long): Response.Failure =
             Response.Failure(id, message, cause?.message)
-
-        private object ClusterRpcReceiveServiceScope : CoroutineScope {
-            override val coroutineContext: CoroutineContext
-                get() = EmptyCoroutineContext
-        }
-
-        private fun launch(f: suspend () -> Unit) {
-            ClusterRpcReceiveServiceScope.launch(Dispatchers.Default) { f() }
-        }
     }
 }

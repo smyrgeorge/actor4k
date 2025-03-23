@@ -2,11 +2,7 @@ package io.github.smyrgeorge.actor4k.actor.impl
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor.Protocol
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
+import io.github.smyrgeorge.actor4k.util.extentions.launch
 
 /**
  * Represents an actor that routes messages to a group of child actors using a defined routing strategy.
@@ -134,15 +130,4 @@ abstract class RouterActor<Req : Actor.Message>(
      * inherit from the `Message` class.
      */
     abstract class Child<Req : Message> : Actor<Req, Protocol.Ok>(randomKey())
-
-    companion object {
-        private object RouterActorScope : CoroutineScope {
-            override val coroutineContext: CoroutineContext
-                get() = EmptyCoroutineContext
-        }
-
-        private fun launch(f: suspend () -> Unit) {
-            RouterActorScope.launch(Dispatchers.Default) { f() }
-        }
-    }
 }
