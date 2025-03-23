@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.util.extentions
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -23,8 +23,8 @@ private object EmptyScope : CoroutineScope {
  * @param f The suspend function to be executed within the launched coroutine.
  * @return A [Job] representing the coroutine, which can be used to monitor and manage its execution.
  */
-fun launch(f: suspend () -> Unit): Job =
-    EmptyScope.launch(Dispatchers.Default) { f() }
+fun launch(dispatcher: CoroutineDispatcher = defaultDispatcher, f: suspend () -> Unit): Job =
+    EmptyScope.launch(dispatcher) { f() }
 
 /**
  * Continuously executes a suspendable function `f` at a specified time interval defined by `delay`.
