@@ -3,7 +3,7 @@
 set -e
 
 # Build the project.
-./gradlew :microbank:shadowJar
+./gradlew :microbank:jvmJar
 
 # Build docker image.
 docker build . -t microbank-jvm -f microbank/src/docker/jvm.Dockerfile

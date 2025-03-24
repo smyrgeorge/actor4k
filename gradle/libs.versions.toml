@@ -19,8 +19,6 @@ assertk = "0.28.1"
 kotlinx-serialization = "1.8.0"
 # https://github.com/ktorio/ktor
 ktor = "3.1.1"
-# https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
-shadow = "8.1.1"
 
 [libraries]
 gradle-kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -44,4 +42,3 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 pubhish = { id = "com.vanniktech.maven.publish", version.ref = "publish" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }

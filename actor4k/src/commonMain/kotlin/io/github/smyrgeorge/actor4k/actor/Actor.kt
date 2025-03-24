@@ -282,8 +282,6 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
         stats.triggeredShutDownAt = Clock.System.now()
         status = Status.SHUTTING_DOWN
         mail.close()
-        // Trigger the shutdown hook.
-        launch { onShutdown() }
     }
 
     /**
@@ -459,6 +457,9 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
             if (!isClosedForReceive) {
                 log.warn("[$address::consume] Channel is not closed for receive but the actor is shutting down.")
             }
+            // Trigger the shutdown hook.
+            onShutdown()
+            // Un-register the actor.
             ActorSystem.registry.unregister(this@Actor.ref)
             status = Status.SHUT_DOWN
             stats.shutDownAt = Clock.System.now()

@@ -23,7 +23,6 @@ class MultiplatformClusterConventions : Plugin<Project> {
                 Pair("mingwX64") { mingwX64() },
                 Pair("jvm") {
                     jvm {
-                        withJava()
                         compilerOptions {
                             freeCompilerArgs.set(listOf("-Xjsr305=strict"))
                             jvmTarget.set(JvmTarget.JVM_21)

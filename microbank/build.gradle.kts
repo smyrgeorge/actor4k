@@ -1,10 +1,6 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 plugins {
-    application
     id("io.github.smyrgeorge.actor4k.multiplatform.binaries")
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.shadow)
 }
 
 kotlin {
@@ -28,10 +24,20 @@ kotlin {
     }
 }
 
-application {
-    mainClass.set("io.github.smyrgeorge.actor4k.cluster.microbank.MicrobankMainKt")
+tasks.named<Jar>("jvmJar") {
+    archiveFileName.set("microbank.jar")
+
+    manifest {
+        attributes(
+            "Main-Class" to "io.github.smyrgeorge.actor4k.cluster.microbank.MicrobankMainKt"
+        )
+    }
+
+    // Include dependencies in your JAR (similar to what Shadow does)
+    from(configurations.named("jvmRuntimeClasspath").map { config ->
+        config.map { if (it.isDirectory) it else zipTree(it) }
+    })
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-tasks.withType<ShadowJar> {
-    archiveFileName.set("microbank.jar")
-}

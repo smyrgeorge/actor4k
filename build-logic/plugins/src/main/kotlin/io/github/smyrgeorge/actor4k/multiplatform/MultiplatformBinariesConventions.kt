@@ -20,7 +20,7 @@ class MultiplatformBinariesConventions : Plugin<Project> {
                 Pair("linuxArm64") { linuxArm64 { binaries { executable() } } },
                 Pair("linuxX64") { linuxX64 { binaries { executable() } } },
                 Pair("mingwX64") { mingwX64 { binaries { executable() } } },
-                Pair("jvm") { jvm { withJava() } },
+                Pair("jvm") { jvm() },
             )
 
             targets.forEach {
