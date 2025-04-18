@@ -129,7 +129,10 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
                 log.debug("Actor {} activated successfully.", address)
             } catch (e: Exception) {
                 log.error("Could not activate ${actor.address()}. Reason: ${e.message ?: "Unknown error."}.")
-                registry.remove(address)
+                // Need to lock again to safely remove from registry
+                lock {
+                    registry.remove(address)
+                }
                 throw e
             }
         }
@@ -147,13 +150,17 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
      * @param ref The `LocalRef` representing the actor to be unregistered.
      * @return Unit The completion of the operation.
      */
-    internal suspend fun unregister(ref: LocalRef): Unit = lock {
-        // Invalidate the shared LocalRef.
+    internal suspend fun unregister(ref: LocalRef) {
+        // Invalidate the shared LocalRef outside the lock to prevent potential deadlocks
         ref.invalidate()
-        // Remove it from the registry.
-        registry[ref.address]?.let {
-            registry.remove(ref.address)
-            log.info("Unregistered actor ${ref.address}.")
+
+        // Only lock for the registry modification
+        lock {
+            // Remove it from the registry.
+            registry[ref.address]?.let {
+                registry.remove(ref.address)
+                log.info("Unregistered actor ${ref.address}.")
+            }
         }
     }
 
