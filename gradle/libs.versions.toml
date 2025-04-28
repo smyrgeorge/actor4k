@@ -8,7 +8,7 @@ publish = "0.31.0"
 # https://github.com/Kotlin/dokka
 dokka = "2.0.0"
 # https://github.com/smyrgeorge/log4k
-log4k = "0.40.0"
+log4k = "0.50.0"
 # https://mvnrepository.com/artifact/org.slf4j/slf4j-api
 slf4j = "2.0.17"
 # https://github.com/Kotlin/kotlinx-datetime
