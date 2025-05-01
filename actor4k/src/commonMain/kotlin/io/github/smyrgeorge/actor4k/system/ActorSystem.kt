@@ -242,18 +242,27 @@ object ActorSystem {
     }
 
     /**
-     * Configuration class for setting up system parameters in an Actor-based system.
+     * Represents the configuration parameters for an Actor System.
      *
-     * @property actorQueueSize Specifies the maximum size of the actor's message queue. Defaults to unlimited queue size.
-     * @property actorAskTimeout Defines the timeout duration for requests sent using the 'ask' pattern to an actor.
-     * @property actorExpiresAfter Specifies the expiration time for inactive actors, determining when they are removed from the system.
-     * @property systemCollectStatsEvery Specifies the interval for system-level statistic collection.
-     * @property systemLogStatsEvery Configures the time interval for system statistics logging.
-     * @property registryCleanupEvery Specifies the interval for cleaning up the actor registry to remove expired or unused entries.
+     * This class is used to customize the behavior and operational settings of the Actor System
+     * such as queue size, timeouts, expiration settings, and system statistics.
+     *
+     * @property actorQueueSize The size of the actor's message queue. Default is unlimited.
+     * @property actorAskTimeout The maximum timeout duration for ask operations from actors.
+     * @property actorReplyTimeout The maximum time a system will wait for an actor to reply.
+     * @property actorActivateTimeout The timeout duration for actor activation steps.
+     * @property actorShutdownHookTimeout The timeout duration for actor cleanup during system shutdown.
+     * @property actorExpiresAfter The duration after which inactive actors will be considered expired.
+     * @property systemCollectStatsEvery The interval for collecting system statistics.
+     * @property systemLogStatsEvery The interval for logging system statistics to the output.
+     * @property registryCleanupEvery The frequency at which the actor registry is cleaned up.
      */
     data class Conf(
         val actorQueueSize: Int = Channel.UNLIMITED,
         val actorAskTimeout: Duration = 30.seconds,
+        val actorReplyTimeout: Duration = 2.seconds,
+        val actorActivateTimeout: Duration = 5.seconds,
+        val actorShutdownHookTimeout: Duration = 10.seconds,
         val actorExpiresAfter: Duration = 5.minutes,
         val systemCollectStatsEvery: Duration = 5.seconds,
         val systemLogStatsEvery: Duration = 30.seconds,

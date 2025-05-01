@@ -16,7 +16,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -220,7 +219,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     /**
      * Sends a reply to an actor using a specified message pattern, handling timeouts and closed channels.
      *
-     * This function attempts to send the response to the `replyTo` channel within a timeout of 2 seconds.
+     * This function attempts to send the response to the `replyTo` channel within a configurable timeout.
      * It also logs warnings in case of timeout, closed channel, or other exceptions.
      *
      * @param operation The operation name associated with the reply, used for logging.
@@ -230,11 +229,11 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
     private suspend fun reply(operation: String, pattern: Patterns.Ask<Req, Res>, reply: Result<Res>) {
         try {
             // We should be able to reply immediately.
-            withTimeout(2.seconds) {
+            withTimeout(ActorSystem.conf.actorReplyTimeout) {
                 pattern.replyTo.send(reply)
             }
         } catch (_: TimeoutCancellationException) {
-            log.warn("[$address::$operation] Could not reply in time (timeout) (the message was processed successfully).")
+            log.warn("[$address::$operation] Could not reply in time (timeout after ${ActorSystem.conf.actorReplyTimeout}) (the message was processed successfully).")
         } catch (_: ClosedSendChannelException) {
             log.warn("[$address::$operation] Could not reply, the channel is closed (the message was processed successfully).")
         } catch (e: Exception) {
@@ -457,12 +456,22 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
             if (!isClosedForReceive) {
                 log.warn("[$address::consume] Channel is not closed for receive but the actor is shutting down.")
             }
-            // Trigger the shutdown hook.
-            onShutdown()
-            // Un-register the actor.
-            ActorSystem.registry.unregister(this@Actor.ref)
-            status = Status.SHUT_DOWN
-            stats.shutDownAt = Clock.System.now()
+
+            try {
+                // Use a timeout for the shutdown hook to prevent deadlocks
+                withTimeout(ActorSystem.conf.actorShutdownHookTimeout) {
+                    onShutdown()
+                }
+            } catch (_: TimeoutCancellationException) {
+                log.error("[$address::onShutdown] Shutdown hook timed out after ${ActorSystem.conf.actorShutdownHookTimeout}. Forcing shutdown.")
+            } catch (e: Exception) {
+                log.error("[$address::onShutdown] Error during shutdown hook: ${e.message ?: "Unknown error"}")
+            } finally {
+                // Un-register the actor even if shutdown hook fails or times out
+                status = Status.SHUT_DOWN
+                stats.shutDownAt = Clock.System.now()
+                ActorSystem.registry.unregister(this@Actor.ref)
+            }
         }
 
     private suspend fun replyActivationError(pattern: Patterns<Req, Res>) {

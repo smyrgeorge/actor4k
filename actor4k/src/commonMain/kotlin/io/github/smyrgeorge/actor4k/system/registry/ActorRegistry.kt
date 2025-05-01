@@ -11,6 +11,7 @@ import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
 import io.github.smyrgeorge.actor4k.util.extentions.forever
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 
 /**
@@ -125,7 +126,10 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
         // Only call the activate method if the Actor just created.
         if (isNew) {
             try {
-                actor.activate()
+                // Use a timeout for activation to prevent deadlocks
+                withTimeout(ActorSystem.conf.actorActivateTimeout) {
+                    actor.activate()
+                }
                 log.debug("Actor {} activated successfully.", address)
             } catch (e: Exception) {
                 log.error("Could not activate ${actor.address()}. Reason: ${e.message ?: "Unknown error."}.")
