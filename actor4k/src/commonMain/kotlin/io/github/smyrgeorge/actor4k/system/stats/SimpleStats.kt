@@ -7,7 +7,7 @@ class SimpleStats : Stats {
     private var totalMessages: Long = 0
     private var currentPeriodMessages: Long = 0
 
-    override fun collect() {
+    override suspend fun collect() {
         actors = ActorSystem.registry.size()
         val totalMessages = ActorSystem.registry.totalMessages()
         currentPeriodMessages = totalMessages - this.totalMessages

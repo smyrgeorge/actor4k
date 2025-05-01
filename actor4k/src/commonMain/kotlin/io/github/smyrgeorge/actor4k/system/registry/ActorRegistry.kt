@@ -130,9 +130,7 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
             } catch (e: Exception) {
                 log.error("Could not activate ${actor.address()}. Reason: ${e.message ?: "Unknown error."}.")
                 // Need to lock again to safely remove from registry
-                lock {
-                    registry.remove(address)
-                }
+                lock { registry.remove(address) }
                 throw e
             }
         }
@@ -183,14 +181,14 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
      *
      * @return The total number of actors in the local registry.
      */
-    fun size(): Int = registry.size
+    suspend fun size(): Int = lock { registry.size }
 
     /**
      * Calculates the total number of messages processed by all actors in the local registry.
      *
      * @return The total count of messages processed by all actors.
      */
-    fun totalMessages(): Long = registry.map { it.value.stats().receivedMessages }.sum()
+    suspend fun totalMessages(): Long = lock { registry.map { it.value.stats().receivedMessages } }.sum()
 
     /**
      * Registers a factory function for creating instances of a specific actor type within the ActorRegistry.

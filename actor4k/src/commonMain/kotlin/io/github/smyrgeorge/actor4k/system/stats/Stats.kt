@@ -23,5 +23,5 @@ interface Stats {
      * The primary purpose of this method is to monitor the state and performance
      * of the actor-based system by refreshing key metrics.
      */
-    fun collect()
+    suspend fun collect()
 }

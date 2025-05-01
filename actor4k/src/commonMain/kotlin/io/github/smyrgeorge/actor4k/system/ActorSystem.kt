@@ -191,10 +191,14 @@ object ActorSystem {
 
         // Wait for all actors to finish.
         delay(100.milliseconds)
-        while (registry.size() > 0) {
-            log.info("Waiting ${registry.size()} actors to finish...")
+        var remainingActors = registry.size()
+        while (remainingActors > 0) {
+            log.info("Waiting $remainingActors actors to finish...")
             delay(1.seconds)
-            registry.shutdown()
+            remainingActors = registry.size()
+            if (remainingActors > 0) {
+                registry.shutdown()
+            }
         }
 
         // Reset cluster's status.
