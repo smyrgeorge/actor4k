@@ -142,7 +142,7 @@ class ClusterImpl(
      *             If false, it will return immediately after starting the server.
      */
     override fun start(wait: Boolean) {
-        log.info("Starting cluster with ${nodes.size} nodes.")
+        log.info("Starting cluster with ${nodes.size} nodes...")
         client = HttpClientUtils.create()
         server = HttpServerUtils.create(current.port, routing, receive)
 

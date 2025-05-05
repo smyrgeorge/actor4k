@@ -38,6 +38,20 @@ object ActorSystem {
 
     private val log: Logger by lazy { loggerFactory.getLogger(this::class) }
 
+    /**
+     * Indicates whether the logging system has been initiated.
+     *
+     * This variable is used to ensure that the logging-related operations,
+     * such as starting the stats collector and periodic logging of system
+     * statistics, are initialized only once during the lifecycle of the
+     * actor system.
+     *
+     * When set to `true`, it denotes that the stats collector and other
+     * periodic logging mechanisms have already been started, preventing
+     * further redundant initializations.
+     */
+    private var loggingStarted = false
+
     val conf: Conf get() = _conf
     val type: Type get() = _type
     val status: Status get() = _status
@@ -49,14 +63,6 @@ object ActorSystem {
 
     init {
         registerShutdownHook()
-        forever(_conf.systemCollectStatsEvery) {
-            if (status != Status.READY) return@forever
-            stats.collect()
-        }
-        forever(_conf.systemLogStatsEvery) {
-            if (status != Status.READY) return@forever
-            log.info(stats.toString())
-        }
     }
 
     /**
@@ -170,6 +176,20 @@ object ActorSystem {
         if (!this::_registry.isInitialized) error("Please register an actor registry.")
 
         log.info("Starting actor system...")
+
+        // Start the stats collector once per JVM instance.
+        if (!loggingStarted) {
+            loggingStarted = true
+            log.info("Starting stats collector...")
+            forever(_conf.systemCollectStatsEvery) {
+                if (status != Status.READY) return@forever
+                stats.collect()
+            }
+            forever(_conf.systemLogStatsEvery) {
+                if (status != Status.READY) return@forever
+                log.info(stats.toString())
+            }
+        }
 
         _status = Status.READY
         if (isCluster()) cluster.start(wait)
