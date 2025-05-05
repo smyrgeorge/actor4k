@@ -36,7 +36,9 @@ object ActorSystem {
     private lateinit var _registry: ActorRegistry
     private lateinit var _loggerFactory: Logger.Factory
 
-    private val log: Logger by lazy { loggerFactory.getLogger(this::class) }
+    private lateinit var _log: Logger
+    private val log: Logger
+        get() = if (!this::_log.isInitialized) error("Please register a Logger factory.") else _log
 
     /**
      * Indicates whether the logging system has been initiated.
@@ -105,6 +107,7 @@ object ActorSystem {
      */
     fun register(loggerFactory: Logger.Factory): ActorSystem {
         _loggerFactory = loggerFactory
+        _log = loggerFactory.getLogger(this::class)
         return this
     }
 
