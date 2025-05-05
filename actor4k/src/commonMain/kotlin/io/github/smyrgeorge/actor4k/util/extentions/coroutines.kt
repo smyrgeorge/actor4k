@@ -40,8 +40,8 @@ fun launch(
  * @param delay The duration to wait between each execution of the provided suspend function.
  * @param f The suspend function to be executed repeatedly.
  */
-fun forever(delay: Duration, f: suspend () -> Unit) {
-    launch {
+fun forever(delay: Duration, f: suspend () -> Unit): Job {
+    return launch {
         while (true) {
             runCatching {
                 delay(delay)

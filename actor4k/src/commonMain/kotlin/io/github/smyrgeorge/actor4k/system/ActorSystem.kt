@@ -12,6 +12,7 @@ import io.github.smyrgeorge.actor4k.util.extentions.defaultDispatcher
 import io.github.smyrgeorge.actor4k.util.extentions.forever
 import io.github.smyrgeorge.actor4k.util.extentions.registerShutdownHook
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlin.time.Duration
@@ -36,6 +37,9 @@ object ActorSystem {
     private lateinit var _registry: ActorRegistry
     private lateinit var _loggerFactory: Logger.Factory
 
+    private var collectStatsJob: Job? = null
+    private var logStatsJob: Job? = null
+
     private val log: Logger by lazy { loggerFactory.getLogger(this::class) }
 
     val conf: Conf get() = _conf
@@ -49,8 +53,6 @@ object ActorSystem {
 
     init {
         registerShutdownHook()
-        forever(_conf.systemCollectStatsEvery) { stats.collect() }
-        forever(_conf.systemLogStatsEvery) { log.info(stats.toString()) }
     }
 
     /**
@@ -162,7 +164,19 @@ object ActorSystem {
         if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
         if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.")
         if (!this::_registry.isInitialized) error("Please register an actor registry.")
+
         log.info("Starting actor system...")
+
+        // Start the collect-stats job.
+        if (collectStatsJob == null) {
+            collectStatsJob = forever(_conf.systemCollectStatsEvery) { stats.collect() }
+        }
+
+        // Start the log-stats job.
+        if (logStatsJob == null) {
+            logStatsJob = forever(_conf.systemLogStatsEvery) { log.info(stats.toString()) }
+        }
+
         _status = Status.READY
         if (isCluster()) cluster.start(wait)
     }
@@ -180,8 +194,22 @@ object ActorSystem {
      * It is designed to handle local and clustered environments appropriately.
      */
     suspend fun shutdown() {
+        if (status != Status.READY) return
+
         log.info("Received shutdown signal, will shutdown...")
         _status = Status.SHUTTING_DOWN
+
+        // Terminate collect-stats job.
+        collectStatsJob?.let {
+            it.cancel()
+            collectStatsJob = null
+        }
+
+        // Terminate log-stats job.
+        logStatsJob?.let {
+            it.cancel()
+            logStatsJob = null
+        }
 
         // Shutdown the actor registry.
         registry.shutdown()
