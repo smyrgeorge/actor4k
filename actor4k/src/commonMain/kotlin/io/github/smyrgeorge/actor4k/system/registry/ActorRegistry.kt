@@ -175,9 +175,10 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
      *
      * @return Unit A coroutine completion indicating that all local actors have been successfully shut down.
      */
-    suspend fun shutdown(): Unit = lock {
-        log.info("Stopping all local actors (size={})...", registry.size)
-        registry.values.forEach { it.shutdown() }
+    suspend fun shutdown() {
+        val remaining = lock { registry.values.map { it } }
+        log.info("Stopping all local actors (size={})...", remaining.size)
+        remaining.forEach { it.shutdown() }
     }
 
     /**

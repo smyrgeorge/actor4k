@@ -1,10 +1,7 @@
 package io.github.smyrgeorge.actor4k.util.extentions
 
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExecutorCoroutineDispatcher
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 
@@ -27,4 +24,5 @@ actual fun getEnv(key: String): String? = System.getenv(key)
 private val LOOM: ExecutorCoroutineDispatcher =
     Executors.newVirtualThreadPerTaskExecutor().asCoroutineDispatcher()
 
-actual val defaultDispatcher: CoroutineDispatcher = LOOM
+actual val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO
+@Suppress("unused") val loomDispatcher: CoroutineDispatcher = LOOM
