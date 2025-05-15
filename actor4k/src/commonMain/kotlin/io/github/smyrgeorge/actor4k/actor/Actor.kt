@@ -15,6 +15,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
+import kotlin.math.absoluteValue
 import kotlin.time.Duration
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -176,7 +177,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @return A [Result] wrapping a successful operation as [Unit], or a failure
      * if the message could not be sent or the actor is unavailable.
      */
-    suspend fun tell(msg: Message): Result<Unit> = runCatching {
+    open suspend fun tell(msg: Message): Result<Unit> = runCatching {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         @Suppress("UNCHECKED_CAST") (msg as Req)
         val tell = Patterns.Tell<Req, Res>(msg)
@@ -196,7 +197,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * actor's configured timeout.
      * @return A [Result] containing the actor's response of type [R], or a failure if an exception occurs or the timeout expires.
      */
-    suspend fun <R : Res> ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): Result<R> {
+    open suspend fun <R : Res> ask(msg: Message, timeout: Duration = ActorSystem.conf.actorAskTimeout): Result<R> {
         val ask: Patterns.Ask<Req, Res> = runCatching {
             if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
             @Suppress("UNCHECKED_CAST") (msg as Req)
@@ -495,7 +496,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
          */
         fun randomKey(prefix: String = "key"): String {
             @OptIn(ExperimentalUuidApi::class)
-            return "$prefix-${Uuid.random().hashCode()}"
+            return "$prefix-${Uuid.random().hashCode().absoluteValue}"
         }
     }
 }

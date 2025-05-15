@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
+import io.github.smyrgeorge.actor4k.actor.impl.RouterActor.Protocol
 import io.github.smyrgeorge.actor4k.examples.TestRouterChild.TestProtocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
@@ -9,24 +10,23 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
 class RoundRobinTestRouter(key: String) :
-    RouterActor<TestProtocol>(key, Strategy.ROUND_ROBIN)
+    RouterActor<TestProtocol, Protocol.Ok>(key, Strategy.ROUND_ROBIN)
 
 class BroadcastDetachedTestRouter() :
-    RouterActor<TestProtocol>(randomKey(), Strategy.BROADCAST, true)
+    RouterActor<TestProtocol, Protocol.Ok>(randomKey(), Strategy.BROADCAST, true)
 
-class TestRouterChild : RouterActor.Child<TestProtocol>() {
-    override suspend fun onReceive(m: TestProtocol): RouterActor.Protocol.Ok {
+class TestRouterChild : RouterActor.Child<TestProtocol, Protocol.Ok>() {
+    override suspend fun onReceive(m: TestProtocol): Protocol.Ok {
         when (m) {
-            TestProtocol.Test -> log.info("Received Test message: $m")
+            TestProtocol.Test -> log.info("[${address()}] Received Test message: $m")
         }
-        return RouterActor.Protocol.Ok
+        return Protocol.Ok
     }
 
-    sealed class TestProtocol : RouterActor.Protocol() {
+    sealed class TestProtocol : Protocol() {
         data object Test : TestProtocol()
     }
 }
-
 
 fun main(): Unit = runBlocking {
     val loggerFactory = SimpleLoggerFactory()
