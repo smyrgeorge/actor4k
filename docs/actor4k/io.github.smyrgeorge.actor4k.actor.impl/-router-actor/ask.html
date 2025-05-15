@@ -2,7 +2,7 @@
 <html class="no-js">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-    <title>proxy</title>
+    <title>ask</title>
 <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
     <script>document.documentElement.classList.replace("no-js","js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
@@ -45,7 +45,7 @@
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":actor4k-cluster:dokkaHtmlPartial/commonMain">common</button>
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":actor4k:dokkaHtmlPartial/commonMain">common</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
                 <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
@@ -56,7 +56,7 @@
                     </div>
                         <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":actor4k-cluster:dokkaHtmlPartial/commonMain" data-filter=":actor4k-cluster:dokkaHtmlPartial/commonMain">
+                                <input type="checkbox" class="checkbox--input" id=":actor4k:dokkaHtmlPartial/commonMain" data-filter=":actor4k:dokkaHtmlPartial/commonMain">
                                 <span class="checkbox--icon"></span>
                                 common
                             </label>
@@ -90,12 +90,12 @@
                 </div>
             </div>
             <div id="main">
-<div class="main-content" data-page-type="member" id="content" pageids="actor4k-cluster::io.github.smyrgeorge.actor4k.cluster/ClusterImpl/proxy/#/PointingToDeclaration//-1464340628">
-  <div class="breadcrumbs"><a href="../../index.html">actor4k-cluster</a><span class="delimiter">/</span><a href="../index.html">io.github.smyrgeorge.actor4k.cluster</a><span class="delimiter">/</span><a href="index.html">ClusterImpl</a><span class="delimiter">/</span><span class="current">proxy</span></div>
+<div class="main-content" data-page-type="member" id="content" pageids="actor4k::io.github.smyrgeorge.actor4k.actor.impl/RouterActor/ask/#io.github.smyrgeorge.actor4k.actor.Actor.Message#kotlin.time.Duration/PointingToDeclaration//1399988857">
+  <div class="breadcrumbs"><a href="../../index.html">actor4k</a><span class="delimiter">/</span><a href="../index.html">io.github.smyrgeorge.actor4k.actor.impl</a><span class="delimiter">/</span><a href="index.html">RouterActor</a><span class="delimiter">/</span><span class="current">ask</span></div>
   <div class="cover ">
-    <h1 class="cover"><span><span>proxy</span></span></h1>
+    <h1 class="cover"><span><span>ask</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="proxy.html">proxy</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator"> = </span><span class="token boolean">false</span></div><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":actor4k-cluster:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k-cluster:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>proxy</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Indicates whether the current node operates as a proxy; if true, it excludes the current node from the list of managed nodes.</p></div></div></div></div></div></div></div>
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend override </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="ask.html">R</a><span class="token operator"> : </span><a href="index.html">Res</a><span class="token operator">&gt; </span><a href="ask.html"><span class="token function">ask</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">msg<span class="token operator">: </span><a href="../../io.github.smyrgeorge.actor4k.actor/-actor/-message/index.html">Actor.Message</a><span class="token punctuation">, </span></span><span class="parameter ">timeout<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-duration/index.html">Duration</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-result/index.html">Result</a><span class="token operator">&lt;</span><a href="ask.html">R</a><span class="token operator">&gt;</span></div><p class="paragraph">Sends a message to one of the child actors and waits for a response within the specified timeout.</p><p class="paragraph">This method uses the defined routing strategy to decide how the message is routed to child actors. If the strategy is <code class="lang-kotlin">RANDOM</code>, the message is sent to a randomly chosen child. If the strategy is <code class="lang-kotlin">ROUND_ROBIN</code>, the message is sent to child actors in a sequential, cyclic order. The <code class="lang-kotlin">BROADCAST</code> strategy is not supported with this method, and invoking it in this mode will result in a failure.</p><p class="paragraph">If no child actors are registered, the method returns a failure result.</p><span class="kdoc-tag"><h4 class="">Return</h4><p class="paragraph">A <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-result/index.html">Result</a> containing the response of type <a href="ask.html">R</a> from the child actor, or a failure if an error occurs or no response is received within the timeout.</p></span><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>msg</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The message to send to the child actor. It must conform to the expected message type.</p></div></div></div></div><div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>timeout</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The maximum duration to wait for a response before timing out.</p></div></div></div></div></div></div></div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
