@@ -3,201 +3,211 @@ package io.github.smyrgeorge.actor4k.actor.impl
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.extentions.launch
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.Channel
 import kotlin.time.Duration
 
 /**
- * Represents an actor that routes messages to a group of child actors using a defined routing strategy.
+ * Represents a router actor that delegates messages to a collection of workers based on a specified routing strategy.
  *
- * The `RouterActor` class extends the `Actor` abstraction to provide functionality for managing
- * and routing messages to multiple child actors based on a specified `RoutingStrategy`. It supports
- * dynamic registration of child actors and ensures proper activation and shutdown of its dependencies.
+ * The `RouterActor` manages a set of `Worker` instances and distributes messages to them using
+ * predefined routing strategies, enabling efficient message handling in an actor-based system.
  *
- * @param Req The type of message requests this actor handles, which must extend `Actor.Message`.
- * @param Res The type of message responses this actor produces, which must extend `Actor.Message.Response`.
- * @param key A unique identifier for the actor. Defaults to a randomly generated value prefixed with "router".
- * @param strategy The routing strategy used to distribute messages to child actors.
- * @param autoActivation Whether to automatically activate the actor and its child actors during initialization.
- * @param children Initial list of child actors to be registered with this router.
+ * @param Req the type of request messages this router actor can process. Must extend [Actor.Message].
+ * @param Res the type of response messages expected from the workers. Must extend [Actor.Message.Response].
+ * @param key an optional unique key to identify the router actor. Defaults to a random key prefixed with "router".
+ * @param strategy the routing strategy used to delegate messages to workers.
  */
 abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
     key: String = randomKey("router"),
-    val strategy: Strategy,
-    autoActivation: Boolean = false,
-    children: List<Child<Req, Res>> = emptyList()
+    val strategy: Strategy
 ) : Actor<Req, Res>(key) {
 
     private var id: Long = 0L
-    private var children: Array<Child<Req, Res>> = children.toTypedArray()
-
-    init {
-        launch {
-            if (autoActivation) activate()
-            children.forEach { it.activate() }
-        }
-    }
+    private var workers: Array<Worker<Req, Res>> = emptyArray()
+    private lateinit var available: Channel<Worker<Req, Res>>
 
     final override suspend fun onReceive(m: Req): Res {
         error("This method should never be called.")
     }
 
     /**
-     * Sends a message to child actors according to the defined routing strategy.
+     * Routes a message to the workers based on the configured strategy.
      *
-     * Based on the strategy, the message is sent to:
-     * - A randomly selected child actor (`RANDOM`).
-     * - A child actor in cyclic order (`ROUND_ROBIN`).
-     * - All child actors simultaneously (`BROADCAST`).
+     * The method distributes the provided message to the workers according to the routing strategy:
+     * - `RANDOM`: Chooses a random worker to deliver the message.
+     * - `ROUND_ROBIN`: Sends the message to workers in a circular order.
+     * - `BROADCAST`: Delivers the message to all workers.
+     * - `FIRST_AVAILABLE`: Routes the message to the first available worker.
      *
-     * If no child actors are registered, the method returns a failure result.
+     * If no workers are registered, the method returns a failure result.
      *
-     * @param msg The message to be sent, inheriting from the [Message] class.
-     * @return A [Result] wrapping [Unit] on success, or a failure if no children are registered.
+     * @param msg The message to be sent, which must inherit from [Message].
+     * @return A [Result] wrapping [Unit] on successful dispatch or a failure if no workers are registered.
      */
     final override suspend fun tell(msg: Message): Result<Unit> {
-        if (children.isEmpty()) return Result.failure(IllegalStateException("No children registered."))
+        if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
         id++
         when (strategy) {
-            Strategy.RANDOM -> children.random().tell(msg)
-            Strategy.ROUND_ROBIN -> children[id.toInt() % children.size].tell(msg)
-            Strategy.BROADCAST -> children.forEach { it.tell(msg) }
-            Strategy.FIRST_IDLE -> {
-                var backoffDelay = 10L
-                val maxDelay = 1000L
-                val backoffFactor = 2.0
-
-                var child = children.find { !it.isProcessing() }
-                while (child == null) {
-                    delay(backoffDelay)
-                    child = children.find { !it.isProcessing() }
-
-                    // Calculate the next backoff delay with exponential increase
-                    backoffDelay = (backoffDelay * backoffFactor).toLong().coerceAtMost(maxDelay)
-                }
-                child.tell(msg)
-            }
+            Strategy.RANDOM -> workers.random().tell(msg)
+            Strategy.ROUND_ROBIN -> workers[id.toInt() % workers.size].tell(msg)
+            Strategy.BROADCAST -> workers.forEach { it.tell(msg) }
+            Strategy.FIRST_AVAILABLE -> available.receive().tell(msg)
         }
 
         return Result.success(Unit)
     }
 
     /**
-     * Sends a message to one of the child actors and waits for a response within the specified timeout.
+     * Sends a message to a worker and waits for a response within a specified timeout.
      *
-     * This method uses the defined routing strategy to decide how the message is routed to child actors.
-     * If the strategy is `RANDOM`, the message is sent to a randomly chosen child. If the strategy is
-     * `ROUND_ROBIN`, the message is sent to child actors in a sequential, cyclic order. The `BROADCAST`
-     * strategy is not supported with this method, and invoking it in this mode will result in a failure.
+     * This function routes the message to an appropriate worker based on the configured
+     * routing strategy. If the `BROADCAST` strategy is set, it returns a failure since
+     * `ask` cannot be used with this strategy. For other strategies, it selects a worker
+     * and sends the message, returning the response or an error if no workers are available
+     * or the timeout is exceeded.
      *
-     * If no child actors are registered, the method returns a failure result.
-     *
-     * @param msg The message to send to the child actor. It must conform to the expected message type.
-     * @param timeout The maximum duration to wait for a response before timing out.
-     * @return A [Result] containing the response of type [R] from the child actor, or a failure if an error occurs or no response is received within the timeout.
+     * @param msg The message to be sent to a worker. Must be an instance of the `Message` class.
+     * @param timeout The maximum duration to wait for a response from the worker.
+     * @return A [Result] containing the worker's response of type [R], or a failure if an error occurs
+     *         or the timeout period is exceeded.
      */
     final override suspend fun <R : Res> ask(msg: Message, timeout: Duration): Result<R> {
-        if (children.isEmpty()) return Result.failure(IllegalStateException("No children registered."))
+        if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
         id++
         return when (strategy) {
-            Strategy.RANDOM -> children.random().ask(msg, timeout)
-            Strategy.ROUND_ROBIN -> children[id.toInt() % children.size].ask(msg, timeout)
+            Strategy.RANDOM -> workers.random().ask(msg, timeout)
+            Strategy.ROUND_ROBIN -> workers[id.toInt() % workers.size].ask(msg, timeout)
             Strategy.BROADCAST -> Result.failure(IllegalStateException("Cannot use 'ask' with 'BROADCAST' strategy."))
-            Strategy.FIRST_IDLE -> {
-                var backoffDelay = 10L
-                val maxDelay = 1000L
-                val backoffFactor = 2.0
-
-                var child = children.find { !it.isProcessing() }
-                while (child == null) {
-                    delay(10)
-                    child = children.find { !it.isProcessing() }
-
-                    // Calculate the next backoff delay with exponential increase
-                    backoffDelay = (backoffDelay * backoffFactor).toLong().coerceAtMost(maxDelay)
-                }
-                child.ask(msg, timeout)
-            }
+            Strategy.FIRST_AVAILABLE -> available.receive().ask(msg, timeout)
         }
     }
 
     /**
-     * Invoked during the shutdown process of the actor.
+     * Shuts down the router and its associated workers.
      *
-     * This method iterates through all child actors and invokes their
-     * respective `shutdown` method, ensuring that each child actor is
-     * properly terminated. It is an essential part of the actor's lifecycle
-     * to ensure clean and orderly shutdown of its dependencies.
+     * This method performs a graceful shutdown by iterating through the registered
+     * workers and invoking their individual `shutdown` methods. Additionally, it closes
+     * the internal resource that tracks availability to ensure no further operations
+     * can be performed.
      */
     final override suspend fun onShutdown() {
-        children.forEach { it.shutdown() }
+        workers.forEach { it.shutdown() }
+        available.close()
     }
 
     /**
-     * Registers multiple actors to the current router actor and activates them immediately.
+     * Registers the provided workers with the `RouterActor` for message routing and initializes them.
      *
-     * @param actors Vararg of actor instances to be registered and activated.
-     * @return This instance of RouterActor for method chaining.
+     * The method ensures that all workers are activated and, in the case of the `FIRST_AVAILABLE` strategy,
+     * registers their availability via a channel. This method can only be called before the router is initialized.
+     * Once initialized, additional workers cannot be registered.
+     *
+     * @param actors The workers to be registered. Each worker is of type `Worker<Req, Res>`, where `Req` represents
+     *               the request type and `Res` represents the response type.
+     * @return The current instance of `RouterActor<Req, Res>` to allow method chaining.
+     * @throws IllegalStateException If the method is called after the router is already initialized.
      */
-    fun register(vararg actors: Child<Req, Res>): RouterActor<Req, Res> {
-        children = actors.toList().toTypedArray()
-        children.forEach { launch { it.activate() } }
+    fun register(vararg actors: Worker<Req, Res>): RouterActor<Req, Res> {
+        if (workers.isNotEmpty()) error("Cannot register new actors. Register function should only be called once.")
+
+        workers = actors.toList().toTypedArray()
+        available = Channel(workers.size)
+
+        workers.forEach { worker ->
+            launch {
+                if (strategy == Strategy.FIRST_AVAILABLE) {
+                    worker.registerBecomeAvailableChannel(available)
+                    available.send(worker)
+                }
+                worker.activate()
+            }
+        }
         return this
     }
 
     /**
-     * Defines the routing strategies available for directing messages to child actors in a RouterActor.
+     * Represents the strategy used by the RouterActor to route messages to its workers.
      *
-     * The specified strategy determines the manner in which messages are routed:
-     * - `RANDOM`: Selects a child actor randomly for each message.
-     * - `BROADCAST`: Sends the message to all child actors simultaneously.
-     * - `ROUND_ROBIN`: Distributes messages sequentially among child actors in cyclic order.
-     * - `FIRST_IDLE`: Sends the message to the first available child actor that is not currently processing.
+     * Each strategy defines a specific approach for how the RouterActor interacts with its
+     * registered workers when sending or receiving messages.
+     *
+     * RANDOM:
+     *   Selects a worker randomly for processing a request.
+     *
+     * BROADCAST:
+     *   Broadcasts the message to all registered workers. Not supported for operations
+     *   requiring a single response, like `ask`.
+     *
+     * ROUND_ROBIN:
+     *   Routes messages to workers in a cyclic manner. After the last worker is used, it
+     *   starts again from the first worker.
+     *
+     * FIRST_AVAILABLE:
+     *   Assigns the task to the first worker that becomes available. This strategy requires
+     *   workers to register their availability with the RouterActor.
      */
     enum class Strategy {
-        RANDOM, BROADCAST, ROUND_ROBIN, FIRST_IDLE;
+        RANDOM, BROADCAST, ROUND_ROBIN, FIRST_AVAILABLE;
     }
 
     /**
-     * Represents a protocol in the messaging or actor-based communication system.
+     * Represents an abstract protocol that defines the communication structure for messages and responses
+     * within the actor-based messaging system.
      *
-     * The `Protocol` class serves as an abstraction for defining specific protocol types that can be
-     * used for communication between actors or components within the system. It extends the base
-     * functionality of the `Message` class, inheriting properties like unique message identifiers
-     * and creation timestamps.
+     * The `Protocol` class serves as the foundation for implementing custom messaging protocols by extending
+     * its structure. It inherits from the `Message` class, ensuring compatibility with the overall messaging
+     * system and providing access to common message functionalities.
      *
-     * This class is typically used as a foundation for implementing domain-specific messaging
-     * protocols by creating subclasses or specialized message types. Actors interacting with
-     * protocols can leverage the provided structure for streamlined message processing and response
-     * handling.
+     * Subclasses of `Protocol` can define specific request and response types, enabling structured and
+     * predictable communication patterns within the actor hierarchy.
      *
-     * ## Subclasses:
-     * - `Protocol.Ok`: Represents a successful response, extending `Response`. This is commonly used
-     *   as an acknowledgment or confirmation message in actor communication workflows.
+     * @constructor Creates a new instance of the `Protocol` class. This class is abstract and cannot be
+     * instantiated directly. Instead, it is expected to be extended by other classes to define the messaging
+     * protocol.
      *
-     * ## Usage context:
-     * The `Protocol` class is designed to work within the context of actor-based programming and
-     * ensures smooth message routing and lifecycle operations when used with actors like `RouterActor`.
+     * @see Message
+     * @see Message.Response
      */
     abstract class Protocol : Message() {
         data object Ok : Response()
     }
 
     /**
-     * Represents an abstract child actor in an actor-based communication system.
+     * Represents an abstract worker in an actor-based system capable of processing messages of type `Req` and generating
+     * responses of type `Res`. It acts as a specialized `Actor` with an internal mechanism to signal its availability.
      *
-     * The `Child` class is designed to function as a base class for actors that operate
-     * with specific message and response types. It inherits from the `Actor` class
-     * and introduces additional capabilities tailored for routed communication and
-     * interaction with child actors.
-     *
-     * @param Req The type of messages that the actor can handle. It must extend the `Message` class.
-     * @param Res The type of responses that the actor can produce. It must extend the `Message.Response` class.
-     * @param capacity The maximum size of the actor's message queue. Defaults to the configuration value defined
-     * in `ActorSystem.conf.actorQueueSize`.
+     * @param Req the type of the request messages this worker can handle. It must extend [Message].
+     * @param Res the type of the response messages this worker can generate. It must extend [Message.Response].
+     * @param capacity the maximum number of messages the worker can queue, defaulting to the value defined
+     * in the actor system's configuration.
      */
-    abstract class Child<Req : Message, Res : Message.Response>(
+    abstract class Worker<Req : Message, Res : Message.Response>(
         capacity: Int = ActorSystem.conf.actorQueueSize,
-    ) : Actor<Req, Res>(key = randomKey(), capacity = capacity)
+    ) : Actor<Req, Res>(key = randomKey(), capacity = capacity) {
+        private var available: Channel<Worker<Req, Res>>? = null
+
+        /**
+         * Registers a `Channel` to signal the availability of the worker.
+         * The provided channel is used to notify the system when the worker becomes available
+         * to process new requests.
+         *
+         * @param ch the channel used to signal the availability of this worker.
+         */
+        internal fun registerBecomeAvailableChannel(ch: Channel<Worker<Req, Res>>) {
+            available = ch
+        }
+
+        /**
+         * Invoked after processing a request and generating a response. This method signals the availability of the worker
+         * for further tasks by sending it to the associated availability channel, if it is registered.
+         *
+         * @param m the request message that was processed by the worker.
+         * @param res the result of processing the request, containing either a successful response or an error.
+         */
+        final override suspend fun afterReceive(m: Req, res: Result<Res>) {
+            available?.send(this)
+        }
+    }
 }

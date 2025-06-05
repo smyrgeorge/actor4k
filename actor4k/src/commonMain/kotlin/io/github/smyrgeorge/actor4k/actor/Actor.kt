@@ -6,7 +6,6 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
@@ -40,7 +39,6 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
 
     private val stats: Stats = Stats()
     private var status = Status.CREATED
-    private var processing: Boolean = false
     private var initializationFailed: Exception? = null
     private val address: Address = Address.of(this::class, key)
     private val ref: LocalRef = LocalRef(address = address, actor = this)
@@ -80,6 +78,20 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @return The response of type [Res] generated after processing the message.
      */
     abstract suspend fun onReceive(m: Req): Res
+
+    /**
+     * Hook called after the actor has finished processing a message.
+     *
+     * This method provides an optional post-processing step for handling actions that should occur
+     * after the actor completes processing a message. It is executed after the result of the processing
+     * is generated, whether it is successful or a failure. Override this method in a subclass to
+     * implement custom logic such as logging, additional state updates, or cleanup tasks.
+     *
+     * @param m The original request message of type [Req] that was processed.
+     * @param res The result of the processing of type [Res], encapsulated in a [Result] object that
+     * represents either a success or a failure.
+     */
+    internal open suspend fun afterReceive(m: Req, res: Result<Res>) {}
 
     /**
      * Hook invoked during the shutdown sequence of the actor.
@@ -158,13 +170,17 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
                 }
 
                 // Consume flow.
-                processing = true
                 val reply: Result<Res> = runCatching { onReceive(msg).apply { setId(stats.receivedMessages) } }
                 when (it) {
                     is Patterns.Tell -> Unit
                     is Patterns.Ask -> reply(operation = "consume", pattern = it, reply = reply)
                 }
-                processing = false
+
+                try {
+                    afterReceive(msg, reply)
+                } catch (e: Exception) {
+                    log.warn("[$address::afterReceive] Failed to process afterReceive hook (${e.message ?: ""})")
+                }
             }
         }
     }
@@ -271,27 +287,6 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @return the address of the actor as a [Address].
      */
     fun address(): Address = address
-
-    /**
-     * Checks whether the actor is currently processing a message.
-     *
-     * @return `true` if the actor is in a processing state, or `false` otherwise.
-     */
-    fun isProcessing(): Boolean = processing
-
-    /**
-     * Checks whether the actor's mailbox is empty.
-     *
-     * This method determines if there are no messages currently present in the mailbox
-     * associated with the actor. It provides a boolean result indicating the emptiness
-     * of the mailbox.
-     *
-     * @return `true` if the mailbox is empty, otherwise `false`.
-     */
-    fun isEmpty(): Boolean {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        return mail.isEmpty
-    }
 
     /**
      * Performs the shutdown process for the actor.
@@ -521,7 +516,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
          */
         fun randomKey(prefix: String = "key"): String {
             @OptIn(ExperimentalUuidApi::class)
-            return "$prefix-${Uuid.random().hashCode().absoluteValue}"
+            return "${prefix.removeSuffix("-")}-${Uuid.random().hashCode().absoluteValue}"
         }
     }
 }
