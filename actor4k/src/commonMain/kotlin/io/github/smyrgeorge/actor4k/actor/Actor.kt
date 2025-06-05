@@ -6,6 +6,7 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
@@ -39,6 +40,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
 
     private val stats: Stats = Stats()
     private var status = Status.CREATED
+    private var processing: Boolean = false
     private var initializationFailed: Exception? = null
     private val address: Address = Address.of(this::class, key)
     private val ref: LocalRef = LocalRef(address = address, actor = this)
@@ -49,7 +51,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      *
      * This method provides a pre-activation step for setting up or preparing
      * the actor before it processes its first message. It is executed within
-     * the `activate` method, prior to handling the initialization message and
+     * the `activate` method, before handling the initialization message and
      * before the actor enters its active state.
      *
      * Override this method in a subclass to implement any custom logic
@@ -146,7 +148,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
                         status = Status.READY
                         stats.initializedAt = Clock.System.now()
                     } catch (e: Exception) {
-                        // In case of an error we need to close the [Actor] immediately.
+                        // In case of an error, we need to close the [Actor] immediately.
                         log.error("[$address::activate] Failed to activate, will shutdown (${e.message ?: ""})")
                         initializationFailed = e
                         replyActivationError(it)
@@ -156,11 +158,13 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
                 }
 
                 // Consume flow.
+                processing = true
                 val reply: Result<Res> = runCatching { onReceive(msg).apply { setId(stats.receivedMessages) } }
                 when (it) {
                     is Patterns.Tell -> Unit
                     is Patterns.Ask -> reply(operation = "consume", pattern = it, reply = reply)
                 }
+                processing = false
             }
         }
     }
@@ -267,6 +271,27 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @return the address of the actor as a [Address].
      */
     fun address(): Address = address
+
+    /**
+     * Checks whether the actor is currently processing a message.
+     *
+     * @return `true` if the actor is in a processing state, or `false` otherwise.
+     */
+    fun isProcessing(): Boolean = processing
+
+    /**
+     * Checks whether the actor's mailbox is empty.
+     *
+     * This method determines if there are no messages currently present in the mailbox
+     * associated with the actor. It provides a boolean result indicating the emptiness
+     * of the mailbox.
+     *
+     * @return `true` if the mailbox is empty, otherwise `false`.
+     */
+    fun isEmpty(): Boolean {
+        @OptIn(ExperimentalCoroutinesApi::class)
+        return mail.isEmpty
+    }
 
     /**
      * Performs the shutdown process for the actor.

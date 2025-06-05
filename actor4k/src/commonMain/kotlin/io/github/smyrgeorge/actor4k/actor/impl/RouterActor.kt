@@ -3,6 +3,7 @@ package io.github.smyrgeorge.actor4k.actor.impl
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.extentions.launch
+import kotlinx.coroutines.delay
 import kotlin.time.Duration
 
 /**
@@ -61,6 +62,21 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
             Strategy.RANDOM -> children.random().tell(msg)
             Strategy.ROUND_ROBIN -> children[id.toInt() % children.size].tell(msg)
             Strategy.BROADCAST -> children.forEach { it.tell(msg) }
+            Strategy.FIRST_IDLE -> {
+                var backoffDelay = 10L
+                val maxDelay = 1000L
+                val backoffFactor = 2.0
+
+                var child = children.find { !it.isProcessing() }
+                while (child == null) {
+                    delay(backoffDelay)
+                    child = children.find { !it.isProcessing() }
+
+                    // Calculate the next backoff delay with exponential increase
+                    backoffDelay = (backoffDelay * backoffFactor).toLong().coerceAtMost(maxDelay)
+                }
+                child.tell(msg)
+            }
         }
 
         return Result.success(Unit)
@@ -88,6 +104,21 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
             Strategy.RANDOM -> children.random().ask(msg, timeout)
             Strategy.ROUND_ROBIN -> children[id.toInt() % children.size].ask(msg, timeout)
             Strategy.BROADCAST -> Result.failure(IllegalStateException("Cannot use 'ask' with 'BROADCAST' strategy."))
+            Strategy.FIRST_IDLE -> {
+                var backoffDelay = 10L
+                val maxDelay = 1000L
+                val backoffFactor = 2.0
+
+                var child = children.find { !it.isProcessing() }
+                while (child == null) {
+                    delay(10)
+                    child = children.find { !it.isProcessing() }
+
+                    // Calculate the next backoff delay with exponential increase
+                    backoffDelay = (backoffDelay * backoffFactor).toLong().coerceAtMost(maxDelay)
+                }
+                child.ask(msg, timeout)
+            }
         }
     }
 
@@ -116,16 +147,16 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
     }
 
     /**
-     * Specifies the strategy used for routing messages to child actors in a `RouterActor`.
+     * Defines the routing strategies available for directing messages to child actors in a RouterActor.
      *
-     * Routing strategies define how the `RouterActor` distributes messages to its child actors:
-     *
-     * - `RANDOM`: A message is routed to a randomly chosen child actor.
-     * - `BROADCAST`: The message is forwarded to all child actors simultaneously.
-     * - `ROUND_ROBIN`: Messages are distributed in a sequential, cyclic order across child actors.
+     * The specified strategy determines the manner in which messages are routed:
+     * - `RANDOM`: Selects a child actor randomly for each message.
+     * - `BROADCAST`: Sends the message to all child actors simultaneously.
+     * - `ROUND_ROBIN`: Distributes messages sequentially among child actors in cyclic order.
+     * - `FIRST_IDLE`: Sends the message to the first available child actor that is not currently processing.
      */
     enum class Strategy {
-        RANDOM, BROADCAST, ROUND_ROBIN
+        RANDOM, BROADCAST, ROUND_ROBIN, FIRST_IDLE;
     }
 
     /**
@@ -154,18 +185,19 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
     }
 
     /**
-     * Represents an abstract child actor within the actor-based system.
+     * Represents an abstract child actor in an actor-based communication system.
      *
-     * The `Child` class is a specialized type of `Actor` designed to handle
-     * requests of type `Req` and produce responses of type `Protocol.Ok`.
-     * It provides a foundation for implementing child actor behavior in a
-     * hierarchical actor model, where parent actors can create and manage
-     * child actors.
+     * The `Child` class is designed to function as a base class for actors that operate
+     * with specific message and response types. It inherits from the `Actor` class
+     * and introduces additional capabilities tailored for routed communication and
+     * interaction with child actors.
      *
-     * @param Req The type of message requests this actor can handle, which must
-     * inherit from the `Message` class.
+     * @param Req The type of messages that the actor can handle. It must extend the `Message` class.
+     * @param Res The type of responses that the actor can produce. It must extend the `Message.Response` class.
+     * @param capacity The maximum size of the actor's message queue. Defaults to the configuration value defined
+     * in `ActorSystem.conf.actorQueueSize`.
      */
     abstract class Child<Req : Message, Res : Message.Response>(
         capacity: Int = ActorSystem.conf.actorQueueSize,
-    ) : Actor<Req, Res>(randomKey(), capacity)
+    ) : Actor<Req, Res>(key = randomKey(), capacity = capacity)
 }
