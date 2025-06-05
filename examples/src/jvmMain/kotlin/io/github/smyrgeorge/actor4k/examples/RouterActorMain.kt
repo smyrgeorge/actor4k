@@ -33,7 +33,7 @@ fun main(): Unit = runBlocking {
 
     val registry = SimpleActorRegistry(loggerFactory)
         .factoryFor(RoundRobinTestRouter::class) {
-            RoundRobinTestRouter("router-1")
+            RoundRobinTestRouter(key = it)
                 .register(
                     TestRouterWorker(),
                     TestRouterWorker(),
