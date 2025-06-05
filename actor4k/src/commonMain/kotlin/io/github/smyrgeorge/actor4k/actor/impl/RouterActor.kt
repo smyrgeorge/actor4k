@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.actor.impl
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlin.time.Duration
 
@@ -164,5 +165,7 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
      * @param Req The type of message requests this actor can handle, which must
      * inherit from the `Message` class.
      */
-    abstract class Child<Req : Message, Res : Message.Response> : Actor<Req, Res>(randomKey())
+    abstract class Child<Req : Message, Res : Message.Response>(
+        capacity: Int = ActorSystem.conf.actorQueueSize,
+    ) : Actor<Req, Res>(randomKey(), capacity)
 }

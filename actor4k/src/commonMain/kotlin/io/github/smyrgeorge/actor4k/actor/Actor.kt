@@ -468,7 +468,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
             } catch (e: Exception) {
                 log.error("[$address::onShutdown] Error during shutdown hook: ${e.message ?: "Unknown error"}")
             } finally {
-                // Un-register the actor even if shutdown hook fails or times out
+                // Unregister the actor even if the shutdown hook fails or times out
                 status = Status.SHUT_DOWN
                 stats.shutDownAt = Clock.System.now()
                 ActorSystem.registry.unregister(this@Actor.ref)
