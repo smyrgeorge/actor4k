@@ -47,13 +47,13 @@ core module is already being used in production with great results (in a non-clu
 **What’s Next?**
 
 - **Enhance the basic actor API by adding:**
-  - Timers
-  - Stash
+    - Timers
+    - Stash
 - **Expand the cluster capabilities**
-  - Node configuration loader
-  - Dynamic node management and discovery
+    - Node configuration loader
+    - Dynamic node management and discovery
 - **Other**
-  - Event Sourcing tooling (Persistent Actor)
+    - Event Sourcing tooling (Persistent Actor)
 
 ## Actors in Cluster
 
@@ -89,7 +89,7 @@ val registry = SimpleActorRegistry(loggerFactory)
 
 // Start the actor system.
 ActorSystem
-  .register(loggerFactory)
+    .register(loggerFactory)
     .register(registry) // You can override the registry implementation here.
     .start()
 ```
@@ -206,30 +206,30 @@ behavior provides an effective way to implement a back-pressure strategy within 
 ### Router Actor
 
 A [Router Actor](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/actor/impl/RouterActor.kt) is an actor
-designed to distribute received messages among multiple child actors according to a defined routing strategy. This
+designed to distribute received messages among multiple worker actors according to a defined routing strategy. This
 pattern simplifies concurrent and parallel message handling, effectively supporting greater scalability and throughput.
-The RouterActor provides mechanisms for dynamic management and structured communication patterns with its child
+The RouterActor provides mechanisms for dynamic management and structured communication patterns with its worker
 actors, encapsulating common strategies useful in concurrent systems.
 
 #### Key Features and Responsibilities
 
 The `RouterActor` extends the foundational `Actor` abstraction, managing several essential roles:
 
-- **Message Routing**: It efficiently forwards messages it receives to its registered child actors based on a selected
+- **Message Routing**: It efficiently forwards messages it receives to its registered worker actors based on a selected
   routing strategy.
-- **Child Actor Management**:
-  - Initiates and manages the lifecycle of child actors, ensuring they are appropriately activated, maintained, and
-    gracefully shut down.
-  - Supports dynamic registration of additional child actors at runtime.
+- **Worker Actor Management**:
+    - Initiates and manages the lifecycle of worker actors, ensuring they are appropriately activated, maintained, and
+      gracefully shut down.
 
 #### Supported Routing Strategies:
 
 The Router Actor provides three routing strategies:
 
-- **RANDOM**: Routes an incoming message randomly to one of its child actors.
-- **BROADCAST**: Sends the same message simultaneously to all child actors.
-- **ROUND_ROBIN**: Sequentially routes incoming messages in a cyclic manner across its children, balancing the load
+- **RANDOM**: Routes an incoming message randomly to one of its worker actors.
+- **BROADCAST**: Sends the same message simultaneously to all worker actors.
+- **ROUND_ROBIN**: Sequentially routes incoming messages in a cyclic manner across its workers, balancing the load
   evenly.
+- **FIRST_AVAILABLE**: Assigns the task to the first worker that becomes available.
 
 Check an example [here](examples/src/jvmMain/kotlin/io/github/smyrgeorge/actor4k/examples/RouterActorMain.kt).
 
