@@ -1,22 +1,13 @@
 package io.github.smyrgeorge.actor4k.test
 
 import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isFailure
-import assertk.assertions.isGreaterThan
-import assertk.assertions.isInstanceOf
-import assertk.assertions.isNotNull
-import assertk.assertions.isSuccess
-import assertk.assertions.isTrue
+import assertk.assertions.*
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.test.util.Registry
-import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -216,6 +207,108 @@ class RouterActorTests {
         assertThat(result.getOrNull()).isNotNull()
     }
 
+    @Test
+    fun `register should throw exception when called multiple times`(): Unit = runBlocking {
+        // Create router and workers
+        val router = TestRouter(RouterActor.Strategy.RANDOM)
+        val worker1 = TestWorker()
+        val worker2 = TestWorker()
+
+        // First registration should succeed
+        router.register(worker1)
+
+        // Second registration should fail
+        val exception = runCatching {
+            router.register(worker2)
+        }.exceptionOrNull()
+
+        assertThat(exception).isNotNull()
+        assertThat(exception!!).isInstanceOf(IllegalStateException::class)
+    }
+
+    @Test
+    fun `router should shutdown without errors`(): Unit = runBlocking {
+        // Create workers
+        val worker1 = TestWorker()
+        val worker2 = TestWorker()
+        val worker3 = TestWorker()
+
+        // Create router and register workers
+        val router = TestRouter(RouterActor.Strategy.RANDOM)
+            .register(worker1, worker2, worker3)
+
+        // Activate the workers by sending a message
+        router.tell(TestProtocol.Ping).getOrThrow()
+
+        // Shutdown the router - this should not throw any exceptions
+        val result = runCatching {
+            router.shutdown()
+        }
+
+        // Verify shutdown completed without errors
+        assertThat(result.isSuccess).isTrue()
+    }
+
+    @Test
+    fun `router should work with different message types`(): Unit = runBlocking {
+        // Create workers
+        val worker = TestWorkerWithMultipleMessages()
+
+        // Create router
+        val router = TestRouterWithMultipleMessages(RouterActor.Strategy.RANDOM)
+            .register(worker)
+
+        // Send different types of messages
+        router.tell(TestProtocolWithMultipleMessages.Ping).getOrThrow()
+        router.tell(TestProtocolWithMultipleMessages.Echo("Hello")).getOrThrow()
+
+        delay(500) // Allow time for message processing
+
+        // Verify messages were processed
+        assertThat(worker.pingCount).isEqualTo(1)
+        assertThat(worker.lastEchoMessage).isEqualTo("Hello")
+    }
+
+    @Test
+    fun `ROUND_ROBIN strategy should work with varying number of workers`(): Unit = runBlocking {
+        // Create different numbers of workers for testing
+        val singleWorkerRouter = TestRouter(RouterActor.Strategy.ROUND_ROBIN)
+            .register(TestWorker())
+
+        val manyWorkersRouter = TestRouter(RouterActor.Strategy.ROUND_ROBIN)
+            .register(
+                TestWorker(), TestWorker(), TestWorker(),
+                TestWorker(), TestWorker()
+            )
+
+        // Send messages to both routers
+        repeat(10) {
+            singleWorkerRouter.tell(TestProtocol.Ping).getOrThrow()
+            manyWorkersRouter.tell(TestProtocol.Ping).getOrThrow()
+        }
+
+        // Both should succeed without errors
+        assertThat(true).isTrue() // If we got here, the test passed
+    }
+
+    @Test
+    fun `router should handle worker failures gracefully`(): Unit = runBlocking {
+        // Create a worker that will fail
+        val failingWorker = TestWorkerThatFails()
+
+        // Create router with the failing worker
+        val router = TestRouter(RouterActor.Strategy.RANDOM)
+            .register(failingWorker)
+
+        // Send a message that will cause the worker to fail
+        // Use ask instead of tell to get the failure
+        val result = router.ask<RouterActor.Protocol.Ok>(TestProtocol.Ping, 5.seconds)
+
+        // The router should propagate the failure
+        assertThat(result).isFailure()
+        assertThat(result.exceptionOrNull()).isNotNull()
+    }
+
     // Test protocol for messages
     sealed class TestProtocol : RouterActor.Protocol() {
         data object Ping : TestProtocol()
@@ -225,7 +318,8 @@ class RouterActorTests {
     class TestRouter(strategy: Strategy) : RouterActor<TestProtocol, RouterActor.Protocol.Ok>("test-router", strategy)
 
     // Test worker implementation
-    class TestWorker(private val processingTime: Long = 0) : RouterActor.Worker<TestProtocol, RouterActor.Protocol.Ok>() {
+    class TestWorker(private val processingTime: Long = 0) :
+        RouterActor.Worker<TestProtocol, RouterActor.Protocol.Ok>() {
         var messageCount = 0
             private set
 
@@ -235,6 +329,42 @@ class RouterActorTests {
                 delay(processingTime)
             }
             return RouterActor.Protocol.Ok
+        }
+    }
+
+    // Test protocol with multiple message types
+    sealed class TestProtocolWithMultipleMessages : RouterActor.Protocol() {
+        data object Ping : TestProtocolWithMultipleMessages()
+        data class Echo(val message: String) : TestProtocolWithMultipleMessages()
+    }
+
+    // Test router with multiple message types
+    class TestRouterWithMultipleMessages(strategy: Strategy) :
+        RouterActor<TestProtocolWithMultipleMessages, RouterActor.Protocol.Ok>("test-router-multiple", strategy)
+
+    // Test worker with multiple message types
+    class TestWorkerWithMultipleMessages :
+        RouterActor.Worker<TestProtocolWithMultipleMessages, RouterActor.Protocol.Ok>() {
+
+        var pingCount = 0
+            private set
+
+        var lastEchoMessage: String = ""
+            private set
+
+        override suspend fun onReceive(m: TestProtocolWithMultipleMessages): RouterActor.Protocol.Ok {
+            when (m) {
+                is TestProtocolWithMultipleMessages.Ping -> pingCount++
+                is TestProtocolWithMultipleMessages.Echo -> lastEchoMessage = m.message
+            }
+            return RouterActor.Protocol.Ok
+        }
+    }
+
+    // Test worker that fails
+    class TestWorkerThatFails : RouterActor.Worker<TestProtocol, RouterActor.Protocol.Ok>() {
+        override suspend fun onReceive(m: TestProtocol): RouterActor.Protocol.Ok {
+            throw RuntimeException("Simulated failure")
         }
     }
 }
