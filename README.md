@@ -223,13 +223,20 @@ The `RouterActor` extends the foundational `Actor` abstraction, managing several
 
 #### Supported Routing Strategies:
 
-The Router Actor provides three routing strategies:
+The Router Actor provides four routing strategies:
 
-- **RANDOM**: Routes an incoming message randomly to one of its worker actors.
-- **BROADCAST**: Sends the same message simultaneously to all worker actors.
-- **ROUND_ROBIN**: Sequentially routes incoming messages in a cyclic manner across its workers, balancing the load
-  evenly.
-- **FIRST_AVAILABLE**: Assigns the task to the first worker that becomes available.
+- **RANDOM**: Chooses a random worker to deliver the message.
+- **BROADCAST**: Delivers the message to all workers. Note that the `ask` operation cannot be used with this strategy.
+- **ROUND_ROBIN**: Sends the message to workers in a circular order, balancing the load evenly.
+- **FIRST_AVAILABLE**: Routes the message to the first worker that becomes available. This strategy requires
+  workers to register their availability with the RouterActor.
+
+#### Worker and Protocol Classes
+
+The RouterActor implementation includes:
+
+- **Worker**: An abstract class that extends Actor and processes messages of specific request and response types. Workers have an internal mechanism to signal their availability, which is particularly important for the FIRST_AVAILABLE routing strategy.
+- **Protocol**: An abstract class that defines the communication structure for messages and responses within the actor-based messaging system.
 
 Check an example [here](examples/src/jvmMain/kotlin/io/github/smyrgeorge/actor4k/examples/RouterActorMain.kt).
 
