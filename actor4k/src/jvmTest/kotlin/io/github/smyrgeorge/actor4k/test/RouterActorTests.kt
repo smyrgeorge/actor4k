@@ -309,6 +309,110 @@ class RouterActorTests {
         assertThat(result.exceptionOrNull()).isNotNull()
     }
 
+    @Test
+    fun `FIRST_AVAILABLE strategy should distribute load based on worker processing speed`(): Unit = runBlocking {
+        // Create workers with very different processing times
+        val veryFastWorker = TestWorker(processingTime = 50)
+        val mediumWorker = TestWorker(processingTime = 200)
+        val slowWorker = TestWorker(processingTime = 500)
+
+        // Create router with FIRST_AVAILABLE strategy
+        val router = TestRouter(RouterActor.Strategy.FIRST_AVAILABLE)
+            .register(veryFastWorker, mediumWorker, slowWorker)
+
+        // Send many messages in quick succession
+        repeat(20) {
+            router.tell(TestProtocol.Ping).getOrThrow()
+        }
+
+        delay(2000) // Allow time for all message processing
+
+        // Very fast worker should process significantly more messages than others
+        assertThat(veryFastWorker.messageCount).isGreaterThan(mediumWorker.messageCount)
+        assertThat(mediumWorker.messageCount).isGreaterThan(slowWorker.messageCount)
+
+        // Total messages should be 20
+        assertThat(veryFastWorker.messageCount + mediumWorker.messageCount + slowWorker.messageCount).isEqualTo(20)
+    }
+
+    @Test
+    fun `FIRST_AVAILABLE strategy should handle all workers being busy`(): Unit = runBlocking {
+        // Create workers with long processing times
+        val worker1 = TestWorker(processingTime = 300)
+        val worker2 = TestWorker(processingTime = 300)
+
+        // Create router with FIRST_AVAILABLE strategy
+        val router = TestRouter(RouterActor.Strategy.FIRST_AVAILABLE)
+            .register(worker1, worker2)
+
+        // Send messages to occupy all workers
+        router.tell(TestProtocol.Ping).getOrThrow()
+        router.tell(TestProtocol.Ping).getOrThrow()
+
+        // Send another message - this should wait until a worker becomes available
+        val startTime = System.currentTimeMillis()
+        router.tell(TestProtocol.Ping).getOrThrow()
+        val endTime = System.currentTimeMillis()
+
+        // The third message should have waited for at least one worker to become available
+        // which should take approximately 300ms
+        assertThat(endTime - startTime).isGreaterThanOrEqualTo(250)
+
+        delay(500) // Allow time for all message processing
+
+        // Total messages should be 3
+        assertThat(worker1.messageCount + worker2.messageCount).isEqualTo(3)
+    }
+
+    @Test
+    fun `FIRST_AVAILABLE strategy should recover when workers fail`(): Unit = runBlocking {
+        // Create a mix of reliable and unreliable workers
+        val reliableWorker = TestWorker()
+        val unreliableWorker = TestWorkerThatFailsOccasionally()
+
+        // Create router with FIRST_AVAILABLE strategy
+        val router = TestRouter(RouterActor.Strategy.FIRST_AVAILABLE)
+            .register(reliableWorker, unreliableWorker)
+
+        // Send multiple messages
+        repeat(10) {
+            // Use tell which doesn't propagate failures
+            router.tell(TestProtocol.Ping).getOrThrow()
+            delay(50) // Small delay between sends
+        }
+
+        delay(1000) // Allow time for message processing
+
+        // The reliable worker should have processed some messages
+        assertThat(reliableWorker.messageCount).isGreaterThan(0)
+
+        // The unreliable worker should have attempted to process some messages
+        assertThat(unreliableWorker.attemptCount).isGreaterThan(0)
+
+        // Some messages should have failed (in the unreliable worker)
+        assertThat(unreliableWorker.failureCount).isGreaterThan(0)
+    }
+
+    @Test
+    fun `FIRST_AVAILABLE strategy should work with a single worker`(): Unit = runBlocking {
+        // Create a single worker
+        val worker = TestWorker()
+
+        // Create router with FIRST_AVAILABLE strategy
+        val router = TestRouter(RouterActor.Strategy.FIRST_AVAILABLE)
+            .register(worker)
+
+        // Send multiple messages
+        repeat(5) {
+            router.tell(TestProtocol.Ping).getOrThrow()
+        }
+
+        delay(500) // Allow time for message processing
+
+        // The worker should have processed all messages
+        assertThat(worker.messageCount).isEqualTo(5)
+    }
+
     // Test protocol for messages
     sealed class TestProtocol : RouterActor.Protocol() {
         data object Ping : TestProtocol()
@@ -365,6 +469,27 @@ class RouterActorTests {
     class TestWorkerThatFails : RouterActor.Worker<TestProtocol, RouterActor.Protocol.Ok>() {
         override suspend fun onReceive(m: TestProtocol): RouterActor.Protocol.Ok {
             throw RuntimeException("Simulated failure")
+        }
+    }
+
+    // Test worker that fails occasionally
+    class TestWorkerThatFailsOccasionally : RouterActor.Worker<TestProtocol, RouterActor.Protocol.Ok>() {
+        var attemptCount: Int = 0
+            private set
+
+        var failureCount: Int = 0
+            private set
+
+        override suspend fun onReceive(m: TestProtocol): RouterActor.Protocol.Ok {
+            attemptCount++
+
+            // Fail on every other message
+            if (attemptCount % 2 == 0) {
+                failureCount++
+                throw RuntimeException("Simulated occasional failure")
+            }
+
+            return RouterActor.Protocol.Ok
         }
     }
 }
