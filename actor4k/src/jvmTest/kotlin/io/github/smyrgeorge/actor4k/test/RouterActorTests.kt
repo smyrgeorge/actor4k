@@ -63,6 +63,127 @@ class RouterActorTests {
     }
 
     @Test
+    fun `RANDOM strategy should distribute load statistically with large number of messages`(): Unit = runBlocking {
+        // Create workers and track message receipt
+        val worker1 = TestWorker()
+        val worker2 = TestWorker()
+        val worker3 = TestWorker()
+
+        // Create router with RANDOM strategy
+        val router = TestRouter(RouterActor.Strategy.RANDOM)
+            .register(worker1, worker2, worker3)
+
+        // Send a large number of messages to get better statistical distribution
+        repeat(100) {
+            router.tell(TestProtocol.Ping).getOrThrow()
+        }
+
+        delay(1000) // Allow time for message processing
+
+        // Verify total messages
+        val totalMessages = worker1.messageCount + worker2.messageCount + worker3.messageCount
+        assertThat(totalMessages).isEqualTo(100)
+
+        // Each worker should have received a reasonable number of messages
+        // With random distribution, it's very unlikely any worker gets less than 10% of messages
+        assertThat(worker1.messageCount).isGreaterThan(5)
+        assertThat(worker2.messageCount).isGreaterThan(5)
+        assertThat(worker3.messageCount).isGreaterThan(5)
+
+        // No worker should have received all messages
+        assertThat(worker1.messageCount).isLessThan(100)
+        assertThat(worker2.messageCount).isLessThan(100)
+        assertThat(worker3.messageCount).isLessThan(100)
+    }
+
+    @Test
+    fun `RANDOM strategy should work with a single worker`(): Unit = runBlocking {
+        // Create a single worker
+        val worker = TestWorker()
+
+        // Create router with RANDOM strategy
+        val router = TestRouter(RouterActor.Strategy.RANDOM)
+            .register(worker)
+
+        // Send multiple messages
+        repeat(10) {
+            router.tell(TestProtocol.Ping).getOrThrow()
+        }
+
+        delay(500) // Allow time for message processing
+
+        // The single worker should receive all messages
+        assertThat(worker.messageCount).isEqualTo(10)
+    }
+
+    @Test
+    fun `RANDOM strategy should continue working after worker failures`(): Unit = runBlocking {
+        // Create a mix of reliable and unreliable workers
+        val reliableWorker = TestWorker()
+        val unreliableWorker = TestWorkerThatFailsOnce()
+
+        // Create router with RANDOM strategy
+        val router = TestRouter(RouterActor.Strategy.RANDOM)
+            .register(reliableWorker, unreliableWorker)
+
+        // Send multiple messages - some might fail depending on random selection
+        var successCount = 0
+        var failureCount = 0
+
+        repeat(20) {
+            try {
+                router.tell(TestProtocol.Ping).getOrThrow()
+                successCount++
+            } catch (_: Exception) {
+                failureCount++
+            }
+        }
+
+        delay(500) // Allow time for message processing
+
+        // We should have some successes and possibly some failures
+        assertThat(successCount).isGreaterThan(0)
+
+        // The reliable worker should have received some messages
+        assertThat(reliableWorker.messageCount).isGreaterThan(0)
+
+        // The unreliable worker should have been attempted at least once
+        // and might have succeeded after the first failure
+        assertThat(unreliableWorker.attemptCount).isGreaterThan(0)
+
+        // Total processed messages should equal the success count
+        // Note: Due to the asynchronous nature, we allow for a small discrepancy
+        val totalProcessed = reliableWorker.messageCount + unreliableWorker.messageCount
+        assertThat(totalProcessed).isGreaterThanOrEqualTo(successCount - 1)
+        assertThat(totalProcessed).isLessThanOrEqualTo(successCount)
+    }
+
+    @Test
+    fun `RANDOM strategy should handle different message types`(): Unit = runBlocking {
+        // Create worker that handles multiple message types
+        val worker = TestWorkerWithMultipleMessages()
+
+        // Create router with RANDOM strategy
+        val router = TestRouterWithMultipleMessages(RouterActor.Strategy.RANDOM)
+            .register(worker)
+
+        // Send different types of messages multiple times
+        repeat(5) {
+            router.tell(TestProtocolWithMultipleMessages.Ping).getOrThrow()
+        }
+
+        repeat(5) {
+            router.tell(TestProtocolWithMultipleMessages.Echo("Message $it")).getOrThrow()
+        }
+
+        delay(500) // Allow time for message processing
+
+        // Verify all messages were processed
+        assertThat(worker.pingCount).isEqualTo(5)
+        assertThat(worker.lastEchoMessage).isEqualTo("Message 4") // Last message sent
+    }
+
+    @Test
     fun `ROUND_ROBIN strategy should route messages in cyclic order`(): Unit = runBlocking {
         // Create workers and track message receipt
         val worker1 = TestWorker()
@@ -292,6 +413,101 @@ class RouterActorTests {
     }
 
     @Test
+    fun `ROUND_ROBIN strategy should handle uneven message distribution`(): Unit = runBlocking {
+        // Create workers and track message receipt
+        val worker1 = TestWorker()
+        val worker2 = TestWorker()
+        val worker3 = TestWorker()
+        val worker4 = TestWorker()
+
+        // Create router with ROUND_ROBIN strategy
+        val router = TestRouter(RouterActor.Strategy.ROUND_ROBIN)
+            .register(worker1, worker2, worker3, worker4)
+
+        // Send 10 messages (not a multiple of 4)
+        repeat(10) {
+            router.tell(TestProtocol.Ping).getOrThrow()
+        }
+
+        delay(500) // Allow time for message processing
+
+        // Verify total messages
+        val totalMessages = worker1.messageCount + worker2.messageCount +
+                worker3.messageCount + worker4.messageCount
+        assertThat(totalMessages).isEqualTo(10)
+
+        // Each worker should have received either 2 or 3 messages
+        // The exact distribution depends on the initial state of the id counter
+        // So we'll check that the distribution is reasonable
+        for (worker in listOf(worker1, worker2, worker3, worker4)) {
+            assertThat(worker.messageCount).isIn(2, 3)
+        }
+
+        // Two workers should have received 3 messages and two should have received 2
+        val workersWithThreeMessages = listOf(worker1, worker2, worker3, worker4)
+            .count { it.messageCount == 3 }
+        val workersWithTwoMessages = listOf(worker1, worker2, worker3, worker4)
+            .count { it.messageCount == 2 }
+
+        assertThat(workersWithThreeMessages).isEqualTo(2)
+        assertThat(workersWithTwoMessages).isEqualTo(2)
+    }
+
+    @Test
+    fun `ROUND_ROBIN strategy should maintain pattern with large number of messages`(): Unit = runBlocking {
+        // Create workers and track message receipt
+        val worker1 = TestWorker()
+        val worker2 = TestWorker()
+        val worker3 = TestWorker()
+
+        // Create router with ROUND_ROBIN strategy
+        val router = TestRouter(RouterActor.Strategy.ROUND_ROBIN)
+            .register(worker1, worker2, worker3)
+
+        // Send 30 messages (10 complete cycles)
+        repeat(30) {
+            router.tell(TestProtocol.Ping).getOrThrow()
+        }
+
+        delay(500) // Allow time for message processing
+
+        // Each worker should have received exactly 10 messages
+        assertThat(worker1.messageCount).isEqualTo(10)
+        assertThat(worker2.messageCount).isEqualTo(10)
+        assertThat(worker3.messageCount).isEqualTo(10)
+    }
+
+    @Test
+    fun `ROUND_ROBIN strategy should continue pattern after worker failures`(): Unit = runBlocking {
+        // Create a mix of reliable and unreliable workers
+        val worker1 = TestWorker()
+        val worker2 = TestWorkerThatFailsOnce() // Will fail on first message
+        val worker3 = TestWorker()
+
+        // Create router with ROUND_ROBIN strategy
+        val router = TestRouter(RouterActor.Strategy.ROUND_ROBIN)
+            .register(worker1, worker2, worker3)
+
+        // Send 9 messages - one will fail but the pattern should continue
+        repeat(9) {
+            try {
+                router.tell(TestProtocol.Ping).getOrThrow()
+            } catch (_: Exception) {
+                // Ignore the expected failure
+            }
+        }
+
+        delay(500) // Allow time for message processing
+
+        // Worker2 should have received 3 messages (one failed, two succeeded)
+        // Other workers should have received 3 messages each
+        assertThat(worker1.messageCount).isEqualTo(3)
+        assertThat(worker2.messageCount).isEqualTo(2) // One failed, so only 2 counted
+        assertThat(worker2.attemptCount).isEqualTo(3) // But 3 attempts were made
+        assertThat(worker3.messageCount).isEqualTo(3)
+    }
+
+    @Test
     fun `router should handle worker failures gracefully`(): Unit = runBlocking {
         // Create a worker that will fail
         val failingWorker = TestWorkerThatFails()
@@ -489,6 +705,27 @@ class RouterActorTests {
                 throw RuntimeException("Simulated occasional failure")
             }
 
+            return RouterActor.Protocol.Ok
+        }
+    }
+
+    // Test worker that fails only on the first message
+    class TestWorkerThatFailsOnce : RouterActor.Worker<TestProtocol, RouterActor.Protocol.Ok>() {
+        var messageCount: Int = 0
+            private set
+
+        var attemptCount: Int = 0
+            private set
+
+        override suspend fun onReceive(m: TestProtocol): RouterActor.Protocol.Ok {
+            attemptCount++
+
+            // Fail only on the first message
+            if (attemptCount == 1) {
+                throw RuntimeException("Simulated one-time failure")
+            }
+
+            messageCount++
             return RouterActor.Protocol.Ok
         }
     }
