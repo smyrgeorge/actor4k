@@ -48,14 +48,16 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
         if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
         id++
-        when (strategy) {
+        return when (strategy) {
             Strategy.RANDOM -> workers.random().tell(msg)
-            Strategy.ROUND_ROBIN -> workers[id.toInt() % workers.size].tell(msg)
-            Strategy.BROADCAST -> workers.forEach { it.tell(msg) }
+            Strategy.ROUND_ROBIN -> workers[(id % workers.size).toInt()].tell(msg)
+            Strategy.BROADCAST -> {
+                workers.forEach { it.tell(msg) }
+                Result.success(Unit)
+            }
+
             Strategy.FIRST_AVAILABLE -> available.receive().tell(msg)
         }
-
-        return Result.success(Unit)
     }
 
     /**
@@ -78,7 +80,7 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
         id++
         return when (strategy) {
             Strategy.RANDOM -> workers.random().ask(msg, timeout)
-            Strategy.ROUND_ROBIN -> workers[id.toInt() % workers.size].ask(msg, timeout)
+            Strategy.ROUND_ROBIN -> workers[(id % workers.size).toInt()].ask(msg, timeout)
             Strategy.BROADCAST -> Result.failure(IllegalStateException("Cannot use 'ask' with 'BROADCAST' strategy."))
             Strategy.FIRST_AVAILABLE -> available.receive().ask(msg, timeout)
         }
