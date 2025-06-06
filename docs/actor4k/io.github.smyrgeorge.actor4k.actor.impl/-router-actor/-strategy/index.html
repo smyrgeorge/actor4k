@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">0.65.0
+        <div class="library-version" id="library-version">0.70.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -94,7 +94,7 @@
   <div class="breadcrumbs"><a href="../../../index.html">actor4k</a><span class="delimiter">/</span><a href="../../index.html">io.github.smyrgeorge.actor4k.actor.impl</a><span class="delimiter">/</span><a href="../index.html">RouterActor</a><span class="delimiter">/</span><span class="current">Strategy</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Strategy</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="index.html">Strategy</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="index.html">RouterActor.Strategy</a><span class="token operator">&gt; </span></div><p class="paragraph">Specifies the strategy used for routing messages to child actors in a <code class="lang-kotlin">RouterActor</code>.</p><p class="paragraph">Routing strategies define how the <code class="lang-kotlin">RouterActor</code> distributes messages to its child actors:</p><ul><li><p class="paragraph"><code class="lang-kotlin">RANDOM</code>: A message is routed to a randomly chosen child actor.</p></li><li><p class="paragraph"><code class="lang-kotlin">BROADCAST</code>: The message is forwarded to all child actors simultaneously.</p></li><li><p class="paragraph"><code class="lang-kotlin">ROUND_ROBIN</code>: Messages are distributed in a sequential, cyclic order across child actors.</p></li></ul></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="index.html">Strategy</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="index.html">RouterActor.Strategy</a><span class="token operator">&gt; </span></div><p class="paragraph">Represents the strategy used by the RouterActor to route messages to its workers.</p><p class="paragraph">Each strategy defines a specific approach for how the RouterActor interacts with its registered workers when sending or receiving messages.</p><p class="paragraph">RANDOM: Selects a worker randomly for processing a request.</p><p class="paragraph">BROADCAST: Broadcasts the message to all registered workers. Not supported for operations requiring a single response, like <code class="lang-kotlin">ask</code>.</p><p class="paragraph">ROUND_ROBIN: Routes messages to workers in a cyclic manner. After the last worker is used, it starts again from the first worker.</p><p class="paragraph">FIRST_AVAILABLE: Assigns the task to the first worker that becomes available. This strategy requires workers to register their availability with the RouterActor.</p></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button><button class="section-tab" data-togglable="ENTRY">Entries</button></div>
@@ -142,6 +142,21 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><div class="block"><a href="-r-o-u-n-d_-r-o-b-i-n/index.html">ROUND_ROBIN</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1192292688%2FClasslikes%2F1399988857" anchor-label="FIRST_AVAILABLE" id="-1192292688%2FClasslikes%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="ENTRY" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-f-i-r-s-t_-a-v-a-i-l-a-b-l-e/index.html">FIRST_AVAILABLE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1192292688%2FClasslikes%2F1399988857"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><div class="block"><a href="-f-i-r-s-t_-a-v-a-i-l-a-b-l-e/index.html">FIRST_AVAILABLE</a></div></div></div></div>
                 </div>
               </div>
             </div>

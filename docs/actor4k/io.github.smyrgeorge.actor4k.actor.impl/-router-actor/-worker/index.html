@@ -2,7 +2,7 @@
 <html class="no-js">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-    <title>Child</title>
+    <title>Worker</title>
 <link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
     <script>document.documentElement.classList.replace("no-js","js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">0.65.0
+        <div class="library-version" id="library-version">0.70.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -90,23 +90,23 @@
                 </div>
             </div>
             <div id="main">
-<div class="main-content" data-page-type="classlike" id="content" pageids="actor4k::io.github.smyrgeorge.actor4k.actor.impl/RouterActor.Child///PointingToDeclaration//1399988857">
-  <div class="breadcrumbs"><a href="../../../index.html">actor4k</a><span class="delimiter">/</span><a href="../../index.html">io.github.smyrgeorge.actor4k.actor.impl</a><span class="delimiter">/</span><a href="../index.html">RouterActor</a><span class="delimiter">/</span><span class="current">Child</span></div>
+<div class="main-content" data-page-type="classlike" id="content" pageids="actor4k::io.github.smyrgeorge.actor4k.actor.impl/RouterActor.Worker///PointingToDeclaration//1399988857">
+  <div class="breadcrumbs"><a href="../../../index.html">actor4k</a><span class="delimiter">/</span><a href="../../index.html">io.github.smyrgeorge.actor4k.actor.impl</a><span class="delimiter">/</span><a href="../index.html">RouterActor</a><span class="delimiter">/</span><span class="current">Worker</span></div>
   <div class="cover ">
-    <h1 class="cover"><span><span>Child</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="index.html">Child</a><span class="token operator">&lt;</span><a href="index.html">Req</a><span class="token operator"> : </span><a href="../../../io.github.smyrgeorge.actor4k.actor/-actor/-message/index.html">Actor.Message</a><span class="token punctuation">, </span><a href="index.html">Res</a><span class="token operator"> : </span><a href="../../../io.github.smyrgeorge.actor4k.actor/-actor/-message/-response/index.html">Actor.Message.Response</a><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">capacity<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span>ActorSystem.conf.actorQueueSize</span></span><span class="token punctuation">)</span> : <a href="../../../io.github.smyrgeorge.actor4k.actor/-actor/index.html">Actor</a><span class="token operator">&lt;</span><a href="index.html">Req</a><span class="token punctuation">, </span><a href="index.html">Res</a><span class="token operator">&gt; </span></div><p class="paragraph">Represents an abstract child actor within the actor-based system.</p><p class="paragraph">The <code class="lang-kotlin">Child</code> class is a specialized type of <code class="lang-kotlin">Actor</code> designed to handle requests of type <code class="lang-kotlin">Req</code> and produce responses of type <code class="lang-kotlin">Protocol.Ok</code>. It provides a foundation for implementing child actor behavior in a hierarchical actor model, where parent actors can create and manage child actors.</p><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>Req</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The type of message requests this actor can handle, which must inherit from the <code class="lang-kotlin">Message</code> class.</p></div></div></div></div></div></div></div>
+    <h1 class="cover"><span><span>Worker</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="index.html">Worker</a><span class="token operator">&lt;</span><a href="index.html">Req</a><span class="token operator"> : </span><a href="../../../io.github.smyrgeorge.actor4k.actor/-actor/-message/index.html">Actor.Message</a><span class="token punctuation">, </span><a href="index.html">Res</a><span class="token operator"> : </span><a href="../../../io.github.smyrgeorge.actor4k.actor/-actor/-message/-response/index.html">Actor.Message.Response</a><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">capacity<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span>ActorSystem.conf.actorQueueSize</span></span><span class="token punctuation">)</span> : <a href="../../../io.github.smyrgeorge.actor4k.actor/-actor/index.html">Actor</a><span class="token operator">&lt;</span><a href="index.html">Req</a><span class="token punctuation">, </span><a href="index.html">Res</a><span class="token operator">&gt; </span></div><p class="paragraph">Represents an abstract worker in an actor-based system capable of processing messages of type <code class="lang-kotlin">Req</code> and generating responses of type <code class="lang-kotlin">Res</code>. It acts as a specialized <code class="lang-kotlin">Actor</code> with an internal mechanism to signal its availability.</p><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>Req</span></span></u></div></span></div><div><div class="title"><p class="paragraph">the type of the request messages this worker can handle. It must extend Message.</p></div></div></div></div><div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>Res</span></span></u></div></span></div><div><div class="title"><p class="paragraph">the type of the response messages this worker can generate. It must extend Message.Response.</p></div></div></div></div><div class="table-row" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>capacity</span></span></u></div></span></div><div><div class="title"><p class="paragraph">the maximum number of messages the worker can queue, defaulting to the value defined in the actor system's configuration.</p></div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="">Constructors</h2>
-        <div class="table"><a data-name="-366478513%2FConstructors%2F1399988857" anchor-label="Child" id="-366478513%2FConstructors%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
+        <div class="table"><a data-name="-1898917559%2FConstructors%2F1399988857" anchor-label="Worker" id="-1898917559%2FConstructors%2F1399988857" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":actor4k:dokkaHtmlPartial/commonMain" data-filterable-set=":actor4k:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-child.html"><span><span>Child</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-366478513%2FConstructors%2F1399988857"></span>
+                  <div><a href="-worker.html"><span><span>Worker</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1898917559%2FConstructors%2F1399988857"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
