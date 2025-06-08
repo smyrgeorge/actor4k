@@ -186,7 +186,7 @@ class RpcSendService(
         private var idx: Long = 0
         private val idxMutex = Mutex()
         private suspend fun nextId(): Long = idxMutex.withLock { idx++ }
-        private val rpc = RpcManager<Response>(ActorSystem.loggerFactory, 30.seconds)
+        private val rpc = RpcManager<Response>(ActorSystem.loggerFactory, 120.seconds)
 
         /**
          * Handles the incoming response by decoding it from a byte array and passing it to the appropriate request handler.

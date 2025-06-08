@@ -62,7 +62,7 @@ class RpcReceiveService(
      * @param msg the Echo request containing an id and a payload string.
      * @return the Echo response with the same id and the payload.
      */
-    fun echo(msg: Request.Echo): Response.Echo = Response.Echo(msg.id, msg.payload)
+    private fun echo(msg: Request.Echo): Response.Echo = Response.Echo(msg.id, msg.payload)
 
     /**
      * Processes a Tell request by sending a message to a specified actor without awaiting a response.
@@ -72,7 +72,7 @@ class RpcReceiveService(
      * @return an Empty response if the message is successfully sent to the actor,
      *         or a Failure response if an exception occurs during the process.
      */
-    suspend fun tell(msg: Request.Tell): Response {
+    private suspend fun tell(msg: Request.Tell): Response {
         registry.get(msg.addr)
             .getOrElse { return it.failure(msg.id) }
             .tell(msg.payload)
@@ -88,7 +88,7 @@ class RpcReceiveService(
      * @return a Success response if the actor processes the message successfully,
      *         or a Failure response if an error occurs or the message is not processed.
      */
-    suspend fun ask(msg: Request.Ask): Response {
+    private suspend fun ask(msg: Request.Ask): Response {
         val res = registry.get(msg.addr)
             .getOrElse { return it.failure(msg.id) }
             .ask<Actor.Message.Response>(msg.payload)
@@ -103,7 +103,7 @@ class RpcReceiveService(
      * @return a Response.Status object containing the message ID and the actor's current status if successful,
      *         or a Response.Failure object if an error occurs during the process.
      */
-    suspend fun status(msg: Request.Status): Response {
+    private suspend fun status(msg: Request.Status): Response {
         val status = registry.get(msg.addr)
             .getOrElse { return it.failure(msg.id) }
             .status()
@@ -118,7 +118,7 @@ class RpcReceiveService(
      * @return a Response.Stats object containing the message ID and the actor's statistics if successful,
      *         or a Response.Failure object if an error occurs during the process.
      */
-    suspend fun stats(msg: Request.Stats): Response {
+    private suspend fun stats(msg: Request.Stats): Response {
         val stats = registry.get(msg.addr)
             .getOrElse { return it.failure(msg.id) }
             .stats()
@@ -133,7 +133,7 @@ class RpcReceiveService(
      * @param msg The `Shutdown` request containing the unique message ID and the address of the actor to shut down.
      * @return A `Response.Empty` if the shutdown operation completes successfully, or a `Response.Failure` if any error occurs during the process.
      */
-    suspend fun shutdown(msg: Request.Shutdown): Response {
+    private suspend fun shutdown(msg: Request.Shutdown): Response {
         registry.get(msg.addr)
             .getOrElse { return it.failure(msg.id) }
             .shutdown()
