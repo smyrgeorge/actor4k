@@ -48,9 +48,7 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * Hook called before the actor is activated.
      *
      * This method provides a pre-activation step for setting up or preparing
-     * the actor before it processes its first message. It is executed within
-     * the `activate` method, before handling the initialization message and
-     * before the actor enters its active state.
+     * the actor before it processes its first message.
      *
      * Override this method in a subclass to implement any custom logic
      * required before the actor's activation.
@@ -127,17 +125,17 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * In case of failures during activation, the actor is immediately shut down,
      * and appropriate error messages are sent in response to pending or incoming requests.
      *
-     * This function suspends and starts a coroutine to listen and process messages
-     * from the actor's mailbox until shutdown.
+     * This starts a coroutine to listen and process messages from the actor's mailbox until shutdown.
      */
-    suspend fun activate() {
+    fun activate() {
         if (status != Status.CREATED) return
-
-        status = Status.ACTIVATING
-        onBeforeActivate()
 
         // Start the mail consumer.
         launch {
+
+            status = Status.ACTIVATING
+            onBeforeActivate()
+
             mail.consumeEach {
                 stats.lastMessageAt = Clock.System.now()
                 stats.receivedMessages += 1
@@ -434,14 +432,14 @@ abstract class Actor<Req : Actor.Message, Res : Actor.Message.Response>(
      * Represents statistics related to the lifecycle and message handling of an actor.
      *
      * This data class contains various timestamps and counters that provide insights into
-     * the operational state of an actor, such as when it was created, initialized, shutdown,
-     * the last time a message was processed, and the total number of messages it has processed.
+     * the operational state of an actor, such as when it was created, initialized, shutdown.
+     * The last time a message was processed, and the total number of messages it has processed.
      *
      * @property createdAt The timestamp when the actor was created.
      * @property initializedAt The timestamp when the actor was initialized. Nullable.
      * @property triggeredShutDownAt The timestamp when the actor was triggered to shut down. Nullable.
      * @property shutDownAt The timestamp when the actor completed its shutdown process. Nullable.
-     * @property lastMessageAt The timestamp when the last message was processed by the actor.
+     * @property lastMessageAt The timestamp when the actor processed the last message.
      * @property receivedMessages The total number of messages received and processed by the actor.
      */
     @Serializable

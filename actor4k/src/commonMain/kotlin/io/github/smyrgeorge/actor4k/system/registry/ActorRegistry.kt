@@ -22,7 +22,7 @@ import kotlinx.datetime.Clock
  * through factories. The registry ensures thread-safe operations on stored actor instances.
  *
  * @constructor Initializes the `ActorRegistry` with a provided `Logger.Factory` for logging purposes.
- * @param loggerFactory The factory used to obtain a logger instance for logging operations.
+ * @param loggerFactory The factory used to get a logger instance for logging operations.
  */
 abstract class ActorRegistry(loggerFactory: Logger.Factory) {
 
@@ -84,7 +84,7 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
      * Retrieves a local actor instance based on the provided `LocalRef`.
      *
      * This method resolves and returns the actor associated with the given `LocalRef`
-     * by utilizing its class type and unique key.
+     * by using its class type and unique key.
      *
      * @param ref The `LocalRef` representing the actor, containing its class type and address key.
      * @return The actor instance corresponding to the provided `LocalRef`.
@@ -94,7 +94,7 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
     /**
      * Retrieves a local actor instance based on the specified actor class and unique key.
      *
-     * This method resolves the actor by its class type and key, and ensures that only one instance
+     * This method resolves the actor by its class type and key and ensures that only one instance
      * of the actor is created and stored in the local registry. If the actor is newly created,
      * it will be activated before being returned.
      *
@@ -109,7 +109,7 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
             error("Failed to get $address, ActorSystem is ${ActorSystem.status}.")
 
         // Limit the concurrent access to one at a time.
-        // This is critical, because we need to ensure that only one Actor (with the same key) will be created.
+        // This is critical because we need to ensure that only one Actor (with the same key) will be created.
         val (isNew: Boolean, actor: AnyActor) = lock {
             // Check if the actor already exists in the local storage.
             registry[address]?.let { return@lock false to it }
@@ -133,7 +133,7 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
                 log.debug("Actor {} activated successfully.", address)
             } catch (e: Exception) {
                 log.error("Could not activate ${actor.address()}. Reason: ${e.message ?: "Unknown error."}.")
-                // Need to lock again to safely remove from registry
+                // Need to lock again to safely remove from the registry
                 lock { registry.remove(address) }
                 throw e
             }
