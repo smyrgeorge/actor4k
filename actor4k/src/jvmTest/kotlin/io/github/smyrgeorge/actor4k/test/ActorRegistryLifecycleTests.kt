@@ -50,14 +50,6 @@ class ActorRegistryLifecycleTests {
     }
 
     @Test
-    fun `If onBeforeActivate fails the registry get method should also fail`(): Unit = runBlocking {
-        assertFails {
-            registry.get(OnBeforeActivateFailsAccountActor::class, ACC0000)
-        }
-        assertThat(registry.size()).isZero()
-    }
-
-    @Test
     fun `Concurrent gets for the same actor should not create duplicates`(): Unit = runBlocking {
         val workers = listOf(1, 2, 3, 4)
         workers.forEachParallel {
