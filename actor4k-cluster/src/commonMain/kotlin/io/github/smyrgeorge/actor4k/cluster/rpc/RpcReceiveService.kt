@@ -1,6 +1,5 @@
 package io.github.smyrgeorge.actor4k.cluster.rpc
 
-import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Request
 import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Response
@@ -91,7 +90,7 @@ class RpcReceiveService(
     private suspend fun ask(msg: Request.Ask): Response {
         val res = registry.get(msg.addr)
             .getOrElse { return it.failure(msg.id) }
-            .ask<Actor.Message.Response>(msg.payload)
+            .ask(msg.payload)
             .getOrElse { return it.failure(msg.id) }
         return Response.Success(msg.id, res)
     }
@@ -101,7 +100,7 @@ class RpcReceiveService(
      *
      * @param msg the Status request containing the message ID and the address of the actor.
      * @return a Response.Status object containing the message ID and the actor's current status if successful,
-     *         or a Response.Failure object if an error occurs during the process.
+     *         or a Response. Failure object if an error occurs during the process.
      */
     private suspend fun status(msg: Request.Status): Response {
         val status = registry.get(msg.addr)

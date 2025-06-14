@@ -1,6 +1,6 @@
 package io.github.smyrgeorge.actor4k.examples
 
-import io.github.smyrgeorge.actor4k.actor.Actor.Message
+import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
@@ -29,11 +29,11 @@ fun main(): Unit = runBlocking {
             // Add extra routing to the underlying HTTP server.
         },
         serialization = {
-            polymorphic(Message::class) {
-                subclass(Protocol.Req::class, Protocol.Req.serializer())
+            polymorphic(Actor.Protocol.Message::class) {
+                subclass(Protocol.Ping::class, Protocol.Ping.serializer())
             }
-            polymorphic(Message.Response::class) {
-                subclass(Protocol.Req.Resp::class, Protocol.Req.Resp.serializer())
+            polymorphic(Actor.Protocol.Response::class) {
+                subclass(Protocol.Pong::class, Protocol.Pong.serializer())
             }
         },
     )
@@ -48,8 +48,8 @@ fun main(): Unit = runBlocking {
     val ref = registry.get(AccountActor::class, "ACC0010")
     println(">>> ref: $ref")
     repeat(2) {
-        ref.tell(Protocol.Req(message = "[tell] Hello World!"))
-        val res = ref.ask<Protocol.Req.Resp>(Protocol.Req(message = "Ping!"))
+        ref.tell(Protocol.Ping(message = "[tell] Hello World!"))
+        val res = ref.ask(Protocol.Ping(message = "Ping!"))
         println(">>> ask($it): $res")
         delay(1000)
     }

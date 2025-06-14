@@ -83,7 +83,7 @@ class RpcSendService(
      * @return A [Result] containing the [Response] received in reply, or an error if the operation fails.
      * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun tell(addr: Address, msg: Actor.Message): Result<Response> = runCatching {
+    suspend fun tell(addr: Address, msg: Actor.Protocol): Result<Response> = runCatching {
         val req = Request.Tell(nextId(), addr, msg)
         val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())
@@ -101,7 +101,7 @@ class RpcSendService(
      * @return A [Result] containing the [Response] received in reply, or an error if the operation fails.
      * @throws IllegalStateException if the response ID does not match the request ID.
      */
-    suspend fun ask(addr: Address, msg: Actor.Message): Result<Response> = runCatching {
+    suspend fun ask(addr: Address, msg: Actor.Protocol.Message<*>): Result<Response> = runCatching {
         val req = Request.Ask(nextId(), addr, msg)
         val res = rpc.request<Response>(req.id) {
             session.send(req.serialize())

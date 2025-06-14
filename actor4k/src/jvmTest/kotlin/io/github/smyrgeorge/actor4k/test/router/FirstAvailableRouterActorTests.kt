@@ -1,12 +1,19 @@
 package io.github.smyrgeorge.actor4k.test.router
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThan
+import assertk.assertions.isGreaterThanOrEqualTo
+import assertk.assertions.isNotNull
+import assertk.assertions.isSuccess
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.util.*
 import io.github.smyrgeorge.actor4k.test.util.Registry
+import io.github.smyrgeorge.actor4k.test.util.TestProtocol
+import io.github.smyrgeorge.actor4k.test.util.TestRouter
+import io.github.smyrgeorge.actor4k.test.util.TestWorker
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerThatFailsOccasionally
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -162,8 +169,8 @@ class FirstAvailableRouterActorTests {
         val router = TestRouter(RouterActor.Strategy.FIRST_AVAILABLE)
             .register(worker1, worker2)
 
-        // Send ask message
-        val result = router.ask<RouterActor.Protocol.Ok>(TestProtocol.Ping, 5.seconds)
+        // Send an ask message
+        val result = router.ask(TestProtocol.Ping, 5.seconds)
 
         // Verify success
         assertThat(result).isSuccess()

@@ -1,7 +1,6 @@
 package io.github.smyrgeorge.actor4k.cluster.microbank
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.actor.Actor.Message
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
@@ -46,7 +45,7 @@ object MicroBank {
                 get("/api/account/{accountNo}") {
                     val accountNo: String = call.parameters["accountNo"] ?: error("Missing accountNo from path.")
                     val ref: ActorRef = ActorSystem.get(AccountActor::class, accountNo)
-                    val res = ref.ask<Protocol.Account>(Protocol.GetAccount(accountNo)).getOrThrow()
+                    val res = ref.ask(Protocol.GetAccount(accountNo)).getOrThrow()
                     call.respond(Json.encodeToString(res), null)
                 }
                 get("/api/account/{accountNo}/status") {
@@ -72,16 +71,16 @@ object MicroBank {
                     val body = call.receive<String>()
                     val req = Json.decodeFromString<Protocol.ApplyTx>(body)
                     val ref: ActorRef = ActorSystem.get(AccountActor::class, accountNo)
-                    val res = ref.ask<Protocol.Account>(Protocol.ApplyTx(accountNo, req.value)).getOrThrow()
+                    val res = ref.ask(Protocol.ApplyTx(accountNo, req.value)).getOrThrow()
                     call.respond(Json.encodeToString(res), null)
                 }
             },
             serialization = {
-                polymorphic(Message::class) {
+                polymorphic(Actor.Protocol.Message::class) {
                     subclass(Protocol.GetAccount::class, Protocol.GetAccount.serializer())
                     subclass(Protocol.ApplyTx::class, Protocol.ApplyTx.serializer())
                 }
-                polymorphic(Message.Response::class) {
+                polymorphic(Actor.Protocol.Response::class) {
                     subclass(Protocol.Account::class, Protocol.Account.serializer())
                 }
             },

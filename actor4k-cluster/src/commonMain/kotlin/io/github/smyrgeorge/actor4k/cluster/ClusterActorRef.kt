@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.Actor.Protocol
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage
@@ -33,7 +34,7 @@ class ClusterActorRef(
      *
      * @param msg The message to be sent to the actor.
      */
-    override suspend fun tell(msg: Actor.Message): Result<Unit> {
+    override suspend fun tell(msg: Protocol): Result<Unit> {
         val res = service.tell(address, msg).getOrElse { return Result.failure(it) }
         return when (res) {
             is ClusterMessage.Response.Empty -> Result.success(Unit)
@@ -43,18 +44,23 @@ class ClusterActorRef(
     }
 
     /**
-     * Sends a message to an actor and waits for a response within a specified timeout duration.
+     * Sends a message to the target actor and waits for a response within a specified timeout.
      *
-     * @param msg The message to be sent to the actor.
-     * @param timeout The duration to wait for a response before timing out.
-     * @return A [Result] containing the actor's response of type [Res] if successful, or a failure if an error occurs.
+     * This function ensures that the response corresponds to the sent request. If the response is successfully
+     * received and matches the expected type, it returns the result. Otherwise, it handles failure scenarios,
+     * such as unexpected response types or exceptions.
+     *
+     * @param msg The message to be sent to the target actor. Must implement [Protocol.Message] with a corresponding response type.
+     * @param timeout The maximum duration to wait for a response before timing out.
+     * @return A [Result] containing the successfully received response of type [R], or a failure if an error occurs during
+     *         communication, response processing, or timeout.
      */
-    override suspend fun <Res : Actor.Message.Response> ask(msg: Actor.Message, timeout: Duration): Result<Res> {
+    override suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(msg: M, timeout: Duration): Result<R> {
         val res = service.ask(address, msg).getOrElse { return Result.failure(it) }
         return when (res) {
             is ClusterMessage.Response.Success -> {
-                @Suppress("UNCHECKED_CAST")
-                res.response as? Res
+                @Suppress("UNCHECKED_CAST", "SafeCastWithReturn")
+                res.response as? R
                     ?: return Result.failure(IllegalStateException("Could not cast ${res.response} to the corresponding type."))
                 Result.success(res.response)
             }

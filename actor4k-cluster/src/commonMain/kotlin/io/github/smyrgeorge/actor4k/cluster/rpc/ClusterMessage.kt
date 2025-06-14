@@ -16,10 +16,14 @@ interface ClusterMessage {
         data class Echo(override val id: Long, val payload: String) : Request
 
         @Serializable
-        data class Tell(override val id: Long, val addr: Address, val payload: Actor.Message) : Request
+        data class Tell(override val id: Long, val addr: Address, val payload: Actor.Protocol) : Request
 
         @Serializable
-        data class Ask(override val id: Long, val addr: Address, val payload: Actor.Message) : Request
+        data class Ask(
+            override val id: Long,
+            val addr: Address,
+            val payload: Actor.Protocol.Message<*>
+        ) : Request
 
         @Serializable
         data class Status(override val id: Long, val addr: Address) : Request
@@ -50,7 +54,7 @@ interface ClusterMessage {
         class Stats(override val id: Long, val stats: Actor.Stats) : Response
 
         @Serializable
-        class Success(override val id: Long, val response: Actor.Message.Response) : Response
+        class Success(override val id: Long, val response: Actor.Protocol.Response) : Response
 
         @Serializable
         class Failure(override val id: Long, val message: String?, val cause: String?) : Response {

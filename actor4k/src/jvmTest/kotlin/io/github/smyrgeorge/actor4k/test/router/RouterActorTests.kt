@@ -1,12 +1,20 @@
 package io.github.smyrgeorge.actor4k.test.router
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isFailure
+import assertk.assertions.isInstanceOf
+import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.util.*
 import io.github.smyrgeorge.actor4k.test.util.Registry
+import io.github.smyrgeorge.actor4k.test.util.TestProtocol
+import io.github.smyrgeorge.actor4k.test.util.TestRouter
+import io.github.smyrgeorge.actor4k.test.util.TestWorker
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerThatFails
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerWithMultipleMessages
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -84,12 +92,12 @@ class RouterActorTests {
         val worker = TestWorkerWithMultipleMessages()
 
         // Create router
-        val router = TestRouterWithMultipleMessages(RouterActor.Strategy.RANDOM)
+        val router = TestRouter(RouterActor.Strategy.RANDOM)
             .register(worker)
 
         // Send different types of messages
-        router.tell(TestProtocolWithMultipleMessages.Ping).getOrThrow()
-        router.tell(TestProtocolWithMultipleMessages.Echo("Hello")).getOrThrow()
+        router.tell(TestProtocol.Ping).getOrThrow()
+        router.tell(TestProtocol.Echo("Hello")).getOrThrow()
 
         delay(500) // Allow time for message processing
 
@@ -103,13 +111,13 @@ class RouterActorTests {
         // Create a worker that will fail
         val failingWorker = TestWorkerThatFails()
 
-        // Create router with the failing worker
+        // Create a router with the failing worker
         val router = TestRouter(RouterActor.Strategy.RANDOM)
             .register(failingWorker)
 
         // Send a message that will cause the worker to fail
         // Use ask instead of tell to get the failure
-        val result = router.ask<RouterActor.Protocol.Ok>(TestProtocol.Ping, 5.seconds)
+        val result = router.ask(TestProtocol.Ping, 5.seconds)
 
         // The router should propagate the failure
         assertThat(result).isFailure()

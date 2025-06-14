@@ -31,14 +31,15 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     @Serializable
     data class Account(val accountNo: String, var balance: Int)
 
-    sealed class Protocol : Message() {
-        sealed class Response : Message.Response()
+    sealed interface Protocol : Actor.Protocol {
+        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
+        sealed class Response : Actor.Protocol.Response()
 
         @Serializable
-        data class GetAccount(val accountNo: String) : Protocol()
+        data class GetAccount(val accountNo: String) : Message<Account>()
 
         @Serializable
-        data class ApplyTx(val accountNo: String, val value: Int) : Protocol()
+        data class ApplyTx(val accountNo: String, val value: Int) : Message<Account>()
 
         @Serializable
         data class Account(val account: AccountActor.Account) : Response()

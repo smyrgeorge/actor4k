@@ -12,12 +12,12 @@ import kotlin.time.Duration
  * The `RouterActor` manages a set of `Worker` instances and distributes messages to them using
  * predefined routing strategies, enabling efficient message handling in an actor-based system.
  *
- * @param Req the type of request messages this router actor can process. Must extend [Actor.Message].
- * @param Res the type of response messages expected from the workers. Must extend [Actor.Message.Response].
+ * @param Req the type of request messages this router actor can process. Must extend [Actor.Protocol].
+ * @param Res the type of response messages expected from the workers. Must extend [Actor.Protocol.Response].
  * @param key an optional unique key to identify the router actor. Defaults to a random key prefixed with "router".
  * @param strategy the routing strategy used to delegate messages to workers.
  */
-abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
+abstract class RouterActor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
     key: String = randomKey("router"),
     val strategy: Strategy
 ) : Actor<Req, Res>(key) {
@@ -41,10 +41,10 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
      *
      * If no workers are registered, the method returns a failure result.
      *
-     * @param msg The message to be sent, which must inherit from [Message].
+     * @param msg The message to be sent, which must inherit from [Protocol].
      * @return A [Result] wrapping [Unit] on successful dispatch or a failure if no workers are registered.
      */
-    final override suspend fun tell(msg: Message): Result<Unit> {
+    final override suspend fun tell(msg: Protocol): Result<Unit> {
         if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
         id++
@@ -61,20 +61,24 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
     }
 
     /**
-     * Sends a message to a worker and waits for a response within a specified timeout.
+     * Sends a message to a worker and awaits a response within a specified timeout duration.
      *
-     * This function routes the message to an appropriate worker based on the configured
-     * routing strategy. If the `BROADCAST` strategy is set, it returns a failure since
-     * `ask` cannot be used with this strategy. For other strategies, it selects a worker
-     * and sends the message, returning the response or an error if no workers are available
-     * or the timeout is exceeded.
+     * This method routes the provided message to one of the workers based on the configured routing strategy:
+     * - `RANDOM`: Selects a worker randomly to process the message.
+     * - `ROUND_ROBIN`: Cycles through workers sequentially to distribute the messages evenly.
+     * - `BROADCAST`: Not supported with the `ask` method and will result in a failure.
+     * - `FIRST_AVAILABLE`: Selects the first worker that is available to process the message.
      *
-     * @param msg The message to be sent to a worker. Must be an instance of the `Message` class.
-     * @param timeout The maximum duration to wait for a response from the worker.
-     * @return A [Result] containing the worker's response of type [R], or a failure if an error occurs
-     *         or the timeout period is exceeded.
+     * If no workers are registered, the method immediately returns a failure result.
+     *
+     * @param msg The message to be sent, which should extend [Protocol.Message] and define a response type [R].
+     * @param timeout The maximum duration to wait for a response before timing out.
+     * @return A [Result] encapsulating the response of type [R] if successful, or an exception if the operation fails.
      */
-    final override suspend fun <R : Res> ask(msg: Message, timeout: Duration): Result<R> {
+    final override suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(
+        msg: M,
+        timeout: Duration
+    ): Result<R> {
         if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
         id++
@@ -143,7 +147,7 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
      *   requiring a single response, like `ask`.
      *
      * ROUND_ROBIN:
-     *   Routes messages to workers in a cyclic manner. After the last worker is used, it
+     *   Routes messages to workers cyclically. After the last worker is used, it
      *   starts again from the first worker.
      *
      * FIRST_AVAILABLE:
@@ -155,37 +159,15 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
     }
 
     /**
-     * Represents an abstract protocol that defines the communication structure for messages and responses
-     * within the actor-based messaging system.
-     *
-     * The `Protocol` class serves as the foundation for implementing custom messaging protocols by extending
-     * its structure. It inherits from the `Message` class, ensuring compatibility with the overall messaging
-     * system and providing access to common message functionalities.
-     *
-     * Subclasses of `Protocol` can define specific request and response types, enabling structured and
-     * predictable communication patterns within the actor hierarchy.
-     *
-     * @constructor Creates a new instance of the `Protocol` class. This class is abstract and cannot be
-     * instantiated directly. Instead, it is expected to be extended by other classes to define the messaging
-     * protocol.
-     *
-     * @see Message
-     * @see Message.Response
-     */
-    abstract class Protocol : Message() {
-        data object Ok : Response()
-    }
-
-    /**
      * Represents an abstract worker in an actor-based system capable of processing messages of type `Req` and generating
      * responses of type `Res`. It acts as a specialized `Actor` with an internal mechanism to signal its availability.
      *
-     * @param Req the type of the request messages this worker can handle. It must extend [Message].
-     * @param Res the type of the response messages this worker can generate. It must extend [Message.Response].
+     * @param Req the type of the request messages this worker can handle. It must extend [Protocol].
+     * @param Res the type of the response messages this worker can generate. It must extend [Protocol.Response].
      * @param capacity the maximum number of messages the worker can queue, defaulting to the value defined
      * in the actor system's configuration.
      */
-    abstract class Worker<Req : Message, Res : Message.Response>(
+    abstract class Worker<Req : Protocol, Res : Protocol.Response>(
         capacity: Int = ActorSystem.conf.actorQueueSize,
     ) : Actor<Req, Res>(key = randomKey(), capacity = capacity) {
         private var available: Channel<Worker<Req, Res>>? = null
@@ -203,7 +185,7 @@ abstract class RouterActor<Req : Actor.Message, Res : Actor.Message.Response>(
 
         /**
          * Invoked after processing a request and generating a response. This method signals the availability of the worker
-         * for further tasks by sending it to the associated availability channel, if it is registered.
+         * for further tasks by sending it to the associated availability channel if it is registered.
          *
          * @param m the request message that was processed by the worker.
          * @param res the result of processing the request, containing either a successful response or an error.

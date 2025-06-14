@@ -43,7 +43,6 @@ class ActorLifecycleTests {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.key).isEqualTo(ACC0000)
-        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         delay(100)
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         assertThat(actor.stats().receivedMessages).isZero()
@@ -73,7 +72,7 @@ class ActorLifecycleTests {
     @Test
     fun `Ask something an actor`(): Unit = runBlocking {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
-        val res: Protocol.Req.Resp = ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")).getOrThrow()
+        val res = ref.ask(Protocol.Req("Ping!")).getOrThrow()
         assertThat(res.message).isEqualTo("Pong!")
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.stats().receivedMessages).isEqualTo(1)
@@ -86,7 +85,6 @@ class ActorLifecycleTests {
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
         assertThat(registry.size()).isEqualTo(1)
         assertThat(actor.key).isEqualTo(ACC0000)
-        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
@@ -102,7 +100,6 @@ class ActorLifecycleTests {
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
         assertThat(registry.size()).isEqualTo(1)
         assertThat(actor.key).isEqualTo(ACC0000)
-        assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
         delay(100) // Ensure that the actor shut down.
@@ -117,7 +114,7 @@ class ActorLifecycleTests {
         val ref = ActorSystem.get(SlowActivateWithErrorInActivationAccountActor::class, ACC0000)
         val errors = listOf(1, 2, 3, 4).map {
             async {
-                val res = ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")).exceptionOrNull()
+                val res = ref.ask(Protocol.Req("Ping!")).exceptionOrNull()
                 res?.message ?: ""
             }
         }.awaitAll()
@@ -135,7 +132,7 @@ class ActorLifecycleTests {
         ).awaitAll().first()
 
         val res = listOf(1, 2, 3, 4).map {
-            async { ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping!")).getOrThrow().message }
+            async { ref.ask(Protocol.Req("Ping!")).getOrThrow().message }
         }.awaitAll()
 
         assertThat(registry.size()).isEqualTo(1)
@@ -151,7 +148,7 @@ class ActorLifecycleTests {
 
         // Send several messages
         val responses = (1..5).map {
-            async { ref.ask<Protocol.Req.Resp>(Protocol.Req("Ping $it!")) }
+            async { ref.ask(Protocol.Req("Ping $it!")) }
         }
 
         // Give some time for processing to start
@@ -177,14 +174,14 @@ class ActorLifecycleTests {
         val ref: ActorRef = ActorSystem.get(ErrorThrowingAccountActor::class, ACC0002)
 
         // Send a message that will cause an error
-        val result = ref.ask<Protocol.Req.Resp>(Protocol.Req("THROW_ERROR"))
+        val result = ref.ask(Protocol.Req("THROW_ERROR"))
 
         // Verify error handling
         assertThat(result.isFailure).isEqualTo(true)
         assertThat(result.exceptionOrNull()?.message).isEqualTo("Error processing message")
 
         // Actor should still be alive and able to process messages
-        val validResult = ref.ask<Protocol.Req.Resp>(Protocol.Req("Valid"))
+        val validResult = ref.ask(Protocol.Req("Valid"))
         assertThat(validResult.isSuccess).isEqualTo(true)
         assertThat(validResult.getOrThrow().message).isEqualTo("Pong!")
     }
@@ -195,10 +192,7 @@ class ActorLifecycleTests {
         val ref: ActorRef = ActorSystem.get(SlowProcessingAccountActor::class, "slow")
 
         // Set a short timeout and expect it to fail
-        val result = ref.ask<Protocol.Req.Resp>(
-            Protocol.Req("SlowRequest"),
-            timeout = 100.milliseconds
-        )
+        val result = ref.ask(Protocol.Req("SlowRequest"), timeout = 100.milliseconds)
 
         // Verify timeout behavior
         assertThat(result.isFailure).isEqualTo(true)
@@ -219,7 +213,7 @@ class ActorLifecycleTests {
         val newRef: ActorRef = ActorSystem.get(AccountActor::class, ACC0003)
 
         // Send a message and verify it's processed
-        val result = newRef.ask<Protocol.Req.Resp>(Protocol.Req("Ping!"))
+        val result = newRef.ask(Protocol.Req("Ping!"))
         assertThat(result.isSuccess).isEqualTo(true)
 
         // Verify we have a new actor

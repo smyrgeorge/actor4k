@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.actor.ref
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.Actor.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
@@ -40,17 +41,18 @@ class LocalRef : ActorRef {
      * @param msg the message to be sent to the actor.
      * @return a `Result` indicating success or failure of the operation.
      */
-    override suspend fun tell(msg: Actor.Message): Result<Unit> =
+    override suspend fun tell(msg: Protocol): Result<Unit> =
         actor().getOrElse { return Result.failure(it) }.tell(msg)
 
     /**
-     * Sends a message to the actor associated with this `LocalRef` and waits for a response.
+     * Sends a message to the associated actor and waits for a response within a specified timeout duration.
+     * The method follows the "ask" pattern where a request message is sent, and the sender awaits a corresponding response.
      *
-     * @param msg the message to be sent to the actor.
-     * @param timeout the maximum duration to wait for a response from the actor.
-     * @return a `Result` containing the response message of type `Res`, or an error if the operation fails or times out.
+     * @param msg The message to be sent, which must extend [Protocol.Message] and have a corresponding response type [R].
+     * @param timeout The maximum duration to wait for a response before timing out.
+     * @return A [Result] containing the response of type [R] if successful. Returns a failure if the operation encounters an error or times out.
      */
-    override suspend fun <Res : Actor.Message.Response> ask(msg: Actor.Message, timeout: Duration): Result<Res> =
+    override suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(msg: M, timeout: Duration): Result<R> =
         actor().getOrElse { return Result.failure(it) }.ask(msg, timeout)
 
     /**

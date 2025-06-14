@@ -92,7 +92,7 @@ class ActorGracefulShutdownTests {
         // Shutdown the entire system
         ActorSystem.shutdown()
 
-        // Wait for graceful shutdown
+        // Wait for the graceful shutdown
         delay(3000)
 
         // Verify all actors are gone
@@ -112,7 +112,7 @@ class ActorGracefulShutdownTests {
         ref.tell(Protocol.Req("OpenResource"))
         delay(500)
 
-        // Verify resource is open
+        // Verify the resource is open
         assertThat(ResourceHoldingActor.resourceClosed).isFalse()
 
         // Trigger shutdown
@@ -128,7 +128,7 @@ class ActorGracefulShutdownTests {
 
     @Test
     fun `Messages sent during shutdown should be rejected`(): Unit = runBlocking {
-        // Create actor
+        // Create an actor
         val ref: ActorRef = ActorSystem.get(SlowProcessingAccountActor::class, ACC0004)
         val actor = registry.getLocalActor(ref as LocalRef) as SlowProcessingAccountActor
 
@@ -137,13 +137,13 @@ class ActorGracefulShutdownTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
 
         // Try sending a message during shutdown
-        val result = actor.ask<Protocol.Req.Resp>(Protocol.Req("TooLate"))
+        val result = actor.ask(Protocol.Req("TooLate"))
 
         // Verify message was rejected
         assertThat(result.isFailure).isTrue()
 
         // Wait for shutdown to complete
-        delay(1000)
+        delay(2000)
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
     }
 
@@ -165,13 +165,13 @@ class ActorGracefulShutdownTests {
         // Verify shutdown handling
         assertThat(shutdownCompleted).isEqualTo(null) // Should time out
 
-        // Wait for actual shutdown to complete for cleanup
+        // Wait for the actual shutdown to complete for cleanup
         delay(2000)
     }
 
     @Test
     fun `Multiple concurrent shutdown calls should be handled properly`(): Unit = runBlocking {
-        // Create actor
+        // Create an actor
         val ref: ActorRef = ActorSystem.get(SlowProcessingAccountActor::class, ACC0006)
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
 
@@ -197,7 +197,6 @@ class ActorGracefulShutdownTests {
 
     companion object {
         private const val ACC0000: String = "ACC0000"
-        private const val ACC0001: String = "ACC0001"
         private const val ACC0002: String = "ACC0002"
         private const val ACC0003: String = "ACC0003"
         private const val ACC0004: String = "ACC0004"

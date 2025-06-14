@@ -13,7 +13,6 @@ import io.github.smyrgeorge.actor4k.test.actor.AccountActor
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.test.actor.InitMethodFailsAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.NotRegisteredAccountActor
-import io.github.smyrgeorge.actor4k.test.actor.OnBeforeActivateFailsAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.ShortLivedActor
 import io.github.smyrgeorge.actor4k.test.actor.SlowInitAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.ThrowingDuringMessageProcessingActor

@@ -1,12 +1,19 @@
 package io.github.smyrgeorge.actor4k.test.router
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isIn
+import assertk.assertions.isNotNull
+import assertk.assertions.isSuccess
+import assertk.assertions.isTrue
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.util.*
 import io.github.smyrgeorge.actor4k.test.util.Registry
+import io.github.smyrgeorge.actor4k.test.util.TestProtocol
+import io.github.smyrgeorge.actor4k.test.util.TestRouter
+import io.github.smyrgeorge.actor4k.test.util.TestWorker
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerThatFailsOnce
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -123,7 +130,7 @@ class RoundRobinRouterActorTests {
         val router = TestRouter(RouterActor.Strategy.ROUND_ROBIN)
             .register(worker1, worker2, worker3)
 
-        // Send 9 messages - one will fail but the pattern should continue
+        // Send 9 messages - one will fail, but the pattern should continue
         repeat(9) {
             try {
                 router.tell(TestProtocol.Ping).getOrThrow()
@@ -174,8 +181,8 @@ class RoundRobinRouterActorTests {
         val router = TestRouter(RouterActor.Strategy.ROUND_ROBIN)
             .register(worker1, worker2)
 
-        // Send ask message
-        val result = router.ask<RouterActor.Protocol.Ok>(TestProtocol.Ping, 5.seconds)
+        // Send an ask message
+        val result = router.ask(TestProtocol.Ping, 5.seconds)
 
         // Verify success
         assertThat(result).isSuccess()

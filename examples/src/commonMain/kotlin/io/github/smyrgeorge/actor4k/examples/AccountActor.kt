@@ -1,10 +1,9 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
 import kotlinx.serialization.Serializable
 
-class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
+class AccountActor(key: String) : Actor<AccountActor.Protocol, AccountActor.Protocol.Response>(key) {
     override suspend fun onBeforeActivate() {
         // Optional override.
         log.info("[${address()}] onBeforeActivate")
@@ -17,10 +16,9 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
 
     override suspend fun onReceive(m: Protocol): Protocol.Response {
         log.info("[${address()}] onReceive: $m")
-        val res = when (m) {
-            is Protocol.Req -> Protocol.Req.Resp("Pong!")
+        return when (m) {
+            is Protocol.Ping -> Protocol.Pong("Pong!")
         }
-        return res
     }
 
     override suspend fun onShutdown() {
@@ -28,13 +26,14 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
         log.info("[${address()}] onShutdown")
     }
 
-    sealed class Protocol : Message() {
-        sealed class Response : Message.Response()
+    sealed interface Protocol : Actor.Protocol {
+        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
+        sealed class Response : Actor.Protocol.Response()
 
         @Serializable
-        data class Req(val message: String) : Protocol() {
-            @Serializable
-            data class Resp(val message: String) : Response()
-        }
+        data class Ping(val message: String) : Message<Pong>()
+
+        @Serializable
+        data class Pong(val message: String) : Response()
     }
 }
