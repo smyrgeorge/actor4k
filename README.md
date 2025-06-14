@@ -71,9 +71,8 @@ implementation("io.github.smyrgeorge:actor4k:x.y.z")
 
 ### Start up the Actor System
 
-**actor4k** tries to be multiplatform compatible, which means there is no support for reflection. Therefore, we must
-pass
-the factories to the registry for each Actor class in our project (see the example below).
+**actor4k** tries to be multiplatform compatible, which means there is no support for reflection.
+Therefore, we must pass the factories to the registry for each Actor class in our project (see the example below).
 
 ```kotlin
 // Create the Logger Factory.
@@ -82,7 +81,7 @@ val loggerFactory = SimpleLoggerFactory()
 val registry = SimpleActorRegistry(loggerFactory)
     .factoryFor(AccountActor::class) { key ->
         AccountActor(key) // You can define how an Actor is created.
-        // You can also pass other arguments to the Actor at this point like for example:
+        // You can also pass other arguments to the Actor at this point like, for example,
         // AccountActor(key, arg1, ...)
         // This can be very helpful with dependency injection scenarios.
     }
@@ -120,15 +119,15 @@ class AccountActor(key: String) : Actor<AccountActor.Protocol, AccountActor.Prot
         log.info("[${address()}] onShutdown")
     }
 
-  sealed interface Protocol : Actor.Protocol {
-    sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
-    sealed class Response : Actor.Protocol.Response()
+    sealed interface Protocol : Actor.Protocol {
+        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
+        sealed class Response : Actor.Protocol.Response()
 
-    @Serializable
-    data class Ping(val message: String) : Message<Pong>()
+        @Serializable
+        data class Ping(val message: String) : Message<Pong>()
 
-    @Serializable
-    data class Pong(val message: String) : Response()
+        @Serializable
+        data class Pong(val message: String) : Response()
     }
 }
 ```
@@ -163,7 +162,7 @@ val actor: ActorRef = ActorSystem.get(AccountActor::class, "ACC0010")
 
 ### Detached actors
 
-A detached actor is an actor instance that is manually created by directly invoking its constructor, rather than being
+A detached actor is an actor instance manually created by directly invoking its constructor, rather than being
 automatically instantiated and managed by the actor registry. This means that it stands apart from the typical lifecycle
 management and messaging infrastructure of the actor system until it is explicitly integrated. Detached actors are
 useful in scenarios where you need fine-grained control over the actor's initialization or when they play a specialized
@@ -203,7 +202,7 @@ ensuring thread-safe operation and simplifying concurrency management.
 The [Actor](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/actor/Actor.kt) class includes a `capacity`
 property, which determines the maximum number of messages allowed in an actor's mailbox. By default, this is set to
 unlimited. Adjusting this property enables you to control mailbox capacity explicitly. If the mailbox reaches its
-maximum capacity, any subsequent attempts to send messages will suspend until space becomes available. Leveraging this
+maximum capacity, any following attempts to send messages will suspend until space becomes available. Leveraging this
 behavior provides an effective way to implement a back-pressure strategy within your actor-based application.
 
 ### Router Actor
@@ -258,7 +257,7 @@ You can also build for specific targets.
 ./gradlew build -Ptargets=macosArm64,macosX64
 ```
 
-To build for all available target run:
+To build for all available targets, run:
 
 ```shell
 ./gradlew build -Ptargets=all
