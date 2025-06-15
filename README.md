@@ -123,10 +123,7 @@ class AccountActor(key: String) : Actor<AccountActor.Protocol, AccountActor.Prot
         sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
         sealed class Response : Actor.Protocol.Response()
 
-        @Serializable
         data class Ping(val message: String) : Message<Pong>()
-
-        @Serializable
         data class Pong(val message: String) : Response()
     }
 }
