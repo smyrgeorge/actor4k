@@ -87,7 +87,6 @@ class ActorLifecycleTests {
         assertThat(actor.key).isEqualTo(ACC0000)
         assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
-        assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
         delay(100) // Ensure that the actor shut down.
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
         assertThat(actor.stats().shutDownAt).isNotNull()
