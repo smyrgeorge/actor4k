@@ -29,7 +29,7 @@ class RpcManager<R>(
     private val channels = ConcurrentMap<Long, Channel<R>>(1_000)
 
     internal fun <T : R> open(reqId: Long): Channel<T> {
-        // Create channel.
+        // Create a channel.
         val channel = Channel<T>()
         // Save the channel to the [channels] Map.
         @Suppress("UNCHECKED_CAST")
@@ -48,7 +48,7 @@ class RpcManager<R>(
      * @throws Exception If an error occurs during the execution of the request or response handling.
      */
     internal suspend inline fun <T : R> request(reqId: Long, crossinline f: suspend () -> Unit): T {
-        // Open channel here.
+        // Open the channel here.
         val channel: Channel<T> = open(reqId)
 
         return try {
@@ -98,7 +98,7 @@ class RpcManager<R>(
         channels[reqId]?.let {
             // Close the channel.
             it.close()
-            // Remove it from the channels map.
+            // Remove it from the channel map.
             channels.remove(reqId)
         }
     }

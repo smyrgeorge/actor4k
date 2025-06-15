@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.smyrgeorge.actor4k.actor.ref.Address
-import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage
+import io.github.smyrgeorge.actor4k.cluster.rpc.RpcEnvelope
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcReceiveService
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcSendService
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcWebSocketSession
@@ -54,21 +54,21 @@ class ClusterImpl(
     private lateinit var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>
     private val serializersModule: SerializersModule = SerializersModule {
         serialization()
-        polymorphic(ClusterMessage.Request::class) {
-            subclass(ClusterMessage.Request.Echo::class, ClusterMessage.Request.Echo.serializer())
-            subclass(ClusterMessage.Request.Tell::class, ClusterMessage.Request.Tell.serializer())
-            subclass(ClusterMessage.Request.Ask::class, ClusterMessage.Request.Ask.serializer())
-            subclass(ClusterMessage.Request.Status::class, ClusterMessage.Request.Status.serializer())
-            subclass(ClusterMessage.Request.Stats::class, ClusterMessage.Request.Stats.serializer())
-            subclass(ClusterMessage.Request.Shutdown::class, ClusterMessage.Request.Shutdown.serializer())
+        polymorphic(RpcEnvelope.Request::class) {
+            subclass(RpcEnvelope.Request.Echo::class, RpcEnvelope.Request.Echo.serializer())
+            subclass(RpcEnvelope.Request.Tell::class, RpcEnvelope.Request.Tell.serializer())
+            subclass(RpcEnvelope.Request.Ask::class, RpcEnvelope.Request.Ask.serializer())
+            subclass(RpcEnvelope.Request.Status::class, RpcEnvelope.Request.Status.serializer())
+            subclass(RpcEnvelope.Request.Stats::class, RpcEnvelope.Request.Stats.serializer())
+            subclass(RpcEnvelope.Request.Shutdown::class, RpcEnvelope.Request.Shutdown.serializer())
         }
-        polymorphic(ClusterMessage.Response::class) {
-            subclass(ClusterMessage.Response.Empty::class, ClusterMessage.Response.Empty.serializer())
-            subclass(ClusterMessage.Response.Echo::class, ClusterMessage.Response.Echo.serializer())
-            subclass(ClusterMessage.Response.Status::class, ClusterMessage.Response.Status.serializer())
-            subclass(ClusterMessage.Response.Stats::class, ClusterMessage.Response.Stats.serializer())
-            subclass(ClusterMessage.Response.Success::class, ClusterMessage.Response.Success.serializer())
-            subclass(ClusterMessage.Response.Failure::class, ClusterMessage.Response.Failure.serializer())
+        polymorphic(RpcEnvelope.Response::class) {
+            subclass(RpcEnvelope.Response.Empty::class, RpcEnvelope.Response.Empty.serializer())
+            subclass(RpcEnvelope.Response.Echo::class, RpcEnvelope.Response.Echo.serializer())
+            subclass(RpcEnvelope.Response.Status::class, RpcEnvelope.Response.Status.serializer())
+            subclass(RpcEnvelope.Response.Stats::class, RpcEnvelope.Response.Stats.serializer())
+            subclass(RpcEnvelope.Response.Success::class, RpcEnvelope.Response.Success.serializer())
+            subclass(RpcEnvelope.Response.Failure::class, RpcEnvelope.Response.Failure.serializer())
         }
     }
 
@@ -101,7 +101,7 @@ class ClusterImpl(
      *
      * This property lazily initializes an instance of [RpcSendService] responsible for sending
      * requests and receiving responses between cluster nodes. It is constructed using a WebSocket session
-     * and serialization utilities.
+     * and serialization utility.
      *
      * The initialization uses the provided logger factory, client instance, and current cluster node address
      * to establish the WebSocket session. This session allows asynchronous communication and ensures reliability
@@ -147,7 +147,7 @@ class ClusterImpl(
         server = HttpServerUtils.create(current.port, routing, receive)
 
         services = nodes.map { node ->
-            // Do not create a client for current node.
+            // Do not create a client for the current node.
             if (node.alias == current.alias) null
             else {
                 val session = RpcWebSocketSession(loggerFactory, client, node)

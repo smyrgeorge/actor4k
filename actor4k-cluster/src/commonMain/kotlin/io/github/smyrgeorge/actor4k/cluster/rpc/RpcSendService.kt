@@ -2,8 +2,8 @@ package io.github.smyrgeorge.actor4k.cluster.rpc
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.Address
-import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Request
-import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Response
+import io.github.smyrgeorge.actor4k.cluster.rpc.RpcEnvelope.Request
+import io.github.smyrgeorge.actor4k.cluster.rpc.RpcEnvelope.Response
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
 import kotlinx.coroutines.sync.Mutex

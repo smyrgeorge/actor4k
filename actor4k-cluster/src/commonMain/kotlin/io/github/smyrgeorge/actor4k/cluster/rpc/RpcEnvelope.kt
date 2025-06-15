@@ -7,11 +7,11 @@ import kotlinx.serialization.Serializable
 /**
  * A base interface representing messages exchanged in a clustered actor system.
  */
-interface ClusterMessage {
+interface RpcEnvelope {
     val id: Long
 
     @Serializable
-    sealed interface Request : ClusterMessage {
+    sealed interface Request : RpcEnvelope {
         @Serializable
         data class Echo(override val id: Long, val payload: String) : Request
 
@@ -40,7 +40,7 @@ interface ClusterMessage {
      * A response carries information about the outcome or state related to a requested operation.
      */
     @Serializable
-    sealed interface Response : ClusterMessage {
+    sealed interface Response : RpcEnvelope {
         @Serializable
         class Empty(override val id: Long) : Response
 

@@ -1,8 +1,8 @@
 package io.github.smyrgeorge.actor4k.cluster.rpc
 
 import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
-import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Request
-import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage.Response
+import io.github.smyrgeorge.actor4k.cluster.rpc.RpcEnvelope.Request
+import io.github.smyrgeorge.actor4k.cluster.rpc.RpcEnvelope.Response
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.launch
 import io.ktor.websocket.*
@@ -13,7 +13,7 @@ import kotlinx.serialization.protobuf.ProtoBuf
  * Service responsible for handling RPC requests received via WebSocket frames.
  *
  * The service processes RPC requests, interacts with actors for the requested operations,
- * and returns appropriate responses. Utilizes a registry to manage actor instances and ensure
+ * and returns appropriate responses. Uses a registry to manage actor instances and ensure
  * proper delegation of requests to the corresponding actors.
  *
  * @constructor Initializes the service with the necessary dependencies for processing requests.
@@ -115,7 +115,7 @@ class RpcReceiveService(
      *
      * @param msg the Stats request containing the message ID and the address of the actor.
      * @return a Response.Stats object containing the message ID and the actor's statistics if successful,
-     *         or a Response.Failure object if an error occurs during the process.
+     *         or a [Response.Failure] object if an error occurs during the process.
      */
     private suspend fun stats(msg: Request.Stats): Response {
         val stats = registry.get(msg.addr)

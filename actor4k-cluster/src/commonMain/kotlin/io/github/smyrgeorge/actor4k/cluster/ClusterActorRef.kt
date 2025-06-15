@@ -4,7 +4,7 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.Actor.Protocol
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.Address
-import io.github.smyrgeorge.actor4k.cluster.rpc.ClusterMessage
+import io.github.smyrgeorge.actor4k.cluster.rpc.RpcEnvelope
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcSendService
 import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
 import kotlin.time.Duration
@@ -37,8 +37,8 @@ class ClusterActorRef(
     override suspend fun tell(msg: Protocol): Result<Unit> {
         val res = service.tell(address, msg).getOrElse { return Result.failure(it) }
         return when (res) {
-            is ClusterMessage.Response.Empty -> Result.success(Unit)
-            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
+            is RpcEnvelope.Response.Empty -> Result.success(Unit)
+            is RpcEnvelope.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for tell command."))
         }
     }
@@ -58,14 +58,14 @@ class ClusterActorRef(
     override suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(msg: M, timeout: Duration): Result<R> {
         val res = service.ask(address, msg).getOrElse { return Result.failure(it) }
         return when (res) {
-            is ClusterMessage.Response.Success -> {
+            is RpcEnvelope.Response.Success -> {
                 @Suppress("UNCHECKED_CAST", "SafeCastWithReturn")
                 res.response as? R
                     ?: return Result.failure(IllegalStateException("Could not cast ${res.response} to the corresponding type."))
                 Result.success(res.response)
             }
 
-            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
+            is RpcEnvelope.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
         }
     }
@@ -73,7 +73,7 @@ class ClusterActorRef(
     /**
      * Retrieves the current status of the actor.
      *
-     * This method sends a request to the actor's service to obtain its status. Depending on the response,
+     * This method sends a request to the actor's service to get its status. Depending on the response,
      * it either returns the status successfully, constructs an exception for a failure response, or raises an
      * error if the response is unexpected.
      *
@@ -83,8 +83,8 @@ class ClusterActorRef(
     override suspend fun status(): Result<Actor.Status> {
         val res = service.status(address).getOrElse { return Result.failure(it) }
         return when (res) {
-            is ClusterMessage.Response.Status -> Result.success(res.status)
-            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
+            is RpcEnvelope.Response.Status -> Result.success(res.status)
+            is RpcEnvelope.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
         }
     }
@@ -92,7 +92,7 @@ class ClusterActorRef(
     /**
      * Retrieves statistical information about the actor.
      *
-     * Sends a request to the actor's service to obtain statistical data. The response is processed to determine
+     * Sends a request to the actor's service to collect statistical data. The response is processed to determine
      * success, failure, or unexpected scenarios. On success, it returns the actor's statistics; on failure, it
      * constructs and returns an appropriate exception.
      *
@@ -102,8 +102,8 @@ class ClusterActorRef(
     override suspend fun stats(): Result<Actor.Stats> {
         val res = service.stats(address).getOrElse { return Result.failure(it) }
         return when (res) {
-            is ClusterMessage.Response.Stats -> Result.success(res.stats)
-            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
+            is RpcEnvelope.Response.Stats -> Result.success(res.stats)
+            is RpcEnvelope.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
         }
     }
@@ -118,8 +118,8 @@ class ClusterActorRef(
     override suspend fun shutdown(): Result<Unit> {
         val res = service.shutdown(address).getOrElse { return Result.failure(it) }
         return when (res) {
-            is ClusterMessage.Response.Empty -> Result.success(Unit)
-            is ClusterMessage.Response.Failure -> Result.failure(res.exception())
+            is RpcEnvelope.Response.Empty -> Result.success(Unit)
+            is RpcEnvelope.Response.Failure -> Result.failure(res.exception())
             else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
         }
     }

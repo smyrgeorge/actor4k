@@ -12,7 +12,7 @@ import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
  * A specialized actor registry that integrates with cluster-based implementations for managing distributed actors.
  *
  * This class extends the functionality of a base actor registry by adding support for cluster-specific features such
- * as actor lookups, registration, and references within a distributed system. It utilizes a cluster implementation to
+ * as actor lookups, registration, and references within a distributed system. It uses a cluster implementation to
  * communicate and interact with actors that may not reside in the local process but are part of the distributed cluster.
  *
  * @constructor Creates a new instance of the cluster actor registry associated with a specified logger factory.
