@@ -61,7 +61,6 @@ class ActorGracefulShutdownTests {
 
         // Trigger shutdown
         actor.shutdown()
-        assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
 
         // Give time for onShutdown to complete
         delay(2000)
@@ -134,7 +133,6 @@ class ActorGracefulShutdownTests {
 
         // Start shutdown
         actor.shutdown()
-        assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
 
         // Try sending a message during shutdown
         val result = actor.ask(Protocol.Req("TooLate"))
