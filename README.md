@@ -281,31 +281,31 @@ messages they receive. For example, an account actor might switch between normal
 
 ```kotlin
 class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Response>(key) {
-  // Define behaviors
-  private val normalBehavior: suspend (Protocol) -> Protocol.Response = { message ->
-    when (message) {
-      is Protocol.Ping -> Protocol.Pong("Pong!")
-      is Protocol.SwitchBehavior -> {
-        become(echoBehavior)
-        Protocol.BehaviorSwitched("Switched to echo behavior")
-      }
+    // Define behaviors
+    private val normalBehavior: suspend (Protocol) -> Protocol.Response = { message ->
+        when (message) {
+            is Protocol.Ping -> Protocol.Pong("Pong!")
+            is Protocol.SwitchBehavior -> {
+                become(echoBehavior)
+                Protocol.BehaviorSwitched("Switched to echo behavior")
+            }
+        }
     }
-  }
 
-  private val echoBehavior: suspend (Protocol) -> Protocol.Response = { message ->
-    when (message) {
-      is Protocol.Ping -> Protocol.Pong("Echo: ${message.message}")
-      is Protocol.SwitchBehavior -> {
+    private val echoBehavior: suspend (Protocol) -> Protocol.Response = { message ->
+        when (message) {
+            is Protocol.Ping -> Protocol.Pong("Echo: ${message.message}")
+            is Protocol.SwitchBehavior -> {
+                become(normalBehavior)
+                Protocol.BehaviorSwitched("Switched to normal behavior")
+            }
+        }
+    }
+
+    init {
+        // Set initial behavior
         become(normalBehavior)
-        Protocol.BehaviorSwitched("Switched to normal behavior")
-      }
     }
-  }
-
-  init {
-    // Set initial behavior
-    become(normalBehavior)
-  }
 }
 ```
 
