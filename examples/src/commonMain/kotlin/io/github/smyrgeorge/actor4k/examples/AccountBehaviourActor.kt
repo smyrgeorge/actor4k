@@ -6,26 +6,6 @@ import io.github.smyrgeorge.actor4k.examples.AccountBehaviourActor.Protocol
 
 class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Response>(key) {
 
-    private val normalBehavior: suspend (Protocol) -> Protocol.Response = { m ->
-        when (m) {
-            is Protocol.Ping -> Protocol.Pong("Pong!")
-            is Protocol.SwitchBehavior -> {
-                become(echoBehavior)
-                Protocol.BehaviorSwitched("Switched to echo behavior")
-            }
-        }
-    }
-
-    private val echoBehavior: suspend (Protocol) -> Protocol.Response = { m ->
-        when (m) {
-            is Protocol.Ping -> Protocol.Pong("Echo: ${m.message}")
-            is Protocol.SwitchBehavior -> {
-                become(normalBehavior)
-                Protocol.BehaviorSwitched("Switched to normal behavior")
-            }
-        }
-    }
-
     init {
         // Set initial behavior.
         become(normalBehavior)
@@ -44,5 +24,31 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
         data class Pong(val message: String) : Response()
         data class SwitchBehavior(val behavior: String) : Message<BehaviorSwitched>()
         data class BehaviorSwitched(val message: String) : Response()
+    }
+
+    companion object {
+        private val normalBehavior: suspend (AccountBehaviourActor, Protocol) -> Protocol.Response = { ctx, m ->
+            ctx.log.info("[${ctx.address()}] normalBehavior: $m")
+
+            when (m) {
+                is Protocol.Ping -> Protocol.Pong("Pong!")
+                is Protocol.SwitchBehavior -> {
+                    ctx.become(echoBehavior)
+                    Protocol.BehaviorSwitched("Switched to echo behavior")
+                }
+            }
+        }
+
+        private val echoBehavior: suspend (AccountBehaviourActor, Protocol) -> Protocol.Response = { ctx, m ->
+            ctx.log.info("[${ctx.address()}] echoBehavior: $m")
+
+            when (m) {
+                is Protocol.Ping -> Protocol.Pong("Echo: ${m.message}")
+                is Protocol.SwitchBehavior -> {
+                    ctx.become(normalBehavior)
+                    Protocol.BehaviorSwitched("Switched to normal behavior")
+                }
+            }
+        }
     }
 }
