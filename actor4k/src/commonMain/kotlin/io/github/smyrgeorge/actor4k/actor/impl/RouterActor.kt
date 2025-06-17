@@ -75,10 +75,8 @@ abstract class RouterActor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
      * @param timeout The maximum duration to wait for a response before timing out.
      * @return A [Result] encapsulating the response of type [R] if successful, or an exception if the operation fails.
      */
-    final override suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(
-        msg: M,
-        timeout: Duration
-    ): Result<R> {
+    final override suspend fun <R, M> ask(msg: M, timeout: Duration): Result<R>
+            where M : Protocol.Message<R>, R : Protocol.Response {
         if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
         id++

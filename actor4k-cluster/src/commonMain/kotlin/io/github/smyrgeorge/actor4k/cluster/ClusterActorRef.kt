@@ -55,7 +55,8 @@ class ClusterActorRef(
      * @return A [Result] containing the successfully received response of type [R], or a failure if an error occurs during
      *         communication, response processing, or timeout.
      */
-    override suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(msg: M, timeout: Duration): Result<R> {
+    override suspend fun <R, M> ask(msg: M, timeout: Duration): Result<R>
+            where M : Protocol.Message<R>, R : Protocol.Response {
         val res = service.ask(address, msg).getOrElse { return Result.failure(it) }
         return when (res) {
             is RpcEnvelope.Response.Success -> {

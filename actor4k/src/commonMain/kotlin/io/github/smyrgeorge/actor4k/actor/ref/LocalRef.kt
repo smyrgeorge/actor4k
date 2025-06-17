@@ -52,7 +52,8 @@ class LocalRef : ActorRef {
      * @param timeout The maximum duration to wait for a response before timing out.
      * @return A [Result] containing the response of type [R] if successful. Returns a failure if the operation encounters an error or times out.
      */
-    override suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(msg: M, timeout: Duration): Result<R> =
+    override suspend fun <R, M> ask(msg: M, timeout: Duration): Result<R>
+            where M : Protocol.Message<R>, R : Protocol.Response =
         actor().getOrElse { return Result.failure(it) }.ask(msg, timeout)
 
     /**

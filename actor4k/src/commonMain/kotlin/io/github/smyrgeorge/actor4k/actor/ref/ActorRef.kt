@@ -33,7 +33,8 @@ abstract class ActorRef(
      * @param timeout The maximum duration to wait for a response before the method times out.
      * @return A [Result] containing the response of type [R] if the operation is successful; otherwise, an error.
      */
-    abstract suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(msg: M, timeout: Duration): Result<R>
+    abstract suspend fun <R, M> ask(msg: M, timeout: Duration): Result<R>
+            where M : Protocol.Message<R>, R : Protocol.Response
 
     /**
      * Sends a message to the actor and awaits a response using the default timeout.
@@ -44,7 +45,8 @@ abstract class ActorRef(
      * @param msg The message to be sent. It must extend [Protocol.Message] and specify a response type [R].
      * @return A [Result] containing the response of type [R] if the operation is successful; otherwise, an error.
      */
-    suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(msg: M): Result<R> =
+    suspend fun <R, M> ask(msg: M): Result<R>
+            where M : Protocol.Message<R>, R : Protocol.Response =
         ask(msg, ActorSystem.conf.actorAskTimeout)
 
     /**

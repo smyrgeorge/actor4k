@@ -211,10 +211,8 @@ abstract class Actor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
      * @param timeout The maximum duration to wait for a response. If unspecified, defaults to the actor system's configured ask timeout.
      * @return A [Result] wrapping the response of type [R] if successful, or an exception in case of failure or timeout.
      */
-    open suspend fun <R : Protocol.Response, M : Protocol.Message<R>> ask(
-        msg: M,
-        timeout: Duration = ActorSystem.conf.actorAskTimeout
-    ): Result<R> {
+    open suspend fun <R, M> ask(msg: M, timeout: Duration = ActorSystem.conf.actorAskTimeout): Result<R>
+            where M : Protocol.Message<R>, R : Protocol.Response {
         val ask: Patterns.Ask<Req, Res> = runCatching {
             if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
             @Suppress("UNCHECKED_CAST") (msg as Req)
