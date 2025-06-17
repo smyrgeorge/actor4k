@@ -242,6 +242,78 @@ The RouterActor implementation includes:
 
 Check an example [here](examples/src/jvmMain/kotlin/io/github/smyrgeorge/actor4k/examples/RouterActorMain.kt).
 
+### Behavior Actor
+
+A [Behavior Actor](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/actor/impl/BehaviorActor.kt) is an actor
+that can change its behavior dynamically based on the current state or message received. This pattern enables an actor
+to respond differently to the same message types depending on its current state, making it ideal for implementing state
+machines or actors that need to adapt their processing logic based on previous interactions.
+
+#### Key Features and Capabilities
+
+The `BehaviorActor` extends the foundational `Actor` abstraction, providing several powerful capabilities:
+
+- **Dynamic Behavior Changes**: It allows for changing the actor's message processing logic at runtime using the
+  `become` method, enabling state-dependent responses.
+- **Behavior Encapsulation**: Behaviors are encapsulated as functions that process messages, making it easy to define
+  and switch between different processing strategies.
+- **State Machine Implementation**: The ability to change behaviors makes it straightforward to implement state machines
+  where the actor's response depends on its current state.
+
+#### Using BehaviorActor
+
+To use a BehaviorActor, you need to:
+
+1. **Define Behaviors**: Create functions that process messages and return appropriate responses.
+2. **Switch Behaviors**: Use the `become` method to change the actor's current behavior based on conditions or messages.
+3. **Initialize**: Set an initial behavior that the actor will use when it starts processing messages.
+
+#### Utility Methods
+
+The BehaviorActor provides utility methods to simplify behavior management:
+
+- **`become`**: Changes the actor's current behavior to a new function.
+- **`createBehavior`**: A utility function to create a behavior that handles different message types.
+
+#### Example Implementation
+
+The BehaviorActor can be used to implement actors that need to change their behavior based on their state or the
+messages
+they receive. For example, an account actor might switch between normal and echo behaviors:
+
+```kotlin
+class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Response>(key) {
+  // Define behaviors
+  private val normalBehavior: suspend (Protocol) -> Protocol.Response = { message ->
+    when (message) {
+      is Protocol.Ping -> Protocol.Pong("Pong!")
+      is Protocol.SwitchBehavior -> {
+        become(echoBehavior)
+        Protocol.BehaviorSwitched("Switched to echo behavior")
+      }
+    }
+  }
+
+  private val echoBehavior: suspend (Protocol) -> Protocol.Response = { message ->
+    when (message) {
+      is Protocol.Ping -> Protocol.Pong("Echo: ${message.message}")
+      is Protocol.SwitchBehavior -> {
+        become(normalBehavior)
+        Protocol.BehaviorSwitched("Switched to normal behavior")
+      }
+    }
+  }
+
+  init {
+    // Set initial behavior
+    become(normalBehavior)
+  }
+}
+```
+
+Check a complete
+example [here](examples/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/examples/AccountBehaviourActor.kt).
+
 ## Build
 
 ```shell
