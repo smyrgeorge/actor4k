@@ -306,6 +306,16 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
         // Set initial behavior
         become(normalBehavior)
     }
+
+    sealed interface Protocol : Actor.Protocol {
+        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
+        sealed class Response : Actor.Protocol.Response()
+
+        data class Ping(val message: String) : Message<Pong>()
+        data class Pong(val message: String) : Response()
+        data class SwitchBehavior(val behavior: String) : Message<BehaviorSwitched>()
+        data class BehaviorSwitched(val message: String) : Response()
+    }
 }
 ```
 
