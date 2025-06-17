@@ -273,13 +273,11 @@ To use a BehaviorActor, you need to:
 The BehaviorActor provides utility methods to simplify behavior management:
 
 - **`become`**: Changes the actor's current behavior to a new function.
-- **`createBehavior`**: A utility function to create a behavior that handles different message types.
 
 #### Example Implementation
 
 The BehaviorActor can be used to implement actors that need to change their behavior based on their state or the
-messages
-they receive. For example, an account actor might switch between normal and echo behaviors:
+messages they receive. For example, an account actor might switch between normal and echo behaviors:
 
 ```kotlin
 class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Response>(key) {
