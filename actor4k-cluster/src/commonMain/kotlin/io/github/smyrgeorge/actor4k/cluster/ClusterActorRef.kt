@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.actor.Actor.Protocol
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcEnvelope
@@ -34,7 +34,7 @@ class ClusterActorRef(
      *
      * @param msg The message to be sent to the actor.
      */
-    override suspend fun tell(msg: Protocol): Result<Unit> {
+    override suspend fun tell(msg: ActorProtocol): Result<Unit> {
         val res = service.tell(address, msg).getOrElse { return Result.failure(it) }
         return when (res) {
             is RpcEnvelope.Response.Empty -> Result.success(Unit)
@@ -50,13 +50,13 @@ class ClusterActorRef(
      * received and matches the expected type, it returns the result. Otherwise, it handles failure scenarios,
      * such as unexpected response types or exceptions.
      *
-     * @param msg The message to be sent to the target actor. Must implement [Protocol.Message] with a corresponding response type.
+     * @param msg The message to be sent to the target actor. Must implement [ActorProtocol.Message] with a corresponding response type.
      * @param timeout The maximum duration to wait for a response before timing out.
      * @return A [Result] containing the successfully received response of type [R], or a failure if an error occurs during
      *         communication, response processing, or timeout.
      */
     override suspend fun <R, M> ask(msg: M, timeout: Duration): Result<R>
-            where M : Protocol.Message<R>, R : Protocol.Response {
+            where M : ActorProtocol.Message<R>, R : ActorProtocol.Response {
         val res = service.ask(address, msg).getOrElse { return Result.failure(it) }
         return when (res) {
             is RpcEnvelope.Response.Success -> {

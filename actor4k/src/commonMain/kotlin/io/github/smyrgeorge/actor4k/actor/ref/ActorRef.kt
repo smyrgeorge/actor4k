@@ -1,7 +1,7 @@
 package io.github.smyrgeorge.actor4k.actor.ref
 
 import io.github.smyrgeorge.actor4k.actor.Actor
-import io.github.smyrgeorge.actor4k.actor.Actor.Protocol
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlin.time.Duration
 
@@ -21,7 +21,7 @@ abstract class ActorRef(
      * @param msg The message to be sent to the actor.
      * @return A `Result` indicating the completion of the operation, either `Unit` on success or an error on failure.
      */
-    abstract suspend fun tell(msg: Protocol): Result<Unit>
+    abstract suspend fun tell(msg: ActorProtocol): Result<Unit>
 
     /**
      * Sends a message to the actor and awaits a response within a specified timeout.
@@ -29,12 +29,12 @@ abstract class ActorRef(
      * This method is designed for request-response interactions in actor-based messaging systems,
      * allowing a message to be sent and a corresponding response to be awaited synchronously.
      *
-     * @param msg The message to be sent. It must extend [Protocol.Message] and specify a response type [R].
+     * @param msg The message to be sent. It must extend [ActorProtocol.Message] and specify a response type [R].
      * @param timeout The maximum duration to wait for a response before the method times out.
      * @return A [Result] containing the response of type [R] if the operation is successful; otherwise, an error.
      */
     abstract suspend fun <R, M> ask(msg: M, timeout: Duration): Result<R>
-            where M : Protocol.Message<R>, R : Protocol.Response
+            where M : ActorProtocol.Message<R>, R : ActorProtocol.Response
 
     /**
      * Sends a message to the actor and awaits a response using the default timeout.
@@ -42,11 +42,11 @@ abstract class ActorRef(
      * This method is designed for request-response interactions in actor-based messaging systems,
      * allowing a message to be sent and a corresponding response to be awaited synchronously.
      *
-     * @param msg The message to be sent. It must extend [Protocol.Message] and specify a response type [R].
+     * @param msg The message to be sent. It must extend [ActorProtocol.Message] and specify a response type [R].
      * @return A [Result] containing the response of type [R] if the operation is successful; otherwise, an error.
      */
     suspend fun <R, M> ask(msg: M): Result<R>
-            where M : Protocol.Message<R>, R : Protocol.Response =
+            where M : ActorProtocol.Message<R>, R : ActorProtocol.Response =
         ask(msg, ActorSystem.conf.actorAskTimeout)
 
     /**

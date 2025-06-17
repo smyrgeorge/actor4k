@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.test.actor
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
 
 open class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
@@ -19,9 +20,9 @@ open class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
         }
     }
 
-    sealed interface Protocol : Actor.Protocol {
-        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
-        sealed class Response : Actor.Protocol.Response()
+    sealed interface Protocol : ActorProtocol {
+        sealed class Message<R : ActorProtocol.Response> : Protocol, ActorProtocol.Message<R>()
+        sealed class Response : ActorProtocol.Response()
         data class Req(val message: String) : Message<Resp>()
         data class Resp(val message: String) : Response()
     }

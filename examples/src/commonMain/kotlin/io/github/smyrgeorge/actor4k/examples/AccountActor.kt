@@ -1,9 +1,11 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
+import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
 import kotlinx.serialization.Serializable
 
-class AccountActor(key: String) : Actor<AccountActor.Protocol, AccountActor.Protocol.Response>(key) {
+class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onBeforeActivate() {
         // Optional override.
         log.info("[${address()}] onBeforeActivate")
@@ -26,9 +28,9 @@ class AccountActor(key: String) : Actor<AccountActor.Protocol, AccountActor.Prot
         log.info("[${address()}] onShutdown")
     }
 
-    sealed interface Protocol : Actor.Protocol {
-        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
-        sealed class Response : Actor.Protocol.Response()
+    sealed interface Protocol : ActorProtocol {
+        sealed class Message<R : ActorProtocol.Response> : Protocol, ActorProtocol.Message<R>()
+        sealed class Response : ActorProtocol.Response()
 
         @Serializable
         data class Ping(val message: String) : Message<Pong>()

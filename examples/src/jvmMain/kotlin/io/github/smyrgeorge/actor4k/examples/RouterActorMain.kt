@@ -1,20 +1,18 @@
 package io.github.smyrgeorge.actor4k.examples
 
-import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
+import io.github.smyrgeorge.actor4k.examples.TestRouterWorker.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
-class RoundRobinTestRouter(key: String) :
-    RouterActor<TestRouterWorker.Protocol, TestRouterWorker.Protocol.Ok>(key, Strategy.ROUND_ROBIN)
+class RoundRobinTestRouter(key: String) : RouterActor<Protocol, Protocol.Ok>(key, Strategy.ROUND_ROBIN)
+class BroadcastDetachedTestRouter() : RouterActor<Protocol, Protocol.Ok>(randomKey(), Strategy.BROADCAST)
 
-class BroadcastDetachedTestRouter() :
-    RouterActor<TestRouterWorker.Protocol, TestRouterWorker.Protocol.Ok>(randomKey(), Strategy.BROADCAST)
-
-class TestRouterWorker : RouterActor.Worker<TestRouterWorker.Protocol, TestRouterWorker.Protocol.Ok>() {
+class TestRouterWorker : RouterActor.Worker<Protocol, Protocol.Ok>() {
     override suspend fun onReceive(m: Protocol): Protocol.Ok {
         when (m) {
             Protocol.Test -> log.info("[${address()}] Received Test message: $m")
@@ -22,9 +20,9 @@ class TestRouterWorker : RouterActor.Worker<TestRouterWorker.Protocol, TestRoute
         return Protocol.Ok
     }
 
-    sealed interface Protocol : Actor.Protocol {
-        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
-        sealed class Response : Actor.Protocol.Response()
+    sealed interface Protocol : ActorProtocol {
+        sealed class Message<R : ActorProtocol.Response> : Protocol, ActorProtocol.Message<R>()
+        sealed class Response : ActorProtocol.Response()
 
         data object Test : Message<Ok>()
         data object Ok : Response()
@@ -52,7 +50,7 @@ fun main(): Unit = runBlocking {
     delay(1000)
     println("RoundRobinTestRouter (attached) router:")
     val r1 = ActorSystem.get(RoundRobinTestRouter::class, "router-1")
-    r1.tell(TestRouterWorker.Protocol.Test).getOrThrow()
+    r1.tell(Protocol.Test).getOrThrow()
     delay(1000)
 
     delay(1000)
@@ -64,7 +62,7 @@ fun main(): Unit = runBlocking {
             TestRouterWorker()
         )
 
-    r2.tell(TestRouterWorker.Protocol.Test).getOrThrow()
-    r2.ask(TestRouterWorker.Protocol.Test).getOrThrow()
+    r2.tell(Protocol.Test).getOrThrow()
+    r2.ask(Protocol.Test).getOrThrow()
     delay(1000)
 }

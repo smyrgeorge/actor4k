@@ -1,13 +1,13 @@
 package io.github.smyrgeorge.actor4k.test.util
 
-import io.github.smyrgeorge.actor4k.actor.Actor.Protocol
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import kotlinx.coroutines.delay
 
 // Test protocol for messages
-sealed interface TestProtocol : Protocol {
-    sealed class Message<R : Protocol.Response> : TestProtocol, Protocol.Message<R>()
-    sealed class Response : Protocol.Response()
+sealed interface TestProtocol : ActorProtocol {
+    sealed class Message<R : ActorProtocol.Response> : TestProtocol, ActorProtocol.Message<R>()
+    sealed class Response : ActorProtocol.Response()
 
     data object Ping : Message<Ok>()
     data class Echo(val message: String) : Message<Ok>()

@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.microbank
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.cluster.microbank.AccountActor.Protocol
 import kotlinx.serialization.Serializable
 
@@ -10,7 +11,7 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
 
     override suspend fun onActivate(m: Protocol) {
         // Initialize the account balance here.
-        // E.g. fetch the data from the DB.
+        // E.g., fetch the data from the DB.
         // In this case we will assume that the balance is equal to '0'.
         account.balance = 0
         log.info("Activated: $account")
@@ -31,9 +32,9 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     @Serializable
     data class Account(val accountNo: String, var balance: Int)
 
-    sealed interface Protocol : Actor.Protocol {
-        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
-        sealed class Response : Actor.Protocol.Response()
+    sealed interface Protocol : ActorProtocol {
+        sealed class Message<R : ActorProtocol.Response> : Protocol, ActorProtocol.Message<R>()
+        sealed class Response : ActorProtocol.Response()
 
         @Serializable
         data class GetAccount(val accountNo: String) : Message<Account>()

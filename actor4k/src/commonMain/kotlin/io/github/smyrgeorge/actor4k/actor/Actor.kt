@@ -31,7 +31,7 @@ import kotlin.uuid.Uuid
  * @param key A unique identifier for the actor used for addressing and tracking.
  * @param capacity Indicates the actor's mailbox capacity (if mail is full, any attempt to send will suspend, back-pressure).
  */
-abstract class Actor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
+abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     val key: String,
     capacity: Int = ActorSystem.conf.actorQueueSize,
 ) {
@@ -191,11 +191,11 @@ abstract class Actor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
      * accept messages, the function fails with an error. The message is sent
      * using the `Tell` communication pattern.
      *
-     * @param msg The message to be sent, which must inherit from [Protocol].
+     * @param msg The message to be sent, which must inherit from [ActorProtocol].
      * @return A [Result] wrapping a successful operation as [Unit], or a failure
      * if the message could not be sent or the actor is unavailable.
      */
-    open suspend fun tell(msg: Protocol): Result<Unit> = runCatching {
+    open suspend fun tell(msg: ActorProtocol): Result<Unit> = runCatching {
         if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
         @Suppress("UNCHECKED_CAST") (msg as Req)
         val tell = Patterns.Tell<Req, Res>(msg)
@@ -207,12 +207,12 @@ abstract class Actor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
      * This method uses the `Ask` interaction pattern, where a request is sent, and the sender
      * waits for a reply from the recipient.
      *
-     * @param msg The message to send, which should inherit from [Protocol.Message] and have a corresponding response type [R].
+     * @param msg The message to send, which should inherit from [ActorProtocol.Message] and have a corresponding response type [R].
      * @param timeout The maximum duration to wait for a response. If unspecified, defaults to the actor system's configured ask timeout.
      * @return A [Result] wrapping the response of type [R] if successful, or an exception in case of failure or timeout.
      */
     open suspend fun <R, M> ask(msg: M, timeout: Duration = ActorSystem.conf.actorAskTimeout): Result<R>
-            where M : Protocol.Message<R>, R : Protocol.Response {
+            where M : ActorProtocol.Message<R>, R : ActorProtocol.Response {
         val ask: Patterns.Ask<Req, Res> = runCatching {
             if (!status.canAcceptMessages) error("$address is '$status' and thus is not accepting messages (try again later).")
             @Suppress("UNCHECKED_CAST") (msg as Req)
@@ -311,52 +311,6 @@ abstract class Actor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
     fun ref(): LocalRef = ref
 
     /**
-     * Represents a communication protocol interface for defining interactions.
-     *
-     * The `Protocol` interface provides a structure for creating message and response objects,
-     * along with basic properties required to track and identify such messages.
-     */
-    interface Protocol {
-        var id: Long
-        val createdAt: Instant
-
-        /**
-         * Determines if the current message is the first one.
-         *
-         * @return `true` if the message's identifier (`id`) is `1L`, indicating it is the first message; `false` otherwise.
-         */
-        fun isFirst(): Boolean = id == 1L
-
-        /**
-         * Represents an abstract message in the communication protocol.
-         *
-         * The `Message` class serves as a base structure for defining various types of messages
-         * exchanged within a protocol. Each message is associated with a corresponding response type.
-         *
-         * @param R The type of response associated with this message. Must extend the `Response` class.
-         */
-        @Serializable
-        abstract class Message<R : Response> : Protocol {
-            override var id: Long = -1L
-            override val createdAt: Instant = Clock.System.now()
-        }
-
-        /**
-         * Represents an abstract response in the communication protocol.
-         *
-         * The `Response` class serves as a base structure for concrete response implementations,
-         * providing default properties to manage response identification and creation time.
-         *
-         * It implements the `Protocol` interface, ensuring compliance with defined protocol standards.
-         */
-        @Serializable
-        abstract class Response : Protocol {
-            override var id: Long = -1L
-            override val createdAt: Instant = Clock.System.now()
-        }
-    }
-
-    /**
      * Represents message patterns used by the `Actor` for communication and message handling.
      *
      * This sealed interface defines two types of messages: `Tell` and `Ask`.
@@ -368,7 +322,7 @@ abstract class Actor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
      * These patterns are consumed and processed within the `Actor` class's message handling logic.
      * Specifically, `Ask` allows sending responses back to the sender using its `replyTo` property.
      */
-    private sealed interface Patterns<Req : Protocol, Res : Protocol.Response> {
+    private sealed interface Patterns<Req : ActorProtocol, Res : ActorProtocol.Response> {
         val msg: Req
 
         /**
@@ -382,7 +336,7 @@ abstract class Actor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
          *
          * @property msg The payload of the message being sent.
          */
-        class Tell<Req : Protocol, Res : Protocol.Response>(
+        class Tell<Req : ActorProtocol, Res : ActorProtocol.Response>(
             override val msg: Req
         ) : Patterns<Req, Res>
 
@@ -396,7 +350,7 @@ abstract class Actor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
          * @property replyTo A channel used to send the response back to the sender. The channel uses a rendezvous
          * approach to manage communication between the sender and recipient.
          */
-        class Ask<Req : Protocol, Res : Protocol.Response>(
+        class Ask<Req : ActorProtocol, Res : ActorProtocol.Response>(
             override val msg: Req,
             val replyTo: Channel<Result<Res>> = Channel(Channel.RENDEZVOUS)
         ) : Patterns<Req, Res>

@@ -44,11 +44,11 @@ object ActorSystem {
      * Indicates whether the logging system has been initiated.
      *
      * This variable is used to ensure that the logging-related operations,
-     * such as starting the stats collector and periodic logging of system
+     * such as starting the stat collector and periodic logging of system
      * statistics, are initialized only once during the lifecycle of the
      * actor system.
      *
-     * When set to `true`, it denotes that the stats collector and other
+     * When set to `true`, it denotes that the stat collector and other
      * periodic logging mechanisms have already been started, preventing
      * further redundant initializations.
      */

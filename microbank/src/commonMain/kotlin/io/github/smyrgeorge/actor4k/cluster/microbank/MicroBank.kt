@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.cluster.microbank
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
@@ -76,11 +77,11 @@ object MicroBank {
                 }
             },
             serialization = {
-                polymorphic(Actor.Protocol.Message::class) {
+                polymorphic(ActorProtocol.Message::class) {
                     subclass(Protocol.GetAccount::class, Protocol.GetAccount.serializer())
                     subclass(Protocol.ApplyTx::class, Protocol.ApplyTx.serializer())
                 }
-                polymorphic(Actor.Protocol.Response::class) {
+                polymorphic(ActorProtocol.Response::class) {
                     subclass(Protocol.Account::class, Protocol.Account.serializer())
                 }
             },

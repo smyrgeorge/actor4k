@@ -96,7 +96,7 @@ ActorSystem
 ### Let's define an Actor!
 
 ```kotlin
-class AccountActor(key: String) : Actor<AccountActor.Protocol, AccountActor.Protocol.Response>(key) {
+class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onBeforeActivate() {
         // Optional override.
         log.info("[${address()}] onBeforeActivate")
@@ -119,9 +119,9 @@ class AccountActor(key: String) : Actor<AccountActor.Protocol, AccountActor.Prot
         log.info("[${address()}] onShutdown")
     }
 
-    sealed interface Protocol : Actor.Protocol {
-        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
-        sealed class Response : Actor.Protocol.Response()
+    sealed interface Protocol : ActorProtocol {
+        sealed class Message<R : ActorProtocol.Response> : Protocol, ActorProtocol.Message<R>()
+        sealed class Response : ActorProtocol.Response()
 
         data class Ping(val message: String) : Message<Pong>()
         data class Pong(val message: String) : Response()
@@ -281,9 +281,9 @@ messages they receive. For example, an account actor might switch between normal
 
 ```kotlin
 class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Response>(key) {
-    // Define behaviors
-    private val normalBehavior: suspend (Protocol) -> Protocol.Response = { message ->
-        when (message) {
+
+    private val normalBehavior: suspend (Protocol) -> Protocol.Response = { m ->
+        when (m) {
             is Protocol.Ping -> Protocol.Pong("Pong!")
             is Protocol.SwitchBehavior -> {
                 become(echoBehavior)
@@ -292,9 +292,9 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
         }
     }
 
-    private val echoBehavior: suspend (Protocol) -> Protocol.Response = { message ->
-        when (message) {
-            is Protocol.Ping -> Protocol.Pong("Echo: ${message.message}")
+    private val echoBehavior: suspend (Protocol) -> Protocol.Response = { m ->
+        when (m) {
+            is Protocol.Ping -> Protocol.Pong("Echo: ${m.message}")
             is Protocol.SwitchBehavior -> {
                 become(normalBehavior)
                 Protocol.BehaviorSwitched("Switched to normal behavior")
@@ -303,13 +303,18 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
     }
 
     init {
-        // Set initial behavior
+        // Set initial behavior.
         become(normalBehavior)
     }
 
-    sealed interface Protocol : Actor.Protocol {
-        sealed class Message<R : Actor.Protocol.Response> : Protocol, Actor.Protocol.Message<R>()
-        sealed class Response : Actor.Protocol.Response()
+    override suspend fun onActivate(m: Protocol) {
+        // Optional override.
+        log.info("[${address()}] onActivate: $m")
+    }
+
+    sealed interface Protocol : ActorProtocol {
+        sealed class Message<R : ActorProtocol.Response> : Protocol, ActorProtocol.Message<R>()
+        sealed class Response : ActorProtocol.Response()
 
         data class Ping(val message: String) : Message<Pong>()
         data class Pong(val message: String) : Response()

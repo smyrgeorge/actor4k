@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.actor.impl
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.channels.Channel
@@ -12,12 +13,12 @@ import kotlin.time.Duration
  * The `RouterActor` manages a set of `Worker` instances and distributes messages to them using
  * predefined routing strategies, enabling efficient message handling in an actor-based system.
  *
- * @param Req the type of request messages this router actor can process. Must extend [Actor.Protocol].
- * @param Res the type of response messages expected from the workers. Must extend [Actor.Protocol.Response].
+ * @param Req the type of request messages this router actor can process. Must extend [ActorProtocol].
+ * @param Res the type of response messages expected from the workers. Must extend [ActorProtocol.Response].
  * @param key an optional unique key to identify the router actor. Defaults to a random key prefixed with "router".
  * @param strategy the routing strategy used to delegate messages to workers.
  */
-abstract class RouterActor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
+abstract class RouterActor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     key: String = randomKey("router"),
     val strategy: Strategy
 ) : Actor<Req, Res>(key) {
@@ -41,10 +42,10 @@ abstract class RouterActor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
      *
      * If no workers are registered, the method returns a failure result.
      *
-     * @param msg The message to be sent, which must inherit from [Protocol].
+     * @param msg The message to be sent, which must inherit from [ActorProtocol].
      * @return A [Result] wrapping [Unit] on successful dispatch or a failure if no workers are registered.
      */
-    final override suspend fun tell(msg: Protocol): Result<Unit> {
+    final override suspend fun tell(msg: ActorProtocol): Result<Unit> {
         if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
         id++
@@ -71,12 +72,12 @@ abstract class RouterActor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
      *
      * If no workers are registered, the method immediately returns a failure result.
      *
-     * @param msg The message to be sent, which should extend [Protocol.Message] and define a response type [R].
+     * @param msg The message to be sent, which should extend [ActorProtocol.Message] and define a response type [R].
      * @param timeout The maximum duration to wait for a response before timing out.
      * @return A [Result] encapsulating the response of type [R] if successful, or an exception if the operation fails.
      */
     final override suspend fun <R, M> ask(msg: M, timeout: Duration): Result<R>
-            where M : Protocol.Message<R>, R : Protocol.Response {
+            where M : ActorProtocol.Message<R>, R : ActorProtocol.Response {
         if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
         id++
@@ -160,12 +161,12 @@ abstract class RouterActor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
      * Represents an abstract worker in an actor-based system capable of processing messages of type `Req` and generating
      * responses of type `Res`. It acts as a specialized `Actor` with an internal mechanism to signal its availability.
      *
-     * @param Req the type of the request messages this worker can handle. It must extend [Protocol].
-     * @param Res the type of the response messages this worker can generate. It must extend [Protocol.Response].
+     * @param Req the type of the request messages this worker can handle. It must extend [ActorProtocol].
+     * @param Res the type of the response messages this worker can generate. It must extend [ActorProtocol.Response].
      * @param capacity the maximum number of messages the worker can queue, defaulting to the value defined
      * in the actor system's configuration.
      */
-    abstract class Worker<Req : Protocol, Res : Protocol.Response>(
+    abstract class Worker<Req : ActorProtocol, Res : ActorProtocol.Response>(
         capacity: Int = ActorSystem.conf.actorQueueSize,
     ) : Actor<Req, Res>(key = randomKey(), capacity = capacity) {
         private var available: Channel<Worker<Req, Res>>? = null

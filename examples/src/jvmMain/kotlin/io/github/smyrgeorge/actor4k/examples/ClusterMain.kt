@@ -1,6 +1,6 @@
 package io.github.smyrgeorge.actor4k.examples
 
-import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.cluster.ClusterActorRegistry
 import io.github.smyrgeorge.actor4k.cluster.ClusterImpl
 import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
@@ -29,10 +29,10 @@ fun main(): Unit = runBlocking {
             // Add extra routing to the underlying HTTP server.
         },
         serialization = {
-            polymorphic(Actor.Protocol.Message::class) {
+            polymorphic(ActorProtocol.Message::class) {
                 subclass(Protocol.Ping::class, Protocol.Ping.serializer())
             }
-            polymorphic(Actor.Protocol.Response::class) {
+            polymorphic(ActorProtocol.Response::class) {
                 subclass(Protocol.Pong::class, Protocol.Pong.serializer())
             }
         },

@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.actor.impl
 
 import io.github.smyrgeorge.actor4k.actor.Actor
+import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 
 /**
  * Represents an actor that can change its behavior based on the current state or message received.
@@ -10,12 +11,12 @@ import io.github.smyrgeorge.actor4k.actor.Actor
  * This is useful for implementing state machines or actors that need to change their
  * processing logic based on previous interactions.
  *
- * @param Req the type of request messages this behavior actor can process. Must extend [Actor.Protocol].
- * @param Res the type of response messages this behavior actor can generate. Must extend [Actor.Protocol.Response].
+ * @param Req the type of request messages this behavior actor can process. Must extend [ActorProtocol].
+ * @param Res the type of response messages this behavior actor can generate. Must extend [ActorProtocol.Response].
  * @param key an optional unique key to identify the behavior actor. Defaults to a random key prefixed with "behavior".
  * @param behavior the initial behavior function that processes messages. Defaults to a function that throws an exception.
  */
-abstract class BehaviorActor<Req : Actor.Protocol, Res : Actor.Protocol.Response>(
+abstract class BehaviorActor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     key: String,
     private var behavior: suspend (Req) -> Res = { _ -> error("No behavior set.") }
 ) : Actor<Req, Res>(key) {
