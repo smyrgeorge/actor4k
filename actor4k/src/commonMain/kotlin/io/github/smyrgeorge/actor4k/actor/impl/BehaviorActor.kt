@@ -2,29 +2,28 @@ package io.github.smyrgeorge.actor4k.actor.impl
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
+import io.github.smyrgeorge.actor4k.system.ActorSystem
 
 /**
- * An abstract actor that supports dynamic behaviors for processing messages.
+ * An abstract actor class that enables dynamic behavior changes for handling incoming requests.
  *
- * The `BehaviorActor` is a specialized actor that allows its behavior
- * for processing incoming messages to be dynamically changed at runtime.
- * The behavior is defined as a suspending function that processes a request
- * and generates a corresponding response.
+ * This class extends the [Actor] class and introduces a dynamic behavior mechanism
+ * for processing requests. It allows defining and changing the behavior of the actor
+ * at runtime through the `become` method.
  *
- * @param Req The type of request messages this actor processes. It must
- *            implement [ActorProtocol].
- * @param Res The type of response messages this actor produces. It must
- *            implement [ActorProtocol.Response].
- * @param key A unique identifier for this actor instance.
- * @param behavior The initial behavior function to process incoming messages.
- *                 By default, this function generates an error if not overridden.
+ * @param Req The type of the request messages this actor can process. Must implement [ActorProtocol].
+ * @param Res The type of the response messages this actor can produce. Must implement [ActorProtocol.Response].
+ * @param key A unique identifier for the actor instance.
+ * @param capacity The capacity of the actor's queue. Defaults to the value specified in `ActorSystem.conf.actorQueueSize`.
  */
 abstract class BehaviorActor<Req, Res>(
     key: String,
-    private var behavior: suspend (BehaviorActor<Req, Res>, Req) -> Res =
-        { _, _ -> error("No behavior set.") }
-) : Actor<Req, Res>(key)
-        where  Req : ActorProtocol, Res : ActorProtocol.Response {
+    capacity: Int = ActorSystem.conf.actorQueueSize
+) : Actor<Req, Res>(key, capacity) where  Req : ActorProtocol, Res : ActorProtocol.Response {
+
+    private var behavior: suspend (BehaviorActor<Req, Res>, Req) -> Res = { _, _ ->
+        error("[${address()}] No behavior set. Did you forget to call `become` function?")
+    }
 
     /**
      * Processes an incoming request using the actor's current behavior function.

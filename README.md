@@ -282,14 +282,9 @@ messages they receive. For example, an account actor might switch between normal
 ```kotlin
 class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Response>(key) {
 
-    init {
-        // Set initial behavior.
-        become(normalBehavior)
-    }
-
     override suspend fun onActivate(m: Protocol) {
-        // Optional override.
-        log.info("[${address()}] onActivate: $m")
+        // Set the default behavior here.
+        become(normalBehavior)
     }
 
     sealed interface Protocol : ActorProtocol {
