@@ -306,7 +306,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     /**
      * Moves all stashed messages back to the actor's mailbox.
      *
-     * This method retrieves all messages previously stashed using [stash] and places them at the front
+     * This method retrieves all messages previously stashed using [stash] and places them at the end
      * of the actor's mailbox, so they will be processed next.
      *
      * This is typically called after an actor changes its behavior and is ready to process previously
@@ -321,6 +321,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         // Drain the stash channel into the list
         @OptIn(ExperimentalCoroutinesApi::class)
         while (!stash.isEmpty) {
+            stats.stashedMessages -= 1
             stashed.add(stash.receive())
         }
 
