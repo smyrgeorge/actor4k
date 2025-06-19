@@ -6,6 +6,7 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
@@ -43,6 +44,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     private val address: Address = Address.of(this::class, key)
     private val ref: LocalRef = LocalRef(address = address, actor = this)
     private val mail: Channel<Patterns<Req, Res>> = Channel(capacity = capacity)
+    private val stash: Channel<Patterns<Req, Res>> = Channel(capacity = capacity)
 
     /**
      * Hook called before the actor is activated.
@@ -284,19 +286,64 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     fun address(): Address = address
 
     /**
+     * Stashes the current message being processed.
+     *
+     * This method allows an actor to temporarily store a message that it can't or doesn't want to process
+     * in its current state. The stashed message can be retrieved later using [unstashAll].
+     *
+     * This is useful when an actor's behavior changes and it wants to process previously stashed messages
+     * with the new behavior.
+     *
+     * @param msg The message to stash
+     */
+    protected suspend fun stash(msg: Req) {
+        log.debug("[$address::stash] Stashing message: $msg")
+        val pattern = Patterns.Tell<Req, Res>(msg)
+        stash.send(pattern)
+        stats.stashedMessages += 1
+    }
+
+    /**
+     * Moves all stashed messages back to the actor's mailbox.
+     *
+     * This method retrieves all messages previously stashed using [stash] and places them at the front
+     * of the actor's mailbox, so they will be processed next.
+     *
+     * This is typically called after an actor changes its behavior and is ready to process previously
+     * stashed messages.
+     */
+    protected suspend fun unstashAll() {
+        log.debug("[$address::unstashAll] Un-stashing all messages")
+
+        // Create a temporary list to hold stashed messages
+        val stashed = mutableListOf<Patterns<Req, Res>>()
+
+        // Drain the stash channel into the list
+        @OptIn(ExperimentalCoroutinesApi::class)
+        while (!stash.isEmpty) {
+            stashed.add(stash.receive())
+        }
+
+        // Send all stashed messages back to the mailbox in the original order
+        stashed.forEach { mail.send(it) }
+    }
+
+    /**
      * Performs the shutdown process for the actor.
      *
      * This method updates the actor's lifecycle status to `SHUTTING_DOWN`
      * and records the shutdown time in the actor's statistics. It also
-     * closes the actor's mailbox to prevent further message handling.
+     * closes the actor's mailbox and stash to prevent further message handling.
      *
      * This method is used to cleanly transition the actor out of its
      * active state and ensure proper resource management.
      */
     fun shutdown() {
+        if (!status.canTriggerShutdown) return
         stats.triggeredShutDownAt = Clock.System.now()
         status = Status.SHUTTING_DOWN
         mail.close()
+        stash.close()
     }
 
     /**
@@ -372,13 +419,14 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
      */
     @Serializable
     enum class Status(
-        val canAcceptMessages: Boolean
+        val canAcceptMessages: Boolean,
+        val canTriggerShutdown: Boolean,
     ) {
-        CREATED(true),
-        ACTIVATING(true),
-        READY(true),
-        SHUTTING_DOWN(false),
-        SHUT_DOWN(false)
+        CREATED(true, true),
+        ACTIVATING(true, true),
+        READY(true, true),
+        SHUTTING_DOWN(false, false),
+        SHUT_DOWN(false, false)
     }
 
     /**
@@ -394,6 +442,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
      * @property shutDownAt The timestamp when the actor completed its shutdown process. Nullable.
      * @property lastMessageAt The timestamp when the actor processed the last message.
      * @property receivedMessages The total number of messages received and processed by the actor.
+     * @property stashedMessages The total number of messages that have been stashed by the actor.
      */
     @Serializable
     data class Stats(
@@ -402,7 +451,8 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         var triggeredShutDownAt: Instant? = null,
         var shutDownAt: Instant? = null,
         var lastMessageAt: Instant = Clock.System.now(),
-        var receivedMessages: Long = 0
+        var receivedMessages: Long = 0,
+        var stashedMessages: Long = 0
     )
 
     /**

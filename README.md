@@ -38,6 +38,45 @@ resilience come from the ability to isolate errors within individual actors thro
 fitting choice for applications such as real-time data processing, microservices architectures, and any system that
 requires robust fault isolation and maintainability.
 
+## Supported Features
+
+### Core Features
+
+- **Actor Lifecycle Management**: Creation, activation, and graceful shutdown of actors
+- **Message Passing Patterns**:
+    - `tell` (fire-and-forget) for asynchronous communication
+    - `ask` (request-response) for synchronous communication with timeout support
+- **Actor References**: Type-safe references to actors for communication
+- **Back-Pressure Control**: Configurable mailbox capacity to handle high message volumes
+- **Error Isolation**: Errors in one actor don't affect others
+- **Stashing**: Ability to temporarily store messages for later processing
+- **Statistics Tracking**: Monitor actor performance and message processing
+
+### Actor Types
+
+- **Generic Actor**: Base actor implementation with lifecycle hooks
+- **Behavior Actor**: Actors that can change their behavior dynamically at runtime
+- **Router Actor**: Distributes messages to worker actors using various routing strategies
+    - Random routing
+    - Round-robin routing
+    - Broadcast routing
+    - First-available routing
+
+### Cluster Support
+
+- **Distributed Actor Communication**: Seamless communication between actors across multiple nodes
+- **Remote Actor References**: References to actors on remote nodes
+- **Node Management**: Configuration and coordination of cluster nodes
+- **RPC Communication**: Remote procedure calls between nodes using WebSockets
+- **Message Serialization**: Efficient serialization of messages for network transport
+
+### Multiplatform Support
+
+- **JVM**: Support for Java Virtual Machine
+- **Native**: Support for Linux, macOS, Windows
+- **Mobile**: Support for iOS and Android
+- **WebAssembly**: Support for wasmJs and wasmWasi
+
 ### State of the project
 
 **Note:** This project is still under heavy development, so you might encounter some incompatibilities along the way.
@@ -48,7 +87,6 @@ core module is already being used in production with great results (in a non-clu
 
 - **Enhance the basic actor API by adding:**
     - Timers
-    - Stash
 - **Expand the cluster capabilities**
     - Node configuration loader
     - Dynamic node management and discovery
@@ -129,6 +167,10 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
 }
 ```
 
+This example shows a basic actor implementation. If you need an actor that can change its behavior dynamically at
+runtime (for implementing state machines or context-dependent processing), check out
+the [Behavior Actor](#behavior-actor) section below.
+
 Now let's send some messages:
 
 ```kotlin
@@ -193,6 +235,22 @@ By extending the `Actor` base class, you gain access to built-in lifecycle hooks
 
 Each actor instance encapsulates its unique state and interacts exclusively through asynchronous message passing,
 ensuring thread-safe operation and simplifying concurrency management.
+
+#### Message Stashing
+
+The [Actor](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/actor/Actor.kt) class provides a message stashing
+mechanism that allows actors to temporarily defer processing of certain messages. This is particularly useful when an
+actor receives messages that it cannot or should not process in its current state, but wants to handle later.
+
+Key features of the stashing mechanism:
+
+- **`stash(msg)`**: Temporarily stores a message in a separate queue for later processing
+- **`unstashAll()`**: Moves all stashed messages back to the actor's mailbox, preserving their original order
+- The actor keeps track of stashed messages count in its statistics
+
+This mechanism is especially valuable when implementing state-dependent behavior, where messages might arrive in an
+order different from what the actor can process, or when the actor needs to change its behavior before processing
+certain messages.
 
 #### Back-Pressure
 
