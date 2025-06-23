@@ -172,7 +172,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
 
                 // Consume flow.
                 val behavior: Behavior<Res> = try {
-                    when (val r: Behavior<Res> = onReceive(msg)) {
+                    when (val r = onReceive(msg)) {
                         is Behavior.Respond<Res> -> r.apply { value.id = stats.receivedMessages }
                         else -> r
                     }
@@ -181,31 +181,20 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 }
 
                 when (behavior) {
-                    is Behavior.Respond<Res> -> {
-                        val success: Result<Res> = Result.success(behavior.value)
-                        @Suppress("DuplicatedCode")
+                    is Behavior.Respond<Res>, is Behavior.Error<Res> -> {
+                        val result: Result<Res> = when (behavior) {
+                            is Behavior.Respond<Res> -> behavior.toResult()
+                            is Behavior.Error<Res> -> behavior.toResult()
+                            else -> Result.failure(Exception("Unexpected behavior: $behavior"))
+                        }
+
                         when (it) {
                             is Patterns.Tell -> Unit
-                            is Patterns.Ask -> reply("consume", it, success)
+                            is Patterns.Ask -> reply("consume", it, result)
                         }
 
                         try {
-                            afterReceive(msg, success)
-                        } catch (e: Exception) {
-                            log.warn("[$address::afterReceive] Failed to process afterReceive hook (${e.message ?: ""})")
-                        }
-                    }
-
-                    is Behavior.Error<Res> -> {
-                        val failure: Result<Res> = Result.failure(behavior.cause)
-                        @Suppress("DuplicatedCode")
-                        when (it) {
-                            is Patterns.Tell -> Unit
-                            is Patterns.Ask -> reply("consume", it, failure)
-                        }
-
-                        try {
-                            afterReceive(msg, failure)
+                            afterReceive(msg, result)
                         } catch (e: Exception) {
                             log.warn("[$address::afterReceive] Failed to process afterReceive hook (${e.message ?: ""})")
                         }
