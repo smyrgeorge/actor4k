@@ -183,6 +183,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 when (behavior) {
                     is Behavior.Respond<Res> -> {
                         val success: Result<Res> = Result.success(behavior.value)
+                        @Suppress("DuplicatedCode")
                         when (it) {
                             is Patterns.Tell -> Unit
                             is Patterns.Ask -> reply("consume", it, success)
@@ -197,9 +198,10 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
 
                     is Behavior.Error<Res> -> {
                         val failure: Result<Res> = Result.failure(behavior.cause)
+                        @Suppress("DuplicatedCode")
                         when (it) {
                             is Patterns.Tell -> Unit
-                            is Patterns.Ask -> reply("consume", it, Result.failure(behavior.cause))
+                            is Patterns.Ask -> reply("consume", it, failure)
                         }
 
                         try {
