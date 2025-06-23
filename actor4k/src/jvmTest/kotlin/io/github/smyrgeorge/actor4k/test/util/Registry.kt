@@ -13,6 +13,7 @@ import io.github.smyrgeorge.actor4k.test.actor.SlowActivateAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.SlowActivateWithErrorInActivationAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.SlowInitAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.SlowProcessingAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.StashingActor
 import io.github.smyrgeorge.actor4k.test.actor.ThrowingDuringMessageProcessingActor
 import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
 
@@ -34,6 +35,7 @@ object Registry {
             SlowActivateWithErrorInActivationAccountActor(it)
         }
         .factoryFor(ThrowingDuringMessageProcessingActor::class) { ThrowingDuringMessageProcessingActor(it) }
+        .factoryFor(StashingActor::class) { StashingActor(it) }
 
     init {
         ActorSystem
