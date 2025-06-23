@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
+import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.actor.impl.BehaviorActor
 import io.github.smyrgeorge.actor4k.examples.AccountBehaviourActor.Protocol
 
@@ -8,7 +9,7 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
 
     override suspend fun onActivate(m: Protocol) {
         // Set the default behavior here.
-        become(normalBehavior)
+        become(normal)
     }
 
     sealed interface Protocol : ActorProtocol {
@@ -22,26 +23,26 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
     }
 
     companion object {
-        private val normalBehavior: suspend (AccountBehaviourActor, Protocol) -> Protocol.Response = { ctx, m ->
+        private val normal: suspend (AccountBehaviourActor, Protocol) -> Behavior<Protocol.Response> = { ctx, m ->
             ctx.log.info("[${ctx.address()}] normalBehavior: $m")
 
             when (m) {
-                is Protocol.Ping -> Protocol.Pong("Pong!")
+                is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Pong!"))
                 is Protocol.SwitchBehavior -> {
-                    ctx.become(echoBehavior)
-                    Protocol.BehaviorSwitched("Switched to echo behavior")
+                    ctx.become(echo)
+                    Behavior.Respond(Protocol.BehaviorSwitched("Switched to echo behavior"))
                 }
             }
         }
 
-        private val echoBehavior: suspend (AccountBehaviourActor, Protocol) -> Protocol.Response = { ctx, m ->
+        private val echo: suspend (AccountBehaviourActor, Protocol) -> Behavior<Protocol.Response> = { ctx, m ->
             ctx.log.info("[${ctx.address()}] echoBehavior: $m")
 
             when (m) {
-                is Protocol.Ping -> Protocol.Pong("Echo: ${m.message}")
+                is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Echo: ${m.message}"))
                 is Protocol.SwitchBehavior -> {
-                    ctx.become(normalBehavior)
-                    Protocol.BehaviorSwitched("Switched to normal behavior")
+                    ctx.become(normal)
+                    Behavior.Respond(Protocol.BehaviorSwitched("Switched to normal behavior"))
                 }
             }
         }

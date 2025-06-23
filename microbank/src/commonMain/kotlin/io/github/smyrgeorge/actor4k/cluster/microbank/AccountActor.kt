@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.cluster.microbank
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
+import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.cluster.microbank.AccountActor.Protocol
 import kotlinx.serialization.Serializable
 
@@ -17,7 +18,7 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
         log.info("Activated: $account")
     }
 
-    override suspend fun onReceive(m: Protocol): Protocol.Response {
+    override suspend fun onReceive(m: Protocol): Behavior<Protocol.Response> {
         val res = when (m) {
             is Protocol.GetAccount -> account
             is Protocol.ApplyTx -> {
@@ -26,7 +27,7 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
             }
         }
 
-        return Protocol.Account(res)
+        return Behavior.Respond(Protocol.Account(res))
     }
 
     @Serializable

@@ -145,10 +145,10 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
         log.info("[${address()}] onActivate: $m")
     }
 
-    override suspend fun onReceive(m: Protocol): Protocol.Response {
+    override suspend fun onReceive(m: Protocol): Behavior<Protocol.Response> {
         log.info("[${address()}] onReceive: $m")
         return when (m) {
-            is Protocol.Ping -> Protocol.Pong("Pong!")
+            is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Pong!"))
         }
     }
 
@@ -238,19 +238,25 @@ ensuring thread-safe operation and simplifying concurrency management.
 
 #### Message Stashing
 
-The [Actor](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/actor/Actor.kt) class provides a message stashing
-mechanism that allows actors to temporarily defer processing of certain messages. This is particularly useful when an
-actor receives messages that it cannot or should not process in its current state, but wants to handle later.
+The Actor system provides a message stashing mechanism that allows actors to temporarily defer processing of messages
+that cannot be handled in the current state. This is particularly useful for implementing state-dependent message
+processing logic.
 
-Key features of the stashing mechanism:
+Key features of message stashing:
 
-- **`stash(msg)`**: Temporarily stores a message in a separate queue for later processing
-- **`unstashAll()`**: Moves all stashed messages back to the actor's mailbox, preserving their original order
-- The actor keeps track of stashed messages count in its statistics
+- **Stashing Messages**: When an actor receives a message it cannot process in its current state, it can return
+  `Behavior.Stash()` to temporarily store the message in a dedicated stash queue.
+- **Unstashing Messages**: The actor can later retrieve all stashed messages using the `unstashAll()` method, which
+  moves them back to the actor's mailbox for processing.
+- **Stash Capacity**: The stash has the same capacity as the actor's mailbox, controlled by the `capacity` property.
+- **Statistics Tracking**: The actor keeps track of stashed messages through the `stashedMessages` counter in its
+  statistics.
 
-This mechanism is especially valuable when implementing state-dependent behavior, where messages might arrive in an
-order different from what the actor can process, or when the actor needs to change its behavior before processing
-certain messages.
+Message stashing is particularly useful in scenarios where:
+
+- An actor needs to change its behavior before processing certain messages
+- Messages arrive in an order different from what the actor expects
+- The actor is waiting for a specific condition or resource to become available
 
 #### Back-Pressure
 
@@ -342,7 +348,7 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
 
     override suspend fun onActivate(m: Protocol) {
         // Set the default behavior here.
-        become(normalBehavior)
+        become(normal)
     }
 
     sealed interface Protocol : ActorProtocol {
@@ -356,26 +362,26 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
     }
 
     companion object {
-        private val normalBehavior: suspend (AccountBehaviourActor, Protocol) -> Protocol.Response = { ctx, m ->
+        private val normal: suspend (AccountBehaviourActor, Protocol) -> Behavior<Protocol.Response> = { ctx, m ->
             ctx.log.info("[${ctx.address()}] normalBehavior: $m")
 
             when (m) {
-                is Protocol.Ping -> Protocol.Pong("Pong!")
+                is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Pong!"))
                 is Protocol.SwitchBehavior -> {
-                    ctx.become(echoBehavior)
-                    Protocol.BehaviorSwitched("Switched to echo behavior")
+                    ctx.become(echo)
+                    Behavior.Respond(Protocol.BehaviorSwitched("Switched to echo behavior"))
                 }
             }
         }
 
-        private val echoBehavior: suspend (AccountBehaviourActor, Protocol) -> Protocol.Response = { ctx, m ->
+        private val echo: suspend (AccountBehaviourActor, Protocol) -> Behavior<Protocol.Response> = { ctx, m ->
             ctx.log.info("[${ctx.address()}] echoBehavior: $m")
 
             when (m) {
-                is Protocol.Ping -> Protocol.Pong("Echo: ${m.message}")
+                is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Echo: ${m.message}"))
                 is Protocol.SwitchBehavior -> {
-                    ctx.become(normalBehavior)
-                    Protocol.BehaviorSwitched("Switched to normal behavior")
+                    ctx.become(normal)
+                    Behavior.Respond(Protocol.BehaviorSwitched("Switched to normal behavior"))
                 }
             }
         }

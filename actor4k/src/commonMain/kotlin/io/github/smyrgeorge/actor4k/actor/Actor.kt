@@ -43,6 +43,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     private var initializationFailed: Exception? = null
     private val address: Address = Address.of(this::class, key)
     private val ref: LocalRef = LocalRef(address = address, actor = this)
+
     private val mail: Channel<Patterns<Req, Res>> = Channel(capacity = capacity)
     private val stash: Channel<Patterns<Req, Res>> = Channel(capacity = capacity)
 
@@ -77,7 +78,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
      * @param m The incoming request message of type [Req] that needs to be processed.
      * @return The response of type [Res] generated after processing the message.
      */
-    abstract suspend fun onReceive(m: Req): Res
+    abstract suspend fun onReceive(m: Req): Behavior<Res>
 
     /**
      * Hook called after the actor has finished processing a message.
@@ -108,33 +109,33 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     open suspend fun onShutdown() {}
 
     /**
-     * Activates the actor and starts the message consumption process.
+     * Activates the actor and transitions its state from `CREATED` to `ACTIVATING`, and eventually to `READY`
+     * upon successful initialization.
      *
-     * This function is responsible for initializing the actor, consuming incoming messages,
-     * and handling them according to the defined patterns (`Tell` or `Ask`).
-     * It performs the following tasks:
+     * When activated, the method begins consuming messages from the mail queue. The activation process follows these steps:
+     * - Executes pre-activation hooks using `onBeforeActivate`.
+     * - Processes incoming messages iteratively from the mail queue.
+     * - Handles the activation flow for the first received message and transitions to the `READY` state if successful.
+     * - Handles message consumption, including success and error scenarios, by invoking the relevant hooks,
+     *   such as `onReceive`, `afterReceive`, and others.
      *
-     * - Invokes the `onBeforeActivate` function for any pre-activation setup.
-     * - Processes initialization messages to activate the actor using `onActivate`.
-     * - Handles subsequent messages using the `onReceive` method.
-     * - Manages any errors during initialization by replying with an error or shutting down the actor.
-     * - Updates the actor's statistics (`stats`) with the processing timestamp and message count.
+     * If an error occurs during activation or message processing:
+     * - Activation errors result in immediate shutdown of the actor.
+     * - Message processing errors are handled by sending error responses or stashing messages, depending on their type.
      *
-     * The method processes messages in two flows:
-     * 1. Initialization Flow: Processes the first message to initialize the actor.
-     * 2. Consumption Flow: Handles all subsequent messages after initialization.
+     * The method also updates the internal statistics such as the timestamp of the last received message
+     * and the total count of received messages.
      *
-     * In case of failures during activation, the actor is immediately shut down,
-     * and appropriate error messages are sent in response to pending or incoming requests.
-     *
-     * This starts a coroutine to listen and process messages from the actor's mailbox until shutdown.
+     * Note:
+     * - This method only starts the activation process if the actor's current status is `CREATED`.
+     * - Subsequent messages are processed based on the defined behavior in message hooks like `onReceive`
+     *   and its associated logic.
      */
     fun activate() {
         if (status != Status.CREATED) return
 
         // Start the mail consumer.
         launch {
-
             onBeforeActivate()
             status = Status.ACTIVATING
 
@@ -170,16 +171,46 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 }
 
                 // Consume flow.
-                val reply: Result<Res> = runCatching { onReceive(msg).apply { id = stats.receivedMessages } }
-                when (it) {
-                    is Patterns.Tell -> Unit
-                    is Patterns.Ask -> reply(operation = "consume", pattern = it, reply = reply)
+                val behavior: Behavior<Res> = try {
+                    when (val r: Behavior<Res> = onReceive(msg)) {
+                        is Behavior.Respond<Res> -> r.apply { value.id = stats.receivedMessages }
+                        else -> r
+                    }
+                } catch (e: Exception) {
+                    Behavior.Error(e)
                 }
 
-                try {
-                    afterReceive(msg, reply)
-                } catch (e: Exception) {
-                    log.warn("[$address::afterReceive] Failed to process afterReceive hook (${e.message ?: ""})")
+                when (behavior) {
+                    is Behavior.Respond<Res> -> {
+                        val success: Result<Res> = Result.success(behavior.value)
+                        when (it) {
+                            is Patterns.Tell -> Unit
+                            is Patterns.Ask -> reply("consume", it, success)
+                        }
+
+                        try {
+                            afterReceive(msg, success)
+                        } catch (e: Exception) {
+                            log.warn("[$address::afterReceive] Failed to process afterReceive hook (${e.message ?: ""})")
+                        }
+                    }
+
+                    is Behavior.Error<Res> -> {
+                        val failure: Result<Res> = Result.failure(behavior.cause)
+                        when (it) {
+                            is Patterns.Tell -> Unit
+                            is Patterns.Ask -> reply("consume", it, Result.failure(behavior.cause))
+                        }
+
+                        try {
+                            afterReceive(msg, failure)
+                        } catch (e: Exception) {
+                            log.warn("[$address::afterReceive] Failed to process afterReceive hook (${e.message ?: ""})")
+                        }
+                    }
+
+                    is Behavior.Stash<Res> -> stash(it)
+                    is Behavior.Shutdown<Res> -> shutdown()
                 }
             }
         }
@@ -286,19 +317,18 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     fun address(): Address = address
 
     /**
-     * Stashes the current message being processed.
+     * Stashes the given message pattern for later processing.
      *
-     * This method allows an actor to temporarily store a message that it can't or doesn't want to process
-     * in its current state. The stashed message can be retrieved later using [unstashAll].
+     * This method temporarily stores the provided message pattern in a stash, allowing the actor to
+     * defer its processing until a later time. It is commonly used when the actor's current
+     * behavior does not support handling the message. The stashed message can be retrieved and
+     * processed later using un-stash related methods.
      *
-     * This is useful when an actor's behavior changes and it wants to process previously stashed messages
-     * with the new behavior.
-     *
-     * @param msg The message to stash
+     * @param pattern The message pattern of type [Patterns] containing the request and response payloads
+     *                to be stashed.
      */
-    protected suspend fun stash(msg: Req) {
-        log.debug("[$address::stash] Stashing message: $msg")
-        val pattern = Patterns.Tell<Req, Res>(msg)
+    private suspend fun stash(pattern: Patterns<Req, Res>) {
+        log.debug("[$address::stash] Stashing message: ${pattern.msg}")
         stash.send(pattern)
         stats.stashedMessages += 1
     }

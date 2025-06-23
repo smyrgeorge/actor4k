@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
+import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.examples.TestRouterWorker.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
@@ -13,11 +14,11 @@ class RoundRobinTestRouter(key: String) : RouterActor<Protocol, Protocol.Ok>(key
 class BroadcastDetachedTestRouter() : RouterActor<Protocol, Protocol.Ok>(randomKey(), Strategy.BROADCAST)
 
 class TestRouterWorker : RouterActor.Worker<Protocol, Protocol.Ok>() {
-    override suspend fun onReceive(m: Protocol): Protocol.Ok {
+    override suspend fun onReceive(m: Protocol): Behavior<Protocol.Ok> {
         when (m) {
             Protocol.Test -> log.info("[${address()}] Received Test message: $m")
         }
-        return Protocol.Ok
+        return Behavior.Respond(Protocol.Ok)
     }
 
     sealed interface Protocol : ActorProtocol {

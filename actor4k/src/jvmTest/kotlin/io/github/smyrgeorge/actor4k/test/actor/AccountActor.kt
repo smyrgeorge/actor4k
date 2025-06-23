@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.test.actor
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
+import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
 
 open class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
@@ -13,10 +14,10 @@ open class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
         log.info("[${address()}] onActivate: $m")
     }
 
-    override suspend fun onReceive(m: Protocol): Protocol.Response {
+    override suspend fun onReceive(m: Protocol): Behavior<Protocol.Response> {
         log.info("[${address()}] onReceive: $m")
         return when (m) {
-            is Protocol.Req -> Protocol.Resp("Pong!")
+            is Protocol.Req -> Behavior.Respond(Protocol.Resp("Pong!"))
         }
     }
 

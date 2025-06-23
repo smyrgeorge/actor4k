@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.examples
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
+import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.examples.AccountActor.Protocol
 import kotlinx.serialization.Serializable
 
@@ -16,10 +17,10 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
         log.info("[${address()}] onActivate: $m")
     }
 
-    override suspend fun onReceive(m: Protocol): Protocol.Response {
+    override suspend fun onReceive(m: Protocol): Behavior<Protocol.Response> {
         log.info("[${address()}] onReceive: $m")
         return when (m) {
-            is Protocol.Ping -> Protocol.Pong("Pong!")
+            is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Pong!"))
         }
     }
 

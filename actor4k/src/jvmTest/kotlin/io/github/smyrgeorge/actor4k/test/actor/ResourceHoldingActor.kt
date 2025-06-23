@@ -1,5 +1,7 @@
 package io.github.smyrgeorge.actor4k.test.actor
 
+import io.github.smyrgeorge.actor4k.actor.Behavior
+
 class ResourceHoldingActor(key: String) : AccountActor(key) {
     companion object {
         var resourceClosed = false
@@ -8,7 +10,7 @@ class ResourceHoldingActor(key: String) : AccountActor(key) {
     // Simulate resource
     private var resourceOpen = false
 
-    override suspend fun onReceive(m: Protocol): Protocol.Response {
+    override suspend fun onReceive(m: Protocol): Behavior<Protocol.Response> {
         if (m is Protocol.Req && m.message == "OpenResource") {
             resourceOpen = true
             resourceClosed = false

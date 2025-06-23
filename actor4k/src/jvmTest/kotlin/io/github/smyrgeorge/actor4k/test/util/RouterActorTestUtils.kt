@@ -1,6 +1,7 @@
 package io.github.smyrgeorge.actor4k.test.util
 
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
+import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import kotlinx.coroutines.delay
 
@@ -23,12 +24,12 @@ class TestWorker(private val processingTime: Long = 0) :
     var messageCount = 0
         private set
 
-    override suspend fun onReceive(m: TestProtocol): TestProtocol.Ok {
+    override suspend fun onReceive(m: TestProtocol): Behavior<TestProtocol.Ok> {
         messageCount++
         if (processingTime > 0) {
             delay(processingTime)
         }
-        return TestProtocol.Ok
+        return Behavior.Respond(TestProtocol.Ok)
     }
 }
 
@@ -42,18 +43,18 @@ class TestWorkerWithMultipleMessages :
     var lastEchoMessage: String = ""
         private set
 
-    override suspend fun onReceive(m: TestProtocol): TestProtocol.Ok {
+    override suspend fun onReceive(m: TestProtocol): Behavior<TestProtocol.Ok> {
         when (m) {
             is TestProtocol.Ping -> pingCount++
             is TestProtocol.Echo -> lastEchoMessage = m.message
         }
-        return TestProtocol.Ok
+        return Behavior.Respond(TestProtocol.Ok)
     }
 }
 
 // Test worker that fails
 class TestWorkerThatFails : RouterActor.Worker<TestProtocol, TestProtocol.Ok>() {
-    override suspend fun onReceive(m: TestProtocol): TestProtocol.Ok {
+    override suspend fun onReceive(m: TestProtocol): Behavior<TestProtocol.Ok> {
         throw RuntimeException("Simulated failure")
     }
 }
@@ -66,7 +67,7 @@ class TestWorkerThatFailsOccasionally : RouterActor.Worker<TestProtocol, TestPro
     var failureCount: Int = 0
         private set
 
-    override suspend fun onReceive(m: TestProtocol): TestProtocol.Ok {
+    override suspend fun onReceive(m: TestProtocol): Behavior<TestProtocol.Ok> {
         attemptCount++
 
         // Fail on every other message
@@ -75,7 +76,7 @@ class TestWorkerThatFailsOccasionally : RouterActor.Worker<TestProtocol, TestPro
             throw RuntimeException("Simulated occasional failure")
         }
 
-        return TestProtocol.Ok
+        return Behavior.Respond(TestProtocol.Ok)
     }
 }
 
@@ -87,7 +88,7 @@ class TestWorkerThatFailsOnce : RouterActor.Worker<TestProtocol, TestProtocol.Ok
     var attemptCount: Int = 0
         private set
 
-    override suspend fun onReceive(m: TestProtocol): TestProtocol.Ok {
+    override suspend fun onReceive(m: TestProtocol): Behavior<TestProtocol.Ok> {
         attemptCount++
 
         // Fail only on the first message
@@ -96,6 +97,6 @@ class TestWorkerThatFailsOnce : RouterActor.Worker<TestProtocol, TestProtocol.Ok
         }
 
         messageCount++
-        return TestProtocol.Ok
+        return Behavior.Respond(TestProtocol.Ok)
     }
 }

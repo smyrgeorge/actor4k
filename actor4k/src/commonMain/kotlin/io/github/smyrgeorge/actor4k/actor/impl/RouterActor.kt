@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.actor.impl
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
+import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.channels.Channel
@@ -27,7 +28,7 @@ abstract class RouterActor<Req, Res>(
     private var workers: Array<Worker<Req, Res>> = emptyArray()
     private lateinit var available: Channel<Worker<Req, Res>>
 
-    final override suspend fun onReceive(m: Req): Res {
+    final override suspend fun onReceive(m: Req): Behavior<Res> {
         error("This method should never be called.")
     }
 
