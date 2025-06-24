@@ -173,7 +173,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 // Process the message.
                 val behavior: Behavior<Res> = try {
                     when (val r = onReceive(msg)) {
-                        is Behavior.Reply -> r.apply { value.id = stats.receivedMessages }
+                        is Behavior.Reply -> r.apply { value.id = it.msg.id }
                         else -> r
                     }
                 } catch (e: Exception) {
