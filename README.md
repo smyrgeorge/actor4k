@@ -244,8 +244,8 @@ processing logic.
 
 Key features of message stashing:
 
-- **Stashing Messages**: When an actor receives a message it cannot process in its current state, it can return
-  `Behavior.Stash()` to temporarily store the message in a dedicated stash queue.
+- **Stashing Messages**: When an actor receives a message it cannot process in its current state, it can call the
+  `stash` method to temporarily store the message in a dedicated stash queue.
 - **Unstashing Messages**: The actor can later retrieve all stashed messages using the `unstashAll()` method, which
   moves them back to the actor's mailbox for processing.
 - **Stash Capacity**: The stash has the same capacity as the actor's mailbox, controlled by the `capacity` property.

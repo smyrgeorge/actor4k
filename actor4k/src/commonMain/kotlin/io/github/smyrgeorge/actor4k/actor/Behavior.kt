@@ -36,17 +36,6 @@ sealed interface Behavior<Res : Response> {
     class Error<Res : Response>(val cause: Throwable) : Behavior<Res>
 
     /**
-     * Represents a behavior that stores or preserves state for a specific response type.
-     *
-     * The `Stash` class implements the `Behavior` interface, where the generic type parameter `Res`
-     * defines the type of the response that this behavior is associated with. The primary purpose
-     * of this class is to provide a mechanism for temporarily storing or deferring the handling of responses.
-     *
-     * @param Res The type of response associated with this behavior.
-     */
-    class Stash<Res : Response> : Behavior<Res>
-
-    /**
      * A class representing a behavior that produces no specific actionable result or effect.
      *
      * The `None` behavior is parameterized with a type `Res` that extends the `Response` class.

@@ -66,7 +66,8 @@ class StashingActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
                     // In stashing mode, stash the message
                     mode == Mode.STASHING -> {
                         log.info("[${address()}] Stashing message: ${m.message}")
-                        Behavior.Stash()
+                        stash()
+                        Behavior.None()
                     }
 
                     // In processing mode, process the message

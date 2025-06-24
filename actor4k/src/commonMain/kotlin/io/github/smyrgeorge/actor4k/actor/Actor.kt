@@ -47,6 +47,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     private val address: Address = Address.of(this::class, key)
     private val ref: LocalRef = LocalRef(address = address, actor = this)
 
+    private var current: Patterns<Req, Res>? = null
     private val mail: Channel<Patterns<Req, Res>> = Channel(
         capacity = capacity,
         onBufferOverflow = BufferOverflow.SUSPEND // Back-pressure.
@@ -181,7 +182,9 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 }
 
                 // Process the message.
+                current = pattern
                 process(pattern)
+                current = null
             }
         }
     }
@@ -229,7 +232,6 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 }
             }
 
-            is Behavior.Stash -> stash(pattern)
             is Behavior.None -> Unit
             is Behavior.Shutdown -> shutdown()
         }
@@ -321,18 +323,15 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     fun address(): Address = address
 
     /**
-     * Stashes the given message pattern for later processing.
+     * Stashes the current message for future processing.
      *
-     * This method temporarily stores the provided message pattern in a stash, allowing the actor to
-     * defer its processing until a later time. It is commonly used when the actor's current
-     * behavior does not support handling the message. The stashed message can be retrieved and
-     * processed later using un-stash related methods.
+     * This method retrieves the current message and stores it in a stash container.
+     * If no current message is available, it throws an error.
      *
-     * @param pattern The message pattern of type [Patterns] containing the request and response payloads
-     *                to be stashed.
+     * @throws IllegalStateException if there is no current message to stash.
      */
-    private suspend fun stash(pattern: Patterns<Req, Res>) {
-        log.debug("[$address::stash] Stashing message: ${pattern.msg}")
+    suspend fun stash() {
+        val pattern = current ?: error("No current message to stash.")
         stash.send(pattern)
         stats.stashedMessages += 1
     }
@@ -345,7 +344,6 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
      * It ensures that all messages in the stash are handled correctly.
      */
     protected suspend fun unstashAll() {
-        log.debug("[$address::unstashAll] Un-stashing all messages")
         // Drain the stash channel.
         @OptIn(ExperimentalCoroutinesApi::class)
         while (!stash.isEmpty) {
