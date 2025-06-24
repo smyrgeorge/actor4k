@@ -37,22 +37,22 @@ class StashingActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
                     m.message == "switch_mode" -> {
                         mode = Mode.PROCESSING
                         unstashAll()
-                        Behavior.Respond(Protocol.Resp("Switched to processing mode"))
+                        Behavior.Reply(Protocol.Resp("Switched to processing mode"))
                     }
                     
                     // Get the current mode
                     m.message == "get_mode" -> {
-                        Behavior.Respond(Protocol.Resp("Current mode: $mode"))
+                        Behavior.Reply(Protocol.Resp("Current mode: $mode"))
                     }
                     
                     // Get the processed count
                     m.message == "get_processed_count" -> {
-                        Behavior.Respond(Protocol.Resp("Processed count: $processedCount"))
+                        Behavior.Reply(Protocol.Resp("Processed count: $processedCount"))
                     }
                     
                     // Get the processed messages
                     m.message == "get_processed_messages" -> {
-                        Behavior.Respond(Protocol.ProcessedMessages(processedMessages.toList()))
+                        Behavior.Reply(Protocol.ProcessedMessages(processedMessages.toList()))
                     }
                     
                     // In stashing mode, stash the message
@@ -66,7 +66,7 @@ class StashingActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
                         log.info("[${address()}] Processing message: ${m.message}")
                         processedCount++
                         processedMessages.add(m.message)
-                        Behavior.Respond(Protocol.Resp("Processed: ${m.message}"))
+                        Behavior.Reply(Protocol.Resp("Processed: ${m.message}"))
                     }
                 }
             }

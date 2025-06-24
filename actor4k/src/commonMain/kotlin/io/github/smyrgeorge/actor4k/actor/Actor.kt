@@ -170,10 +170,10 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                     }
                 }
 
-                // Consume flow.
+                // Process the message.
                 val behavior: Behavior<Res> = try {
                     when (val r = onReceive(msg)) {
-                        is Behavior.Respond<Res> -> r.apply { value.id = stats.receivedMessages }
+                        is Behavior.Reply -> r.apply { value.id = stats.receivedMessages }
                         else -> r
                     }
                 } catch (e: Exception) {
@@ -181,18 +181,20 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 }
 
                 when (behavior) {
-                    is Behavior.Respond<Res>, is Behavior.Error<Res> -> {
-                        val result: Result<Res> = when (behavior) {
-                            is Behavior.Respond<Res> -> behavior.toResult()
-                            is Behavior.Error<Res> -> behavior.toResult()
+                    is Behavior.Reply, is Behavior.Error -> {
+                        val result = when (behavior) {
+                            is Behavior.Reply -> Result.success(behavior.value)
+                            is Behavior.Error -> Result.failure(behavior.cause)
                             else -> Result.failure(Exception("Unexpected behavior: $behavior"))
                         }
 
+                        // Send the response back to the sender.
                         when (it) {
                             is Patterns.Tell -> Unit
                             is Patterns.Ask -> reply("consume", it, result)
                         }
 
+                        // Handle afterReceive hook.
                         try {
                             afterReceive(msg, result)
                         } catch (e: Exception) {
@@ -200,8 +202,9 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                         }
                     }
 
-                    is Behavior.Stash<Res> -> stash(it)
-                    is Behavior.Shutdown<Res> -> shutdown()
+                    is Behavior.Stash -> stash(it)
+                    is Behavior.None -> Unit
+                    is Behavior.Shutdown -> shutdown()
                 }
             }
         }

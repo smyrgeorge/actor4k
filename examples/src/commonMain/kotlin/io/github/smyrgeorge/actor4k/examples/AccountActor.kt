@@ -20,7 +20,7 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onReceive(m: Protocol): Behavior<Protocol.Response> {
         log.info("[${address()}] onReceive: $m")
         return when (m) {
-            is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Pong!"))
+            is Protocol.Ping -> Behavior.Reply(Protocol.Pong("Pong!"))
         }
     }
 

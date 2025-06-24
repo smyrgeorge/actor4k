@@ -21,9 +21,7 @@ sealed interface Behavior<Res : Response> {
      * @param Res The type of the response being wrapped.
      * @property value The response instance associated with this behavior.
      */
-    class Respond<Res : Response>(val value: Res) : Behavior<Res> {
-        fun toResult(): Result<Res> = Result.success(value)
-    }
+    class Reply<Res : Response>(val value: Res) : Behavior<Res>
 
     /**
      * Represents an error behavior associated with a given cause.
@@ -35,9 +33,7 @@ sealed interface Behavior<Res : Response> {
      * @param Res The type of the response associated with the behavior.
      * @property cause The throwable instance representing the error's cause.
      */
-    class Error<Res : Response>(val cause: Throwable) : Behavior<Res> {
-        fun toResult(): Result<Res> = Result.failure(cause)
-    }
+    class Error<Res : Response>(val cause: Throwable) : Behavior<Res>
 
     /**
      * Represents a behavior that stores or preserves state for a specific response type.
@@ -51,9 +47,21 @@ sealed interface Behavior<Res : Response> {
     class Stash<Res : Response> : Behavior<Res>
 
     /**
+     * A class representing a behavior that produces no specific actionable result or effect.
+     *
+     * The `None` behavior is parameterized with a type `Res` that extends the `Response` class.
+     * This class can be used as a placeholder or for scenarios where no specific behavior result
+     * or operation is required, maintaining type consistency within the system.
+     *
+     * @param Res Represents the type of response associated with this behavior,
+     *            constrained to types that inherit from `Response`.
+     */
+    class None<Res : Response> : Behavior<Res>
+
+    /**
      * A behavior representing a shutdown operation for entities responding to a protocol.
      *
-     * The `Shutdown` behavior is utilized to define specific actions or responsibilities
+     * The `Shutdown` behavior is used to define specific actions or responsibilities
      * associated with terminating or halting operations. It operates within the context of
      * responses that conform to the protocol defined by the `Response` class. The generic type
      * parameter `Res` ensures this behavior is tied to a specific type of response.

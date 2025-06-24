@@ -8,7 +8,7 @@ import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.ActorFactory
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
-import io.github.smyrgeorge.actor4k.util.extentions.forever
+import io.github.smyrgeorge.actor4k.util.extentions.doEvery
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
@@ -59,7 +59,7 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
     private val factories: MutableMap<String, ActorFactory> = mutableMapOf()
 
     init {
-        forever(ActorSystem.conf.registryCleanupEvery) { stopLocalExpired() }
+        doEvery(ActorSystem.conf.registryCleanupEvery) { stopLocalExpired() }
     }
 
     /**

@@ -9,7 +9,7 @@ import io.github.smyrgeorge.actor4k.system.stats.Stats
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
 import io.github.smyrgeorge.actor4k.util.extentions.defaultDispatcher
-import io.github.smyrgeorge.actor4k.util.extentions.forever
+import io.github.smyrgeorge.actor4k.util.extentions.doEvery
 import io.github.smyrgeorge.actor4k.util.extentions.registerShutdownHook
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -184,12 +184,12 @@ object ActorSystem {
         if (!loggingStarted) {
             loggingStarted = true
             log.info("Starting stats collector...")
-            forever(_conf.systemCollectStatsEvery) {
-                if (status != Status.READY) return@forever
+            doEvery(_conf.systemCollectStatsEvery) {
+                if (status != Status.READY) return@doEvery
                 stats.collect()
             }
-            forever(_conf.systemLogStatsEvery) {
-                if (status != Status.READY) return@forever
+            doEvery(_conf.systemLogStatsEvery) {
+                if (status != Status.READY) return@doEvery
                 log.info(stats.toString())
             }
         }

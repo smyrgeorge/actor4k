@@ -18,7 +18,7 @@ class TestRouterWorker : RouterActor.Worker<Protocol, Protocol.Ok>() {
         when (m) {
             Protocol.Test -> log.info("[${address()}] Received Test message: $m")
         }
-        return Behavior.Respond(Protocol.Ok)
+        return Behavior.Reply(Protocol.Ok)
     }
 
     sealed interface Protocol : ActorProtocol {

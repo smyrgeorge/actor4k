@@ -29,7 +29,7 @@ class TestWorker(private val processingTime: Long = 0) :
         if (processingTime > 0) {
             delay(processingTime)
         }
-        return Behavior.Respond(TestProtocol.Ok)
+        return Behavior.Reply(TestProtocol.Ok)
     }
 }
 
@@ -48,7 +48,7 @@ class TestWorkerWithMultipleMessages :
             is TestProtocol.Ping -> pingCount++
             is TestProtocol.Echo -> lastEchoMessage = m.message
         }
-        return Behavior.Respond(TestProtocol.Ok)
+        return Behavior.Reply(TestProtocol.Ok)
     }
 }
 
@@ -76,7 +76,7 @@ class TestWorkerThatFailsOccasionally : RouterActor.Worker<TestProtocol, TestPro
             throw RuntimeException("Simulated occasional failure")
         }
 
-        return Behavior.Respond(TestProtocol.Ok)
+        return Behavior.Reply(TestProtocol.Ok)
     }
 }
 
@@ -97,6 +97,6 @@ class TestWorkerThatFailsOnce : RouterActor.Worker<TestProtocol, TestProtocol.Ok
         }
 
         messageCount++
-        return Behavior.Respond(TestProtocol.Ok)
+        return Behavior.Reply(TestProtocol.Ok)
     }
 }

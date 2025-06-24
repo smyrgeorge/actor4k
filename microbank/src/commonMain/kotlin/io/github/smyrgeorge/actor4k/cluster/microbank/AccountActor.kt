@@ -27,7 +27,7 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
             }
         }
 
-        return Behavior.Respond(Protocol.Account(res))
+        return Behavior.Reply(Protocol.Account(res))
     }
 
     @Serializable
