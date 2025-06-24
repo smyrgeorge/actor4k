@@ -148,7 +148,7 @@ class AccountActor(key: String) : Actor<Protocol, Protocol.Response>(key) {
     override suspend fun onReceive(m: Protocol): Behavior<Protocol.Response> {
         log.info("[${address()}] onReceive: $m")
         return when (m) {
-            is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Pong!"))
+            is Protocol.Ping -> Behavior.Reply(Protocol.Pong("Pong!"))
         }
     }
 
@@ -366,10 +366,10 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
             ctx.log.info("[${ctx.address()}] normalBehavior: $m")
 
             when (m) {
-                is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Pong!"))
+                is Protocol.Ping -> Behavior.Reply(Protocol.Pong("Pong!"))
                 is Protocol.SwitchBehavior -> {
                     ctx.become(echo)
-                    Behavior.Respond(Protocol.BehaviorSwitched("Switched to echo behavior"))
+                    Behavior.Reply(Protocol.BehaviorSwitched("Switched to echo behavior"))
                 }
             }
         }
@@ -378,10 +378,10 @@ class AccountBehaviourActor(key: String) : BehaviorActor<Protocol, Protocol.Resp
             ctx.log.info("[${ctx.address()}] echoBehavior: $m")
 
             when (m) {
-                is Protocol.Ping -> Behavior.Respond(Protocol.Pong("Echo: ${m.message}"))
+                is Protocol.Ping -> Behavior.Reply(Protocol.Pong("Echo: ${m.message}"))
                 is Protocol.SwitchBehavior -> {
                     ctx.become(normal)
-                    Behavior.Respond(Protocol.BehaviorSwitched("Switched to normal behavior"))
+                    Behavior.Reply(Protocol.BehaviorSwitched("Switched to normal behavior"))
                 }
             }
         }
