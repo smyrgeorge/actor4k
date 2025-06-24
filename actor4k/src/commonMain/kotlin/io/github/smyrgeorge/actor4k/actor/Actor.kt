@@ -151,7 +151,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                     return@consumeEach
                 }
 
-                val msg = it.msg.apply { id = stats.receivedMessages }
+                val msg: Req = it.msg.apply { id = stats.receivedMessages }
 
                 // Activation flow.
                 if (msg.isFirst()) {
@@ -171,42 +171,57 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 }
 
                 // Process the message.
-                val behavior: Behavior<Res> = try {
-                    when (val r = onReceive(msg)) {
-                        is Behavior.Reply -> r.apply { value.id = it.msg.id }
-                        else -> r
-                    }
-                } catch (e: Exception) {
-                    Behavior.Error(e)
+                process(it)
+            }
+        }
+    }
+
+
+    /**
+     * Processes a given pattern, handling the message, determining the behavior,
+     * handling the response, and managing post-receive operations.
+     *
+     * @param pattern A pattern instance that contains the message to process and
+     *                the type of pattern (e.g., ask or tell).
+     */
+    private suspend fun process(pattern: Patterns<Req, Res>) {
+        val msg: Req = pattern.msg
+
+        // Process the message.
+        val behavior: Behavior<Res> = try {
+            when (val r = onReceive(msg)) {
+                is Behavior.Reply -> r.apply { value.id = pattern.msg.id }
+                else -> r
+            }
+        } catch (e: Exception) {
+            Behavior.Error(e)
+        }
+
+        when (behavior) {
+            is Behavior.Reply, is Behavior.Error -> {
+                val result = when (behavior) {
+                    is Behavior.Reply -> Result.success(behavior.value)
+                    is Behavior.Error -> Result.failure(behavior.cause)
+                    else -> Result.failure(Exception("Unexpected behavior: $behavior"))
                 }
 
-                when (behavior) {
-                    is Behavior.Reply, is Behavior.Error -> {
-                        val result = when (behavior) {
-                            is Behavior.Reply -> Result.success(behavior.value)
-                            is Behavior.Error -> Result.failure(behavior.cause)
-                            else -> Result.failure(Exception("Unexpected behavior: $behavior"))
-                        }
+                // Send the response back to the sender.
+                when (pattern) {
+                    is Patterns.Tell -> Unit
+                    is Patterns.Ask -> reply("consume", pattern, result)
+                }
 
-                        // Send the response back to the sender.
-                        when (it) {
-                            is Patterns.Tell -> Unit
-                            is Patterns.Ask -> reply("consume", it, result)
-                        }
-
-                        // Handle afterReceive hook.
-                        try {
-                            afterReceive(msg, result)
-                        } catch (e: Exception) {
-                            log.warn("[$address::afterReceive] Failed to process afterReceive hook (${e.message ?: ""})")
-                        }
-                    }
-
-                    is Behavior.Stash -> stash(it)
-                    is Behavior.None -> Unit
-                    is Behavior.Shutdown -> shutdown()
+                // Handle afterReceive hook.
+                try {
+                    afterReceive(msg, result)
+                } catch (e: Exception) {
+                    log.warn("[$address::afterReceive] Failed to process afterReceive hook (${e.message ?: ""})")
                 }
             }
+
+            is Behavior.Stash -> stash(pattern)
+            is Behavior.None -> Unit
+            is Behavior.Shutdown -> shutdown()
         }
     }
 
@@ -328,29 +343,21 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     }
 
     /**
-     * Moves all stashed messages back to the actor's mailbox.
+     * Un-stashes all messages from the stash and processes them.
      *
-     * This method retrieves all messages previously stashed using [stash] and places them at the end
-     * of the actor's mailbox, so they will be processed next.
-     *
-     * This is typically called after an actor changes its behavior and is ready to process previously
-     * stashed messages.
+     * This method drains the stash channel by continuously retrieving the stashed messages,
+     * decrementing the stashed messages count, and forwarding the messages for processing.
+     * It ensures that all messages in the stash are handled correctly.
      */
     protected suspend fun unstashAll() {
         log.debug("[$address::unstashAll] Un-stashing all messages")
-
-        // Create a temporary list to hold stashed messages
-        val stashed = mutableListOf<Patterns<Req, Res>>()
-
-        // Drain the stash channel into the list
+        // Drain the stash channel.
         @OptIn(ExperimentalCoroutinesApi::class)
         while (!stash.isEmpty) {
             stats.stashedMessages -= 1
-            stashed.add(stash.receive())
+            val pattern = stash.receive()
+            process(pattern)
         }
-
-        // Send all stashed messages back to the mailbox in the original order
-        stashed.forEach { mail.send(it) }
     }
 
     /**
