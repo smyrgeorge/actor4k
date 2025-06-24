@@ -273,23 +273,23 @@ object ActorSystem {
     }
 
     /**
-     * Represents the configuration parameters for an Actor System.
+     * Represents the configuration for an Actor System, defining various parameters
+     * and timeouts that control its behavior.
      *
-     * This class is used to customize the behavior and operational settings of the Actor System
-     * such as queue size, timeouts, expiration settings, and system statistics.
-     *
-     * @property actorQueueSize The size of the actor's message queue. Default is unlimited.
-     * @property actorAskTimeout The maximum timeout duration for ask operations from actors.
-     * @property actorReplyTimeout The maximum time a system will wait for an actor to reply.
-     * @property actorActivateTimeout The timeout duration for actor activation steps.
-     * @property actorShutdownHookTimeout The timeout duration for actor cleanup during system shutdown.
-     * @property actorExpiresAfter The duration after which inactive actors will be considered expired.
-     * @property systemCollectStatsEvery The interval for collecting system statistics.
-     * @property systemLogStatsEvery The interval for logging system statistics to the output.
-     * @property registryCleanupEvery The frequency at which the actor registry is cleaned up.
+     * @property actorMailboxSize The size of the mailbox queue for each actor. Defaults to an unlimited size.
+     * @property actorStashSize The maximum size of the stash queue for actors. Defines how many messages can be temporarily stored.
+     * @property actorAskTimeout The timeout duration for actor request-reply patterns (ask operations).
+     * @property actorReplyTimeout The duration after which a reply from an actor is considered timed out.
+     * @property actorActivateTimeout The amount of time allocated for activating an actor.
+     * @property actorShutdownHookTimeout The timeout duration for actors to cleanly shut down during system termination.
+     * @property actorExpiresAfter The duration after which an inactive actor is considered expired and subject to cleanup.
+     * @property systemCollectStatsEvery The frequency at which system-level statistics are collected.
+     * @property systemLogStatsEvery The frequency at which system statistics are logged.
+     * @property registryCleanupEvery The interval at which the actor registry is cleaned up to remove expired actors.
      */
     data class Conf(
-        val actorQueueSize: Int = Channel.UNLIMITED,
+        val actorMailboxSize: Int = Channel.UNLIMITED,
+        val actorStashSize: Int = 1000,
         val actorAskTimeout: Duration = 30.seconds,
         val actorReplyTimeout: Duration = 2.seconds,
         val actorActivateTimeout: Duration = 5.seconds,

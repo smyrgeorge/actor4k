@@ -16,11 +16,13 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
  * @param Res The type of the response messages this actor can produce. Must implement [ActorProtocol.Response].
  * @param key A unique identifier for the actor instance.
  * @param capacity The capacity of the actor's queue. Defaults to the value specified in `ActorSystem.conf.actorQueueSize`.
+ * @param stashCapacity Indicates the actor's stash capacity.
  */
 abstract class BehaviorActor<Req, Res>(
     key: String,
-    capacity: Int = ActorSystem.conf.actorQueueSize
-) : Actor<Req, Res>(key, capacity) where  Req : ActorProtocol, Res : ActorProtocol.Response {
+    capacity: Int = ActorSystem.conf.actorMailboxSize,
+    stashCapacity: Int = ActorSystem.conf.actorStashSize,
+) : Actor<Req, Res>(key, capacity, stashCapacity) where  Req : ActorProtocol, Res : ActorProtocol.Response {
 
     private var behavior: suspend (BehaviorActor<Req, Res>, Req) -> Behavior<Res> = { _, _ ->
         error("[${address()}] No behavior set. Did you forget to call `become` function?")

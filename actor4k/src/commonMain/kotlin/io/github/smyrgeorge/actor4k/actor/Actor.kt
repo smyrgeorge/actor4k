@@ -8,6 +8,7 @@ import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -31,10 +32,12 @@ import kotlin.uuid.Uuid
  *
  * @param key A unique identifier for the actor used for addressing and tracking.
  * @param capacity Indicates the actor's mailbox capacity (if mail is full, any attempt to send will suspend, back-pressure).
+ * @param stashCapacity Indicates the actor's stash capacity.
  */
 abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     val key: String,
-    capacity: Int = ActorSystem.conf.actorQueueSize,
+    capacity: Int = ActorSystem.conf.actorMailboxSize,
+    stashCapacity: Int = ActorSystem.conf.actorStashSize,
 ) {
     protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
 
@@ -44,8 +47,15 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     private val address: Address = Address.of(this::class, key)
     private val ref: LocalRef = LocalRef(address = address, actor = this)
 
-    private val mail: Channel<Patterns<Req, Res>> = Channel(capacity = capacity)
-    private val stash: Channel<Patterns<Req, Res>> = Channel(capacity = capacity)
+    private val mail: Channel<Patterns<Req, Res>> = Channel(
+        capacity = capacity,
+        onBufferOverflow = BufferOverflow.SUSPEND // Back-pressure.
+    )
+    private val stash: Channel<Patterns<Req, Res>> = Channel(
+        capacity = stashCapacity,
+        onBufferOverflow = BufferOverflow.DROP_LATEST,
+        onUndeliveredElement = { log.warn("[$address::stash] Stash is full, dropping message: $it") }
+    )
 
     /**
      * Hook called before the actor is activated.
@@ -73,10 +83,10 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     open suspend fun onActivate(m: Req) {}
 
     /**
-     * Handles the receipt of a message and processes it to produce a response.
+     * Handles receiving a request and returns a corresponding response wrapped in a Behavior.
      *
-     * @param m The incoming request message of type [Req] that needs to be processed.
-     * @return The response of type [Res] generated after processing the message.
+     * @param m The incoming request of type Req.
+     * @return The resulting response of type Res wrapped in a Behavior.
      */
     abstract suspend fun onReceive(m: Req): Behavior<Res>
 
@@ -139,7 +149,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
             onBeforeActivate()
             status = Status.ACTIVATING
 
-            mail.consumeEach {
+            mail.consumeEach { pattern ->
                 stats.lastMessageAt = Clock.System.now()
                 stats.receivedMessages += 1
 
@@ -147,11 +157,11 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 // If we get a shutdown event and the actor never initialized successfully,
                 // we need to reply with an error and to drop all the messages.
                 if (initializationFailed != null) {
-                    replyActivationError(it)
+                    replyActivationError(pattern)
                     return@consumeEach
                 }
 
-                val msg: Req = it.msg.apply { id = stats.receivedMessages }
+                val msg: Req = pattern.msg.apply { id = stats.receivedMessages }
 
                 // Activation flow.
                 if (msg.isFirst()) {
@@ -164,14 +174,14 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                         // In case of an error, we need to close the [Actor] immediately.
                         log.error("[$address::activate] Failed to activate, will shutdown (${e.message ?: ""})")
                         initializationFailed = e
-                        replyActivationError(it)
+                        replyActivationError(pattern)
                         shutdown()
                         return@consumeEach
                     }
                 }
 
                 // Process the message.
-                process(it)
+                process(pattern)
             }
         }
     }
@@ -190,7 +200,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         // Process the message.
         val behavior: Behavior<Res> = try {
             when (val r = onReceive(msg)) {
-                is Behavior.Reply -> r.apply { value.id = pattern.msg.id }
+                is Behavior.Reply -> r.apply { value.id = pattern.msg.id } // Set the message ID to the response.
                 else -> r
             }
         } catch (e: Exception) {
@@ -275,30 +285,15 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     }
 
     /**
-     * Sends a reply to an actor using a specified message pattern, handling timeouts and closed channels.
+     * Returns a reference to the current actor as a [LocalRef].
      *
-     * This function attempts to send the response to the `replyTo` channel within a configurable timeout.
-     * It also logs warnings in case of timeout, closed channel, or other exceptions.
+     * The returned [LocalRef] provides details about the actor, including its
+     * name, key, and class type, and enables interaction with the actor such
+     * as sending messages and querying its status.
      *
-     * @param operation The operation name associated with the reply, used for logging.
-     * @param pattern The `Ask` pattern containing the message payload and the channel for sending a response.
-     * @param reply The result to be sent as a reply, encapsulated in a `Result` type.
+     * @return a [LocalRef] representing the reference to the current actor.
      */
-    private suspend fun reply(operation: String, pattern: Patterns.Ask<Req, Res>, reply: Result<Res>) {
-        try {
-            // We should be able to reply immediately.
-            withTimeout(ActorSystem.conf.actorReplyTimeout) {
-                pattern.replyTo.send(reply)
-            }
-        } catch (_: TimeoutCancellationException) {
-            log.warn("[$address::$operation] Could not reply in time (timeout after ${ActorSystem.conf.actorReplyTimeout}) (the message was processed successfully).")
-        } catch (_: ClosedSendChannelException) {
-            log.warn("[$address::$operation] Could not reply, the channel is closed (the message was processed successfully).")
-        } catch (e: Exception) {
-            val error = e.message ?: "Unknown error."
-            log.warn("[$address::$operation] Could not reply (the message was processed successfully). {}", error)
-        }
-    }
+    fun ref(): LocalRef = ref
 
     /**
      * Retrieves the current status of the actor.
@@ -377,17 +372,6 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         mail.close()
         stash.close()
     }
-
-    /**
-     * Returns a reference to the current actor as a [LocalRef].
-     *
-     * The returned [LocalRef] provides details about the actor, including its
-     * name, key, and class type, and enables interaction with the actor such
-     * as sending messages and querying its status.
-     *
-     * @return a [LocalRef] representing the reference to the current actor.
-     */
-    fun ref(): LocalRef = ref
 
     /**
      * Represents message patterns used by the `Actor` for communication and message handling.
@@ -528,6 +512,38 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
             }
         }
 
+    /**
+     * Sends a reply to an actor using a specified message pattern, handling timeouts and closed channels.
+     *
+     * This function attempts to send the response to the `replyTo` channel within a configurable timeout.
+     * It also logs warnings in case of timeout, closed channel, or other exceptions.
+     *
+     * @param operation The operation name associated with the reply, used for logging.
+     * @param pattern The `Ask` pattern containing the message payload and the channel for sending a response.
+     * @param reply The result to be sent as a reply, encapsulated in a `Result` type.
+     */
+    private suspend fun reply(operation: String, pattern: Patterns.Ask<Req, Res>, reply: Result<Res>) {
+        try {
+            // We should be able to reply immediately.
+            withTimeout(ActorSystem.conf.actorReplyTimeout) {
+                pattern.replyTo.send(reply)
+            }
+        } catch (_: TimeoutCancellationException) {
+            log.warn("[$address::$operation] Could not reply in time (timeout after ${ActorSystem.conf.actorReplyTimeout}) (the message was processed successfully).")
+        } catch (_: ClosedSendChannelException) {
+            log.warn("[$address::$operation] Could not reply, the channel is closed (the message was processed successfully).")
+        } catch (e: Exception) {
+            val error = e.message ?: "Unknown error."
+            log.warn("[$address::$operation] Could not reply (the message was processed successfully). {}", error)
+        }
+    }
+
+    /**
+     * Handles the activation error reply logic based on the provided pattern.
+     *
+     * @param pattern The communication pattern used, which could either be of type `Tell` or `Ask`.
+     *                If the pattern is `Ask`, an error result is sent back to the requester.
+     */
     private suspend fun replyActivationError(pattern: Patterns<Req, Res>) {
         when (pattern) {
             is Patterns.Tell -> Unit
