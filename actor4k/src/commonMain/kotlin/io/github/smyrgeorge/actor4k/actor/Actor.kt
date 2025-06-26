@@ -347,8 +347,8 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         // Drain the stash channel.
         @OptIn(ExperimentalCoroutinesApi::class)
         while (!stash.isEmpty) {
-            stats.stashedMessages -= 1
             val pattern = stash.receive()
+            stats.stashedMessages -= 1
             process(pattern)
         }
     }
