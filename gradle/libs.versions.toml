@@ -12,7 +12,7 @@ log4k = "0.50.0"
 # https://mvnrepository.com/artifact/org.slf4j/slf4j-api
 slf4j = "2.0.17"
 # https://github.com/Kotlin/kotlinx-datetime
-kotlinx-datetime = "0.6.2"
+kotlinx-datetime = "0.7.0-0.6.x-compat"
 # https://github.com/willowtreeapps/assertk
 assertk = "0.28.1"
 # https://github.com/Kotlin/kotlinx.serialization
