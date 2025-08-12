@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+
+
 ./gradlew clean build -Ptargets=all
 
 ./gradlew :dokkaHtmlMultiModule
