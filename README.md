@@ -5,7 +5,7 @@
 ![GitHub License](https://img.shields.io/github/license/smyrgeorge/actor4k)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/smyrgeorge/actor4k)
 ![GitHub issues](https://img.shields.io/github/issues/smyrgeorge/actor4k)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.2.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.2.10-blue.svg?logo=kotlin)](http://kotlinlang.org)
 
 ![](https://img.shields.io/static/v1?label=&message=Platforms&color=grey)
 ![](https://img.shields.io/static/v1?label=&message=Jvm&color=blue)
@@ -18,9 +18,6 @@
 ![](https://img.shields.io/static/v1?label=&message=wasmWasi&color=blue)
 
 A small actor system written in kotlin using Coroutines.
-
-> [!IMPORTANT]  
-> The project is in a very early stage; thus, breaking changes should be expected.
 
 📖 [Documentation](https://smyrgeorge.github.io/actor4k/)
 
