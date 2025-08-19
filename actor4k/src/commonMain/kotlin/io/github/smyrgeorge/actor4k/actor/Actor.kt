@@ -1,24 +1,23 @@
+@file:OptIn(ExperimentalTime::class)
+
 package io.github.smyrgeorge.actor4k.actor
 
 import io.github.smyrgeorge.actor4k.actor.ref.Address
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.util.Logger
+import io.github.smyrgeorge.actor4k.util.extentions.instantFromEpochMilliseconds
 import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.consume
+import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.withTimeout
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlin.math.absoluteValue
+import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -151,7 +150,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
             status = Status.ACTIVATING
 
             mail.consumeEach { pattern ->
-                stats.lastMessageAt = Clock.System.now()
+                stats.lastMessageAt = Clock.System.now().toEpochMilliseconds()
                 stats.receivedMessages += 1
 
                 // Case that activation flow failed and we still have messages to consume.
@@ -170,7 +169,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                         onActivate(msg)
                         // Set 'READY' status.
                         status = Status.READY
-                        stats.initializedAt = Clock.System.now()
+                        stats.initializedAt = Clock.System.now().toEpochMilliseconds()
                     } catch (e: Exception) {
                         // In case of an error, we need to close the [Actor] immediately.
                         log.error("[$address::activate] Failed to activate, will shutdown (${e.message ?: ""})")
@@ -365,7 +364,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
      */
     fun shutdown() {
         if (!status.canTriggerShutdown) return
-        stats.triggeredShutDownAt = Clock.System.now()
+        stats.triggeredShutDownAt = Clock.System.now().toEpochMilliseconds()
         status = Status.SHUTTING_DOWN
         mail.close()
         stash.close()
@@ -460,14 +459,26 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
      */
     @Serializable
     data class Stats(
-        var createdAt: Instant = Clock.System.now(),
-        var initializedAt: Instant? = null,
-        var triggeredShutDownAt: Instant? = null,
-        var shutDownAt: Instant? = null,
-        var lastMessageAt: Instant = Clock.System.now(),
+        var createdAt: Long = Clock.System.now().toEpochMilliseconds(),
+        var initializedAt: Long? = null,
+        var triggeredShutDownAt: Long? = null,
+        var shutDownAt: Long? = null,
+        var lastMessageAt: Long = Clock.System.now().toEpochMilliseconds(),
         var receivedMessages: Long = 0,
         var stashedMessages: Long = 0
-    )
+    ) {
+        override fun toString(): String = buildString {
+            append("ActorStats(")
+            append("createdAt=${instantFromEpochMilliseconds(createdAt)}, ")
+            append("initializedAt=${instantFromEpochMilliseconds(initializedAt)}, ")
+            append("triggeredShutDownAt=${instantFromEpochMilliseconds(triggeredShutDownAt)}, ")
+            append("shutDownAt=${instantFromEpochMilliseconds(shutDownAt)}, ")
+            append("lastMessageAt=${instantFromEpochMilliseconds(lastMessageAt)}, ")
+            append("receivedMessages=${instantFromEpochMilliseconds(receivedMessages)}, ")
+            append("stashedMessages=$stashedMessages")
+            append(")")
+        }
+    }
 
     /**
      * Consumes each element from the `ReceiveChannel` and processes it using the provided action.
@@ -505,7 +516,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
             } finally {
                 // Unregister the actor even if the shutdown hook fails or times out
                 status = Status.SHUT_DOWN
-                stats.shutDownAt = Clock.System.now()
+                stats.shutDownAt = Clock.System.now().toEpochMilliseconds()
                 ActorSystem.registry.unregister(this@Actor.ref)
             }
         }

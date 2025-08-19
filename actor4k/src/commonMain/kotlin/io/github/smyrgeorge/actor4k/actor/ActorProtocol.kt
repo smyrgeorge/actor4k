@@ -1,8 +1,10 @@
+@file:OptIn(ExperimentalTime::class)
+
 package io.github.smyrgeorge.actor4k.actor
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * Base interface representing the structure of a protocol entity.
@@ -13,7 +15,7 @@ import kotlinx.serialization.Serializable
  */
 interface ActorProtocol {
     var id: Long
-    val createdAt: Instant
+    val createdAt: Long
 
     /**
      * Determines if the current message is the first one.
@@ -33,7 +35,7 @@ interface ActorProtocol {
     @Serializable
     abstract class Message<R : Response> : ActorProtocol {
         override var id: Long = -1L
-        override val createdAt: Instant = Clock.System.now()
+        override val createdAt: Long = Clock.System.now().toEpochMilliseconds()
     }
 
     /**
@@ -47,6 +49,6 @@ interface ActorProtocol {
     @Serializable
     abstract class Response : ActorProtocol {
         override var id: Long = -1L
-        override val createdAt: Instant = Clock.System.now()
+        override val createdAt: Long = Clock.System.now().toEpochMilliseconds()
     }
 }

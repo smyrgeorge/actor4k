@@ -5,11 +5,11 @@ plugins {
 }
 
 kotlin {
+    @Suppress("unused")
     sourceSets {
         configureEach {
             languageSettings.progressiveMode = true
         }
-        @Suppress("unused")
         val commonMain by getting {
             dependencies {
                 api(project(":actor4k"))

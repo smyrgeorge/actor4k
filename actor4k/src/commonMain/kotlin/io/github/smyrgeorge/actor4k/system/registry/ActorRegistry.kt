@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package io.github.smyrgeorge.actor4k.system.registry
 
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
@@ -12,7 +14,8 @@ import io.github.smyrgeorge.actor4k.util.extentions.doEvery
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * Represents an abstract registry for managing actor instances in an actor system.
@@ -233,8 +236,8 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
     private suspend fun stopLocalExpired(): Unit = lock {
         log.debug("Stopping local expired actors.")
         registry.values.forEach {
-            val df = (Clock.System.now() - it.stats().lastMessageAt).inWholeSeconds
-            if (df > ActorSystem.conf.actorExpiresAfter.inWholeSeconds) {
+            val df = Clock.System.now().toEpochMilliseconds() - it.stats().lastMessageAt
+            if (df > ActorSystem.conf.actorExpiresAfter.inWholeMilliseconds) {
                 log.info("Closing ${it.address()}, ${it.stats()} (expired).")
                 it.shutdown()
             }
