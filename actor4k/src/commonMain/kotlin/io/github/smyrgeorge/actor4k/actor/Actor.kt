@@ -11,7 +11,11 @@ import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedSendChannelException
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import kotlin.math.absoluteValue
@@ -75,7 +79,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
      * Handles the activation process of the actor upon receiving the first message.
      *
      * This method is invoked after the `onBeforeActivate` hook and before the actor
-     * begins processing subsequent messages. It allows initializing or setting up
+     * begins processing further messages. It allows initializing or setting up
      * the actor's state based on the provided initial message.
      *
      * @param m The initial message used to activate and initialize the actor.
@@ -146,7 +150,16 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
 
         // Start the mail consumer.
         launch {
-            onBeforeActivate()
+            try {
+                // Execute pre-activation hooks.
+                onBeforeActivate()
+            } catch (e: Exception) {
+                // In case of an error, we need to close the [Actor] immediately.
+                log.error("[$address::onBeforeActivate] Failed to activate, will shutdown (${e.message ?: ""})")
+                initializationFailed = e
+                shutdown()
+            }
+
             status = Status.ACTIVATING
 
             mail.consumeEach { pattern ->
