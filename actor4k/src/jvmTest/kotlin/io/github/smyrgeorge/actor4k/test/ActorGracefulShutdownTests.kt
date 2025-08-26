@@ -1,11 +1,7 @@
 package io.github.smyrgeorge.actor4k.test
 
 import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
-import assertk.assertions.isNotNull
-import assertk.assertions.isTrue
-import assertk.assertions.isZero
+import assertk.assertions.*
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
@@ -13,15 +9,11 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
 import io.github.smyrgeorge.actor4k.test.actor.LongOnShutdownActor
-import io.github.smyrgeorge.actor4k.test.actor.ResourceHoldingActor
+import io.github.smyrgeorge.actor4k.test.actor.ResourceHoldingAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.SlowProcessingAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.*
 import kotlin.test.Test
 
 class ActorGracefulShutdownTests {
@@ -104,15 +96,15 @@ class ActorGracefulShutdownTests {
     @Test
     fun `Actor should release resources during shutdown`(): Unit = runBlocking {
         // Create an actor that holds resources
-        val ref: ActorRef = ActorSystem.get(ResourceHoldingActor::class, ACC0003)
-        val actor = registry.getLocalActor(ref as LocalRef) as ResourceHoldingActor
+        val ref: ActorRef = ActorSystem.get(ResourceHoldingAccountActor::class, ACC0003)
+        val actor = registry.getLocalActor(ref as LocalRef) as ResourceHoldingAccountActor
 
         // Use the resource
         ref.tell(Protocol.Req("OpenResource"))
         delay(500)
 
         // Verify the resource is open
-        assertThat(ResourceHoldingActor.resourceClosed).isFalse()
+        assertThat(ResourceHoldingAccountActor.resourceClosed).isFalse()
 
         // Trigger shutdown
         actor.shutdown()
@@ -121,7 +113,7 @@ class ActorGracefulShutdownTests {
         delay(1500)
 
         // Verify resources were released
-        assertThat(ResourceHoldingActor.resourceClosed).isTrue()
+        assertThat(ResourceHoldingAccountActor.resourceClosed).isTrue()
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
     }
 

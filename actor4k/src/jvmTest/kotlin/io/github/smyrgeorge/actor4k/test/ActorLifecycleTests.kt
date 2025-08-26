@@ -1,29 +1,17 @@
 package io.github.smyrgeorge.actor4k.test
 
 import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isGreaterThan
-import assertk.assertions.isNotEqualTo
-import assertk.assertions.isNotNull
-import assertk.assertions.isZero
+import assertk.assertions.*
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.actor.AccountActor
+import io.github.smyrgeorge.actor4k.test.actor.*
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
-import io.github.smyrgeorge.actor4k.test.actor.ErrorThrowingAccountActor
-import io.github.smyrgeorge.actor4k.test.actor.SlowActivateAccountActor
-import io.github.smyrgeorge.actor4k.test.actor.SlowActivateWithErrorInActivationAccountActor
-import io.github.smyrgeorge.actor4k.test.actor.SlowProcessingAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlin.test.Test
 import kotlin.test.assertFails
 import kotlin.time.Duration.Companion.milliseconds
@@ -119,6 +107,35 @@ class ActorLifecycleTests {
         }.awaitAll()
         assertThat(errors.size).isEqualTo(4)
         assertThat(errors).isEqualTo(listOf("boom!", "boom!", "boom!", "boom!"))
+    }
+
+    @Test
+    fun `If onBeforeActivate fails all ask requests should receive the same error`(): Unit = runBlocking {
+        val ref = ActorSystem.get(OnBeforeActivateFailsAccountActor::class, ACC0004)
+        val errors = listOf(1, 2, 3, 4).map {
+            async {
+                val res = ref.ask(Protocol.Req("Ping!"))
+                res.exceptionOrNull()?.message ?: ""
+            }
+        }.awaitAll()
+        assertThat(errors.size).isEqualTo(4)
+        // All should be failures and either be activation error or rejection during shutdown
+        assertThat(errors.all { it.isNotEmpty() }).isEqualTo(true)
+        // At least one should be the activation error
+        assertThat(errors.count { it == "boom!" } > 0).isEqualTo(true)
+    }
+
+    @Test
+    fun `Registry should be cleaned up when onBeforeActivate fails`(): Unit = runBlocking {
+        val ref: ActorRef = ActorSystem.get(OnBeforeActivateFailsAccountActor::class, ACC0005)
+        // Trigger activation by sending a message
+        val result = ref.ask(Protocol.Req("Ping!"))
+        // Should fail with boom!
+        assertThat(result.isFailure).isEqualTo(true)
+        assertThat(result.exceptionOrNull()?.message).isEqualTo("boom!")
+        // Give some time for shutdown/unregister to complete
+        delay(200)
+        assertThat(registry.size()).isZero()
     }
 
     @Test
@@ -226,5 +243,7 @@ class ActorLifecycleTests {
         private const val ACC0001: String = "ACC0001"
         private const val ACC0002: String = "ACC0002"
         private const val ACC0003: String = "ACC0003"
+        private const val ACC0004: String = "ACC0004"
+        private const val ACC0005: String = "ACC0005"
     }
 }

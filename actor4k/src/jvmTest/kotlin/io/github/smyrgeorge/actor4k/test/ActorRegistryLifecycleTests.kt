@@ -1,21 +1,12 @@
 package io.github.smyrgeorge.actor4k.test
 
 import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
-import assertk.assertions.isNotZero
-import assertk.assertions.isTrue
-import assertk.assertions.isZero
+import assertk.assertions.*
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.actor.AccountActor
+import io.github.smyrgeorge.actor4k.test.actor.*
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
-import io.github.smyrgeorge.actor4k.test.actor.InitMethodFailsAccountActor
-import io.github.smyrgeorge.actor4k.test.actor.NotRegisteredAccountActor
-import io.github.smyrgeorge.actor4k.test.actor.ShortLivedActor
-import io.github.smyrgeorge.actor4k.test.actor.SlowInitAccountActor
-import io.github.smyrgeorge.actor4k.test.actor.ThrowingDuringMessageProcessingActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
 import io.github.smyrgeorge.actor4k.test.util.forEachParallel
 import kotlinx.coroutines.async
@@ -162,7 +153,7 @@ class ActorRegistryLifecycleTests {
     @Test
     fun `Registry should handle actor errors during message processing`(): Unit = runBlocking {
         // Create an actor that throws during message processing
-        val ref = registry.get(ThrowingDuringMessageProcessingActor::class, ACC0010)
+        val ref = registry.get(ThrowingDuringMessageProcessingAccountActor::class, ACC0010)
 
         // Send a message that will cause an exception
         ref.tell(Protocol.Req("THROW"))
@@ -182,7 +173,7 @@ class ActorRegistryLifecycleTests {
     @Test
     fun `Registry should handle short-lived actors properly`(): Unit = runBlocking {
         // Create an actor that will automatically shutdown after processing a message
-        val ref = registry.get(ShortLivedActor::class, ACC0011)
+        val ref = registry.get(ShortLivedAccountActor::class, ACC0011)
 
         // Send a message that will trigger shutdown
         ref.tell(Protocol.Req("Shutdown"))

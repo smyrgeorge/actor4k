@@ -63,7 +63,8 @@ class ActorStashingTests {
         assertThat(actor.stats().stashedMessages).isZero()
 
         // Verify the order of processed messages
-        val processedMessages = ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
+        val processedMessages =
+            ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
         assertThat(processedMessages.messages).isEqualTo(listOf("message1", "message2", "message3"))
     }
 
@@ -87,7 +88,8 @@ class ActorStashingTests {
         assertThat(processedCount.message).isEqualTo("Processed count: 2")
 
         // Verify the order of processed messages
-        val processedMessages = ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
+        val processedMessages =
+            ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
         assertThat(processedMessages.messages).isEqualTo(listOf("message1", "message2"))
     }
 
@@ -115,7 +117,8 @@ class ActorStashingTests {
         assertThat(processedCount.message).isEqualTo("Processed count: 4")
 
         // Verify the order of processed messages (stashed messages should be processed first)
-        val processedMessages = ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
+        val processedMessages =
+            ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
         assertThat(processedMessages.messages).isEqualTo(
             listOf("stashed1", "stashed2", "immediate1", "immediate2")
         )
@@ -169,13 +172,14 @@ class ActorStashingTests {
         assertThat(finalProcessedCount.message).isEqualTo("Processed count: 5")
 
         // Verify the order of processed messages
-        val processedMessages = ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
+        val processedMessages =
+            ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
         assertThat(processedMessages.messages).isEqualTo(
             listOf(
-                "batch1-message1", 
-                "batch1-message2", 
-                "batch2-message1", 
-                "batch2-message2", 
+                "batch1-message1",
+                "batch1-message2",
+                "batch2-message1",
+                "batch2-message2",
                 "batch2-message3"
             )
         )
@@ -215,7 +219,8 @@ class ActorStashingTests {
         assertThat(actor.stats().stashedMessages).isZero()
 
         // Verify the order of processed messages
-        val processedMessages = ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
+        val processedMessages =
+            ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
         assertEquals(expectedMessages, processedMessages.messages)
     }
 
@@ -257,16 +262,17 @@ class ActorStashingTests {
         delay(200)
 
         // Verify the order of processed messages
-        val processedMessages = ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
+        val processedMessages =
+            ref.ask(Protocol.Req("get_processed_messages")).getOrThrow() as Protocol.ProcessedMessages
         assertThat(processedMessages.messages).isEqualTo(
             listOf(
-                "stashed-batch1-1", 
-                "stashed-batch1-2", 
-                "immediate-1", 
-                "immediate-2", 
-                "stashed-batch2-1", 
-                "stashed-batch2-2", 
-                "immediate-3", 
+                "stashed-batch1-1",
+                "stashed-batch1-2",
+                "immediate-1",
+                "immediate-2",
+                "stashed-batch2-1",
+                "stashed-batch2-2",
+                "immediate-3",
                 "immediate-4"
             )
         )

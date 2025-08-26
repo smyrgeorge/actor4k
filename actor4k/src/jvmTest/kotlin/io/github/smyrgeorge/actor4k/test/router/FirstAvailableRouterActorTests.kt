@@ -1,19 +1,11 @@
 package io.github.smyrgeorge.actor4k.test.router
 
 import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isGreaterThan
-import assertk.assertions.isGreaterThanOrEqualTo
-import assertk.assertions.isNotNull
-import assertk.assertions.isSuccess
+import assertk.assertions.*
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.util.Registry
-import io.github.smyrgeorge.actor4k.test.util.TestProtocol
-import io.github.smyrgeorge.actor4k.test.util.TestRouter
-import io.github.smyrgeorge.actor4k.test.util.TestWorker
-import io.github.smyrgeorge.actor4k.test.util.TestWorkerThatFailsOccasionally
+import io.github.smyrgeorge.actor4k.test.util.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test

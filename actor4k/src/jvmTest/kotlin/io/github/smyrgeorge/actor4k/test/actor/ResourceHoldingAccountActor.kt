@@ -2,7 +2,7 @@ package io.github.smyrgeorge.actor4k.test.actor
 
 import io.github.smyrgeorge.actor4k.actor.Behavior
 
-class ResourceHoldingActor(key: String) : AccountActor(key) {
+class ResourceHoldingAccountActor(key: String) : AccountActor(key) {
     companion object {
         var resourceClosed = false
     }
