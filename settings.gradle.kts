@@ -12,5 +12,6 @@ pluginManagement {
 include("actor4k")
 include("actor4k-cluster")
 
+include("dokka")
 include("examples")
 include("microbank")

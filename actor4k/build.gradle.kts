@@ -1,6 +1,7 @@
 plugins {
     id("io.github.smyrgeorge.actor4k.multiplatform")
     id("io.github.smyrgeorge.actor4k.publish")
+    id("io.github.smyrgeorge.actor4k.dokka")
     alias(libs.plugins.kotlin.serialization)
 }
 
