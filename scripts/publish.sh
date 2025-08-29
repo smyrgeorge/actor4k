@@ -6,7 +6,7 @@ set -e
 
 ./gradlew :dokka:dokkaGenerate
 rm -rf ./docs/*
-cp -R ./dokka/build/dokka/htmlMultiModule/* ./docs/
+cp -R ./dokka/build/dokka/html/* ./docs/
 
 version=$(./gradlew properties -q | awk '/^version:/ {print $2}')
 git add --all
