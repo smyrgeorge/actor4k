@@ -36,11 +36,13 @@ import kotlin.uuid.Uuid
  * @param key A unique identifier for the actor used for addressing and tracking.
  * @param capacity Indicates the actor's mailbox capacity (if mail is full, any attempt to send will suspend, back-pressure).
  * @param stashCapacity Indicates the actor's stash capacity.
+ * @param onMailboxBufferOverflow Indicates the actor's behavior in case that the mailbox is full.
  */
 abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     val key: String,
     capacity: Int = ActorSystem.conf.actorMailboxSize,
     stashCapacity: Int = ActorSystem.conf.actorStashSize,
+    onMailboxBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND // Back-pressure.
 ) {
     protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
 
@@ -53,7 +55,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     private var current: Patterns<Req, Res>? = null
     private val mail: Channel<Patterns<Req, Res>> = Channel(
         capacity = capacity,
-        onBufferOverflow = BufferOverflow.SUSPEND // Back-pressure.
+        onBufferOverflow = onMailboxBufferOverflow
     )
     private val stash: Channel<Patterns<Req, Res>> = Channel(
         capacity = stashCapacity,
