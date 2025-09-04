@@ -155,14 +155,14 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
             try {
                 // Execute pre-activation hooks.
                 onBeforeActivate()
+                // Set 'ACTIVATING' status.
+                status = Status.ACTIVATING
             } catch (e: Exception) {
                 // In case of an error, we need to close the [Actor] immediately.
                 log.error("[$address::onBeforeActivate] Failed to activate, will shutdown (${e.message ?: ""})")
                 initializationFailed = e
                 shutdown()
             }
-
-            status = Status.ACTIVATING
 
             mail.consumeEach { pattern ->
                 stats.lastMessageAt = Clock.System.now().toEpochMilliseconds()
