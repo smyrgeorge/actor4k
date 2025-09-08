@@ -234,7 +234,11 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
 
                 // Send the response back to the sender.
                 when (pattern) {
-                    is Patterns.Tell -> Unit
+                    is Patterns.Tell -> {
+                        if (behavior is Behavior.Error) {
+                            log.error("[$address::onReceive] Failed to process message (it was a tell). Reason: ${behavior.cause.message ?: ""}", behavior.cause)
+                        }
+                    }
                     is Patterns.Ask -> reply("consume", pattern, result)
                 }
 
