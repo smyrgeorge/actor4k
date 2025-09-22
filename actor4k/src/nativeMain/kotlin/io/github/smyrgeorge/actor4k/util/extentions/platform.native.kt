@@ -10,6 +10,7 @@ import kotlinx.coroutines.runBlocking
 import platform.posix.SIGINT
 import platform.posix.atexit
 import platform.posix.signal
+import kotlin.reflect.KClass
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun registerShutdownHook() {
@@ -28,3 +29,5 @@ actual fun registerShutdownHook() {
 @OptIn(ExperimentalForeignApi::class)
 actual fun getEnv(key: String): String? = platform.posix.getenv(key)?.toKString()
 actual val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+actual fun KClass<*>.qualifiedOrSimpleName(): String =
+    qualifiedName ?: simpleName ?: error("Cannot determine qualified or simple name for $this.")

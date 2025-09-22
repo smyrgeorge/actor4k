@@ -1,9 +1,14 @@
 package io.github.smyrgeorge.actor4k.util.extentions
 
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
+import kotlin.reflect.KClass
 
 actual fun registerShutdownHook() {
     Runtime.getRuntime().addShutdownHook(
@@ -26,3 +31,6 @@ private val LOOM: ExecutorCoroutineDispatcher =
 
 actual val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO
 @Suppress("unused") val loomDispatcher: CoroutineDispatcher = LOOM
+
+actual fun KClass<*>.qualifiedOrSimpleName(): String =
+    qualifiedName ?: simpleName ?: error("Cannot determine qualified or simple name for $this.")

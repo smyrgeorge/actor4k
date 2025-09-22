@@ -11,6 +11,7 @@ import io.github.smyrgeorge.actor4k.util.extentions.ActorFactory
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActorClass
 import io.github.smyrgeorge.actor4k.util.extentions.doEvery
+import io.github.smyrgeorge.actor4k.util.extentions.qualifiedOrSimpleName
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
@@ -207,7 +208,7 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
      */
     open fun factoryFor(actor: AnyActorClass, factory: ActorFactory): ActorRegistry {
         if (ActorSystem.status == ActorSystem.Status.READY) error("Cannot register a factory while the system is ready.")
-        factories[actor.qualifiedName!!] = factory
+        factories[actor.qualifiedOrSimpleName()] = factory
         return this
     }
 
@@ -220,7 +221,7 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
      * @throws IllegalStateException if no factory is registered for the provided actor type.
      */
     private fun factoryOf(actor: AnyActorClass): ActorFactory =
-        factories[actor.qualifiedName!!] ?: error("No factory registered for ${actor.qualifiedName!!}.")
+        factories[actor.qualifiedOrSimpleName()] ?: error("No factory registered for ${actor.qualifiedOrSimpleName()}.")
 
     /**
      * Stops and removes all locally registered actors that have exceeded their expiration time.
