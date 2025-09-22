@@ -111,6 +111,13 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     internal open suspend fun afterReceive(m: Req, res: Result<Res>) {}
 
     /**
+     * Post-processing logic to be executed after receiving a request.
+     *
+     * @param m The request object of type Req that was received and needs to be processed.
+     */
+    internal open suspend fun afterReceive(m: Req) {}
+
+    /**
      * Hook invoked during the shutdown sequence of the actor.
      *
      * This method provides an opportunity to perform finalization tasks such as resource cleanup,
@@ -236,9 +243,13 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 when (pattern) {
                     is Patterns.Tell -> {
                         if (behavior is Behavior.Error) {
-                            log.error("[$address::onReceive] Failed to process message (it was a tell). Reason: ${behavior.cause.message ?: ""}", behavior.cause)
+                            log.error(
+                                "[$address::onReceive] Failed to process message (it was a tell). Reason: ${behavior.cause.message ?: ""}",
+                                behavior.cause
+                            )
                         }
                     }
+
                     is Patterns.Ask -> reply("consume", pattern, result)
                 }
 
@@ -250,7 +261,16 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 }
             }
 
-            is Behavior.None -> Unit
+            is Behavior.None -> {
+                // Even if the actor decided not to reply or stash, we still invoke afterReceive.
+                // This allows Router workers (FIRST_AVAILABLE) to re-register availability, avoiding deadlocks.
+                try {
+                    afterReceive(msg)
+                } catch (e: Exception) {
+                    log.warn("[$address::afterReceive] Failed to process afterReceive hook for Behavior.None (${e.message ?: ""})")
+                }
+            }
+
             is Behavior.Shutdown -> shutdown()
         }
     }

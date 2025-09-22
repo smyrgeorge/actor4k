@@ -27,7 +27,7 @@ abstract class RouterActor<Req, Res>(
 
     private var id: Long = 0L
     private var workers: Array<Worker<Req, Res>> = emptyArray()
-    private lateinit var available: Channel<Worker<Req, Res>>
+    private var available: Channel<Worker<Req, Res>>? = null
 
     final override suspend fun onReceive(m: Req): Behavior<Res> {
         error("This method should never be called.")
@@ -59,7 +59,10 @@ abstract class RouterActor<Req, Res>(
                 Result.success(Unit)
             }
 
-            Strategy.FIRST_AVAILABLE -> available.receive().tell(msg)
+            Strategy.FIRST_AVAILABLE -> {
+                val worker = runCatching { available!!.receive() }.getOrElse { return Result.failure(it) }
+                worker.tell(msg)
+            }
         }
     }
 
@@ -87,7 +90,10 @@ abstract class RouterActor<Req, Res>(
             Strategy.RANDOM -> workers.random().ask(msg, timeout)
             Strategy.ROUND_ROBIN -> workers[(id % workers.size).toInt()].ask(msg, timeout)
             Strategy.BROADCAST -> Result.failure(IllegalStateException("Cannot use 'ask' with 'BROADCAST' strategy."))
-            Strategy.FIRST_AVAILABLE -> available.receive().ask(msg, timeout)
+            Strategy.FIRST_AVAILABLE -> {
+                val worker = runCatching { available!!.receive() }.getOrElse { return Result.failure(it) }
+                worker.ask(msg, timeout)
+            }
         }
     }
 
@@ -101,7 +107,7 @@ abstract class RouterActor<Req, Res>(
      */
     final override suspend fun onShutdown() {
         workers.forEach { it.shutdown() }
-        available.close()
+        available?.close()
     }
 
     /**
@@ -120,13 +126,16 @@ abstract class RouterActor<Req, Res>(
         if (workers.isNotEmpty()) error("Cannot register new actors. Register function should only be called once.")
 
         workers = actors.toList().toTypedArray()
-        available = Channel(workers.size)
+
+        if (strategy == Strategy.FIRST_AVAILABLE) {
+            available = Channel(Channel.UNLIMITED) // Do not limit the available queue (avoid deadlocks).
+        }
 
         workers.forEach { worker ->
             launch {
                 if (strategy == Strategy.FIRST_AVAILABLE) {
-                    worker.registerBecomeAvailableChannel(available)
-                    available.send(worker)
+                    worker.registerBecomeAvailableChannel(available!!)
+                    available!!.send(worker)
                 }
                 worker.activate()
             }
@@ -203,6 +212,19 @@ abstract class RouterActor<Req, Res>(
          * @param res the result of processing the request, containing either a successful response or an error.
          */
         final override suspend fun afterReceive(m: Req, res: Result<Res>) {
+            available?.send(this)
+        }
+
+        /**
+         * Signals the availability of the worker after processing a request.
+         *
+         * This method is called after receiving and processing a request. It notifies
+         * the system that the worker is available for further tasks by sending itself
+         * through the availability channel if one is registered.
+         *
+         * @param m the request message that was processed by the worker.
+         */
+        final override suspend fun afterReceive(m: Req) {
             available?.send(this)
         }
     }
