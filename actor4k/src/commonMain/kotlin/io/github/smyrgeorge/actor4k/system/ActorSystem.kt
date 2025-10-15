@@ -292,7 +292,7 @@ object ActorSystem {
         val actorStashSize: Int = 1000,
         val actorAskTimeout: Duration = 30.seconds,
         val actorReplyTimeout: Duration = 2.seconds,
-        val actorActivateTimeout: Duration = 5.seconds,
+        val actorActivateTimeout: Duration = 1.seconds,
         val actorShutdownHookTimeout: Duration = 10.seconds,
         val actorExpiresAfter: Duration = 5.minutes,
         val systemCollectStatsEvery: Duration = 5.seconds,

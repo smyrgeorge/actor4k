@@ -231,12 +231,10 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
      * durations exceed the configured expiration threshold. The operation is performed
      * within a lock to ensure thread safety and prevent concurrent modifications to the
      * registry.
-     *
-     * @return Unit A coroutine completion indicating the operation has finished.
      */
-    private suspend fun stopLocalExpired(): Unit = lock {
+    private suspend fun stopLocalExpired() {
         log.debug("Stopping local expired actors.")
-        registry.values.forEach {
+        lock { registry.values.toList() }.forEach {
             val df = Clock.System.now().toEpochMilliseconds() - it.stats().lastMessageAt
             if (df > ActorSystem.conf.actorExpiresAfter.inWholeMilliseconds) {
                 log.info("Closing ${it.address()}, ${it.stats()} (expired).")
