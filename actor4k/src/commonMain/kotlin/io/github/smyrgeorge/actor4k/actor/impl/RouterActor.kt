@@ -4,9 +4,12 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.system.ActorSystem
-import io.github.smyrgeorge.actor4k.util.extentions.launch
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.onFailure
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.time.Duration
 
 /**
@@ -25,10 +28,16 @@ abstract class RouterActor<Req, Res>(
     val strategy: Strategy
 ) : Actor<Req, Res>(key) where Req : ActorProtocol, Res : ActorProtocol.Response {
 
-    private var id: Long = 0L
     private var workers: Array<Worker<Req, Res>> = emptyArray()
-    private val available: Channel<Worker<Req, Res>> =
-        Channel(Channel.UNLIMITED) // Do not limit the available queue (avoid deadlocks).
+
+    @OptIn(ExperimentalAtomicApi::class)
+    private var workerId: AtomicInt = AtomicInt(0)
+
+    @OptIn(ExperimentalAtomicApi::class)
+    private fun workerId(): Int = workerId.incrementAndFetch() % workers.size
+
+    // Do not limit the available queue (avoid deadlocks).
+    private val available: Channel<Worker<Req, Res>> = Channel(Channel.UNLIMITED)
 
     final override suspend fun onReceive(m: Req): Behavior<Res> {
         error("This method should never be called.")
@@ -51,10 +60,9 @@ abstract class RouterActor<Req, Res>(
     final override suspend fun tell(msg: ActorProtocol): Result<Unit> {
         if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
-        id++
         return when (strategy) {
             Strategy.RANDOM -> workers.random().tell(msg)
-            Strategy.ROUND_ROBIN -> workers[(id % workers.size).toInt()].tell(msg)
+            Strategy.ROUND_ROBIN -> workers[workerId()].tell(msg)
             Strategy.BROADCAST -> {
                 workers.forEach { it.tell(msg) }
                 Result.success(Unit)
@@ -86,10 +94,9 @@ abstract class RouterActor<Req, Res>(
             where M : ActorProtocol.Message<R>, R : ActorProtocol.Response {
         if (workers.isEmpty()) return Result.failure(IllegalStateException("No workers are registered."))
 
-        id++
         return when (strategy) {
             Strategy.RANDOM -> workers.random().ask(msg, timeout)
-            Strategy.ROUND_ROBIN -> workers[(id % workers.size).toInt()].ask(msg, timeout)
+            Strategy.ROUND_ROBIN -> workers[workerId()].ask(msg, timeout)
             Strategy.BROADCAST -> Result.failure(IllegalStateException("Cannot use 'ask' with 'BROADCAST' strategy."))
             Strategy.FIRST_AVAILABLE -> {
                 val worker = runCatching { available.receive() }.getOrElse { return Result.failure(it) }
@@ -125,15 +132,19 @@ abstract class RouterActor<Req, Res>(
 
         workers = actors.toList().toTypedArray()
 
-        workers.forEach { worker ->
-            launch {
-                if (strategy == Strategy.FIRST_AVAILABLE) {
-                    worker.registerBecomeAvailableChannel(available)
-                    available.send(worker)
+        workers.onEach { worker ->
+            worker.activate()
+            if (strategy == Strategy.FIRST_AVAILABLE) {
+                worker.registerBecomeAvailableChannel(available)
+                available.trySend(worker).onFailure { e ->
+                    val error = e ?: IllegalStateException("Unknown error")
+                    log.error("Failed to register worker.", error)
+                    shutdown()
+                    throw error
                 }
-                worker.activate()
             }
         }
+
         return this
     }
 
@@ -185,7 +196,7 @@ abstract class RouterActor<Req, Res>(
         stashCapacity = stashCapacity,
         onMailboxBufferOverflow = onMailboxBufferOverflow
     ) where Req : ActorProtocol, Res : ActorProtocol.Response {
-        private var available: Channel<Worker<Req, Res>>? = null
+        private var signal: Channel<Worker<Req, Res>>? = null
 
         /**
          * Registers a `Channel` to signal the availability of the worker.
@@ -195,7 +206,17 @@ abstract class RouterActor<Req, Res>(
          * @param ch the channel used to signal the availability of this worker.
          */
         internal fun registerBecomeAvailableChannel(ch: Channel<Worker<Req, Res>>) {
-            available = ch
+            signal = ch
+        }
+
+        final override suspend fun onBeforeActivate() {
+            // Do not allow override this hook.
+            // Ensure that the worker will be activated without errors.
+        }
+
+        final override suspend fun onActivate(m: Req) {
+            // Do not allow override this hook.
+            // Ensure that the worker will be activated without errors.
         }
 
         /**
@@ -206,7 +227,7 @@ abstract class RouterActor<Req, Res>(
          * @param res the result of processing the request, containing either a successful response or an error.
          */
         final override suspend fun afterReceive(m: Req, res: Result<Res>) {
-            available?.send(this)
+            signal?.becomeAvailable(this)
         }
 
         /**
@@ -219,7 +240,14 @@ abstract class RouterActor<Req, Res>(
          * @param m the request message that was processed by the worker.
          */
         final override suspend fun afterReceive(m: Req) {
-            available?.send(this)
+            signal?.becomeAvailable(this)
+        }
+
+        private fun Channel<Worker<Req, Res>>.becomeAvailable(worker: Worker<Req, Res>) {
+            trySend(worker).onFailure { e ->
+                val error = e ?: IllegalStateException("Unknown error")
+                log.error("Failed to signal worker availability (worker lost from the pool).", error)
+            }
         }
     }
 }
