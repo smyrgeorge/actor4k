@@ -27,7 +27,8 @@ abstract class RouterActor<Req, Res>(
 
     private var id: Long = 0L
     private var workers: Array<Worker<Req, Res>> = emptyArray()
-    private var available: Channel<Worker<Req, Res>>? = null
+    private val available: Channel<Worker<Req, Res>> =
+        Channel(Channel.UNLIMITED) // Do not limit the available queue (avoid deadlocks).
 
     final override suspend fun onReceive(m: Req): Behavior<Res> {
         error("This method should never be called.")
@@ -60,7 +61,7 @@ abstract class RouterActor<Req, Res>(
             }
 
             Strategy.FIRST_AVAILABLE -> {
-                val worker = runCatching { available!!.receive() }.getOrElse { return Result.failure(it) }
+                val worker = runCatching { available.receive() }.getOrElse { return Result.failure(it) }
                 worker.tell(msg)
             }
         }
@@ -91,7 +92,7 @@ abstract class RouterActor<Req, Res>(
             Strategy.ROUND_ROBIN -> workers[(id % workers.size).toInt()].ask(msg, timeout)
             Strategy.BROADCAST -> Result.failure(IllegalStateException("Cannot use 'ask' with 'BROADCAST' strategy."))
             Strategy.FIRST_AVAILABLE -> {
-                val worker = runCatching { available!!.receive() }.getOrElse { return Result.failure(it) }
+                val worker = runCatching { available.receive() }.getOrElse { return Result.failure(it) }
                 worker.ask(msg, timeout)
             }
         }
@@ -101,13 +102,10 @@ abstract class RouterActor<Req, Res>(
      * Shuts down the router and its associated workers.
      *
      * This method performs a graceful shutdown by iterating through the registered
-     * workers and invoking their individual `shutdown` methods. Additionally, it closes
-     * the internal resource that tracks availability to ensure no further operations
-     * can be performed.
+     * workers and invoking their individual `shutdown` methods.
      */
     final override suspend fun onShutdown() {
         workers.forEach { it.shutdown() }
-        available?.close()
     }
 
     /**
@@ -127,15 +125,11 @@ abstract class RouterActor<Req, Res>(
 
         workers = actors.toList().toTypedArray()
 
-        if (strategy == Strategy.FIRST_AVAILABLE) {
-            available = Channel(Channel.UNLIMITED) // Do not limit the available queue (avoid deadlocks).
-        }
-
         workers.forEach { worker ->
             launch {
                 if (strategy == Strategy.FIRST_AVAILABLE) {
-                    worker.registerBecomeAvailableChannel(available!!)
-                    available!!.send(worker)
+                    worker.registerBecomeAvailableChannel(available)
+                    available.send(worker)
                 }
                 worker.activate()
             }
