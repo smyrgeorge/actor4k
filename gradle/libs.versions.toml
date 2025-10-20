@@ -6,7 +6,7 @@ kotlinx-coroutines = "1.10.2"
 # https://github.com/vanniktech/gradle-maven-publish-plugin
 publish = "0.34.0"
 # https://github.com/Kotlin/dokka
-dokka = "2.0.0"
+dokka = "2.1.0"
 # https://github.com/smyrgeorge/log4k
 log4k = "1.1.2"
 # https://mvnrepository.com/artifact/org.slf4j/slf4j-api
