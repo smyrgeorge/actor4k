@@ -4,18 +4,17 @@ plugins {
 }
 
 kotlin {
-    @Suppress("unused")
     sourceSets {
         configureEach {
             languageSettings.progressiveMode = true
         }
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 implementation(project(":actor4k-cluster"))
                 implementation(libs.kotlinx.serialization.json)
             }
         }
-        val jvmMain by getting {
+        jvmMain {
             dependencies {
                 implementation(libs.slf4j.reload4j)
             }

@@ -6,12 +6,11 @@ plugins {
 }
 
 kotlin {
-    @Suppress("unused")
     sourceSets {
         configureEach {
             languageSettings.progressiveMode = true
         }
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 api(project(":actor4k"))
                 api(libs.kotlinx.serialization.protobuf)

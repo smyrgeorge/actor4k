@@ -6,44 +6,43 @@ plugins {
 }
 
 kotlin {
-    @Suppress("unused")
     sourceSets {
         configureEach {
             languageSettings.progressiveMode = true
         }
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 api(libs.kotlinx.coroutines.core)
                 api(libs.kotlinx.serialization.core)
             }
         }
-        val commonTest by getting {
+        commonTest {
             dependencies {
                 implementation(libs.kotlin.test)
                 implementation(libs.assertk)
             }
         }
-        val jvmMain by getting {
+        jvmMain {
             dependencies {
                 api(libs.slf4j.api)
             }
         }
-        val jvmTest by getting {
+        jvmTest {
             dependencies {
                 implementation(libs.slf4j.reload4j)
             }
         }
-        val nativeMain by getting {
+        nativeMain {
             dependencies {
                 api(libs.log4k)
             }
         }
-        val wasmJsMain by getting {
+        wasmJsMain {
             dependencies {
                 api(libs.log4k)
             }
         }
-        val wasmWasiMain by getting {
+        wasmWasiMain {
             dependencies {
                 api(libs.log4k)
             }
