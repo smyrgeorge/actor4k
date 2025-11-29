@@ -217,15 +217,6 @@ The `actorOf` extension function provides a lightweight, functional approach to 
 define a full actor class. This is particularly useful for simple actors, prototyping, or when you want to avoid the
 overhead of registering actors in the actor registry.
 
-The function allows you to:
-
-- Convenient way to create detached actors
-- Create actors with encapsulated state management using `MutableStateFlow`
-- Define actor behavior inline using lambda expressions
-- Configure lifecycle hooks (activation, shutdown, etc.)
-- Customize mailbox capacity and buffer overflow strategies
-- Build actors quickly without class definitions
-
 ##### Basic Example
 
 ```kotlin

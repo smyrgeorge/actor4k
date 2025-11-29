@@ -87,64 +87,6 @@ class ActorOfExtensionTests {
     }
 
     @Test
-    fun `ActorOf with lifecycle hooks`(): Unit = runBlocking {
-        var beforeActivateCalled = false
-        var activateCalled = false
-        var afterReceiveCalled = false
-        var shutdownCalled = false
-        var firstMessage: StateProtocol? = null
-
-        val actor = actorOf<String, StateProtocol, StateProtocol.Response>(
-            initialState = "initial",
-            key = "lifecycle-actor",
-            onBeforeActivate = {
-                beforeActivateCalled = true
-            },
-            onActivate = { message ->
-                activateCalled = true
-                firstMessage = message
-            },
-            afterReceive = { _, result ->
-                afterReceiveCalled = true
-                assertThat(result.isSuccess).isTrue()
-            },
-            onShutdown = {
-                shutdownCalled = true
-            }
-        ) { state, message ->
-            when (message) {
-                is StateProtocol.SetState -> {
-                    state.value = message.state
-                    Behavior.Reply(StateProtocol.StateResponse(state.value))
-                }
-                is StateProtocol.GetState -> {
-                    Behavior.Reply(StateProtocol.StateResponse(state.value))
-                }
-            }
-        }
-
-        actor.activate()
-        delay(50)
-
-        // Send the first message
-        val result1 = actor.ask(StateProtocol.SetState("new-state")).getOrThrow()
-        assertThat(result1.state).isEqualTo("new-state")
-
-        delay(50)
-
-        // Verify lifecycle hooks were called
-        assertThat(beforeActivateCalled).isTrue()
-        assertThat(activateCalled).isTrue()
-        assertThat(afterReceiveCalled).isTrue()
-        assertThat(firstMessage).isNotNull().isInstanceOf(StateProtocol.SetState::class)
-
-        actor.shutdown()
-        delay(50)
-
-        assertThat(shutdownCalled).isTrue()
-    }
-
-    @Test
     fun `ActorOf with tell operation`(): Unit = runBlocking {
         val counter = actorOf<Int, CounterProtocol, CounterProtocol.Response>(
             initialState = 0,

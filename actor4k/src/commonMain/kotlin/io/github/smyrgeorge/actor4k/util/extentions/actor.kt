@@ -5,7 +5,18 @@ import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableStateFlow
+
+/**
+ * A container class representing a mutable state.
+ *
+ * This class is designed to hold a single mutable value of type `T`. It provides a mechanism
+ * to encapsulate and manage mutable state, which is especially useful in concurrent or
+ * stateful programming scenarios.
+ *
+ * @param T The type of the value being encapsulated.
+ * @property value The current state of type `T`, which can be read and modified directly.
+ */
+class MutableState<T>(var value: T)
 
 /**
  * Creates an actor instance configured with the specified state, key, capacity, and handlers for various lifecycle events.
@@ -18,12 +29,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * @param capacity The size of the actor's mailbox buffer; defaults to the value from `ActorSystem.conf.actorMailboxSize`.
  * @param stashCapacity The size of the actor's stash buffer; defaults to the value from `ActorSystem.conf.actorStashSize`.
  * @param onMailboxBufferOverflow The behavior for handling mailbox buffer overflows; defaults to `BufferOverflow.SUSPEND`.
- * @param onBeforeActivate A suspendable lambda executed before activating the actor; defaults to an empty lambda.
  * @param onActivate A suspendable lambda executed when the actor is activated with an incoming request; defaults to an empty lambda.
- * @param afterReceive A suspendable lambda executed after each message is received and processed, taking the request and processing result as parameters; defaults to a no-op lambda.
  * @param onShutdown A suspendable lambda executed during the actor's shutdown process; defaults to an empty lambda.
  * @param onReceive A suspendable lambda defining the behavior of the actor when receiving a request.
- *                  It takes a `MutableStateFlow<State>` representing the actor's state and a request of type `Req`,
+ *                  It takes a `MutableState<State>` representing the actor's state and a request of type `Req`,
  *                  and it returns a `Behavior<Res>` instance representing the action to take.
  * @return A newly created `Actor` instance configured with the given parameters and behaviors.
  */
@@ -33,16 +42,13 @@ fun <State, Req : ActorProtocol, Res : ActorProtocol.Response> actorOf(
     capacity: Int = ActorSystem.conf.actorMailboxSize,
     stashCapacity: Int = ActorSystem.conf.actorStashSize,
     onMailboxBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND,
-    onBeforeActivate: suspend () -> Unit = {},
-    onActivate: suspend (Req) -> Unit = {},
-    afterReceive: suspend (m: Req, res: Result<Res>) -> Unit = { _, _ -> },
+    // Lifecycle handlers
+    onActivate: suspend (MutableState<State>, Req) -> Unit = { _, _ -> },
     onShutdown: suspend () -> Unit = {},
-    onReceive: suspend (MutableStateFlow<State>, Req) -> Behavior<Res>,
+    onReceive: suspend (MutableState<State>, Req) -> Behavior<Res>,
 ): Actor<Req, Res> = object : Actor<Req, Res>(key, capacity, stashCapacity, onMailboxBufferOverflow) {
-    private val state = MutableStateFlow(initialState)
-    override suspend fun onBeforeActivate() = onBeforeActivate()
-    override suspend fun onActivate(m: Req) = onActivate(m)
+    private val state = MutableState(initialState)
+    override suspend fun onActivate(m: Req) = onActivate(state, m)
     override suspend fun onReceive(m: Req): Behavior<Res> = onReceive(state, m)
-    override suspend fun afterReceive(m: Req, res: Result<Res>) = afterReceive(m, res)
     override suspend fun onShutdown() = onShutdown()
 }.apply { activate() }
