@@ -211,6 +211,48 @@ detached.tell(Protocol.Req(message = "[ask] Ping!"))
 detached.shutdown()
 ```
 
+#### ActorOf Extension Function
+
+The `actorOf` extension function provides a lightweight, functional approach to creating actors without needing to
+define a full actor class. This is particularly useful for simple actors, prototyping, or when you want to avoid the
+overhead of registering actors in the actor registry.
+
+The function allows you to:
+
+- Convenient way to create detached actors
+- Create actors with encapsulated state management using `MutableStateFlow`
+- Define actor behavior inline using lambda expressions
+- Configure lifecycle hooks (activation, shutdown, etc.)
+- Customize mailbox capacity and buffer overflow strategies
+- Build actors quickly without class definitions
+
+##### Basic Example
+
+```kotlin
+// Define your protocol
+sealed interface CounterProtocol : ActorProtocol {
+    sealed class Message<R : ActorProtocol.Response> : CounterProtocol, ActorProtocol.Message<R>()
+    sealed class Response : ActorProtocol.Response()
+    data class Increment(val by: Int) : Message<CurrentValue>()
+}
+
+// Create an actor with state
+val counter = actorOf<Int, CounterProtocol, CounterProtocol.Response>(0) { state, message ->
+    when (message) {
+        is CounterProtocol.Increment -> {
+            // Handle your logic here.
+        }
+    }
+}
+```
+
+This approach is ideal for:
+
+- Simple stateful actors that don't require complex class hierarchies
+- Rapid prototyping and experimentation
+- Unit testing scenarios where you need lightweight actor instances
+- Cases where you want to avoid actor registry dependencies
+
 ## Actor types
 
 ### Generic Actor

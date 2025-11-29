@@ -4,6 +4,7 @@ import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.system.ActorSystem
+import kotlinx.coroutines.channels.BufferOverflow
 
 /**
  * An abstract actor class that enables dynamic behavior changes for handling incoming requests.
@@ -17,12 +18,14 @@ import io.github.smyrgeorge.actor4k.system.ActorSystem
  * @param key A unique identifier for the actor instance.
  * @param capacity The capacity of the actor's queue. Defaults to the value specified in `ActorSystem.conf.actorQueueSize`.
  * @param stashCapacity Indicates the actor's stash capacity.
+ * @param onMailboxBufferOverflow Indicates the actor's behavior in case that the mailbox is full.
  */
 abstract class BehaviorActor<Req, Res>(
     key: String,
     capacity: Int = ActorSystem.conf.actorMailboxSize,
     stashCapacity: Int = ActorSystem.conf.actorStashSize,
-) : Actor<Req, Res>(key, capacity, stashCapacity) where  Req : ActorProtocol, Res : ActorProtocol.Response {
+    onMailboxBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND,
+) : Actor<Req, Res>(key, capacity, stashCapacity, onMailboxBufferOverflow) where  Req : ActorProtocol, Res : ActorProtocol.Response {
 
     private var behavior: suspend (BehaviorActor<Req, Res>, Req) -> Behavior<Res> = { _, _ ->
         error("[${address()}] No behavior set. Did you forget to call `become` function?")
