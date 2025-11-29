@@ -225,6 +225,7 @@ sealed interface CounterProtocol : ActorProtocol {
     sealed class Message<R : ActorProtocol.Response> : CounterProtocol, ActorProtocol.Message<R>()
     sealed class Response : ActorProtocol.Response()
     data class Increment(val by: Int) : Message<CurrentValue>()
+    data class CurrentValue(val value: Int) : Response()
 }
 
 // Create an actor with state

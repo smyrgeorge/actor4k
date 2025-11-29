@@ -52,3 +52,60 @@ fun <State, Req : ActorProtocol, Res : ActorProtocol.Response> actorOf(
     override suspend fun onReceive(m: Req): Behavior<Res> = onReceive(state, m)
     override suspend fun onShutdown() = onShutdown()
 }.apply { activate() }
+
+/**
+ * Represents a simple actor message within the actor protocol.
+ *
+ * This abstract class extends the ActorProtocol.Message class, inheriting its properties
+ * and behavior while defining a response type parameter. It is designed to serve as a base
+ * class for creating specific messages to be exchanged in the communication protocol.
+ *
+ * @param R The type of the response associated with this message, extending ActorProtocol.Response.
+ */
+abstract class SimpleActorMessage<R : ActorProtocol.Response> : ActorProtocol, ActorProtocol.Message<R>()
+
+/**
+ * Represents a simple response within the actor communication protocol.
+ *
+ * @param T The type of the value encapsulated by this response.
+ * @property value The value contained in this response, typically representing the updated state or result of an operation.
+ */
+open class SimpleActorResponse<T>(open val value: T) : ActorProtocol.Response()
+
+/**
+ * Creates a simple actor with specified configuration parameters, state management, and lifecycle handlers.
+ *
+ * @param State The type of the actor's state.
+ * @param initialState The initial state of the actor.
+ * @param key A unique string representing the actor's key. Defaults to a randomly generated unique key.
+ * @param capacity The maximum number of messages that can be held in the actor's mailbox. Defaults to the configured actor mailbox size.
+ * @param stashCapacity The maximum number of messages that can be stashed. Defaults to the configured actor stash size.
+ * @param onMailboxBufferOverflow The behavior when the mailbox buffer overflows. Defaults to suspending.
+ * @param onActivate A lifecycle handler that is invoked when the actor is activated. It receives the mutable state and the activation message.
+ * @param onShutdown A lifecycle handler that is invoked when the actor is shutting down. Defaults to an empty handler.
+ * @param onReceive A handler invoked whenever the actor receives a message. It takes the current state and the received message and returns the updated state.
+ * @return The created actor, which can process messages of type `SimpleActorMessage<SimpleActorResponse<State>>` and respond with `SimpleActorResponse<State>`.
+ */
+fun <State> simpleActorOf(
+    initialState: State,
+    key: String = Actor.randomKey(),
+    capacity: Int = ActorSystem.conf.actorMailboxSize,
+    stashCapacity: Int = ActorSystem.conf.actorStashSize,
+    onMailboxBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND,
+    // Lifecycle handlers
+    onActivate: suspend (MutableState<State>, SimpleActorMessage<SimpleActorResponse<State>>) -> Unit = { _, _ -> },
+    onShutdown: suspend () -> Unit = {},
+    onReceive: suspend (State, SimpleActorMessage<SimpleActorResponse<State>>) -> State,
+): Actor<SimpleActorMessage<SimpleActorResponse<State>>, SimpleActorResponse<State>> = actorOf(
+    initialState = initialState,
+    key = key,
+    capacity = capacity,
+    stashCapacity = stashCapacity,
+    onMailboxBufferOverflow = onMailboxBufferOverflow,
+    onActivate = onActivate,
+    onShutdown = onShutdown
+) { state, message ->
+    val updated = onReceive(state.value, message)
+    state.value = updated
+    Behavior.Reply(SimpleActorResponse(updated))
+}
