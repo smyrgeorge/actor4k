@@ -3,12 +3,12 @@ package io.github.smyrgeorge.actor4k.examples
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
+import io.github.smyrgeorge.actor4k.actor.impl.routerActorOf
+import io.github.smyrgeorge.actor4k.actor.impl.tellOnlyRouterActorOf
 import io.github.smyrgeorge.actor4k.examples.TestRouterWorker.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
-import io.github.smyrgeorge.actor4k.util.extentions.routerActorOf
-import io.github.smyrgeorge.actor4k.util.extentions.tellOnlyRouterActorOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 

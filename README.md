@@ -211,21 +211,17 @@ detached.tell(Protocol.Req(message = "[ask] Ping!"))
 detached.shutdown()
 ```
 
-Before diving deeper, note that there are several quick actor builders available
-[here](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/util/extentions/actor.kt):
+Before diving deeper, note that there are several quick actor (detached) builders available:
 
 - `actorOf` – Create and activate a lightweight, stateful actor with lifecycle hooks and typed protocol/responses.
-- `simpleActorOf` – Convenience wrapper over `actorOf` that manages state updates and always replies with
-  `SimpleResponse<State>`.
-- `routerActorOf` – Build a `RouterActor` with a routing strategy and N worker actors, each handling messages via
-  `onReceive`.
-- `tellOnlyRouterActorOf` – Create a tell-only `RouterActor` that rejects ask messages and processes fire-and-forget
-  messages.
+- `simpleActorOf` – Convenience wrapper over `actorOf` that always replies to with`SimpleResponse<State>`.
+- `routerActorOf` – Build a `RouterActor` with a routing strategy and N worker actors.
+- `tellOnlyRouterActorOf` – Create a tell-only `RouterActor` that processes fire-and-forget messages.
 
-#### ActorOf Extension Function
+#### ActorOf Builder (Detached)
 
-The `actorOf` extension function provides a lightweight, functional approach to creating actors without needing to
-define a full actor class. This is particularly useful for simple actors, prototyping, or when you want to avoid the
+The `actorOf` builder provides a lightweight, functional approach to creating actors without needing to define a full
+actor class. This is particularly useful for simple actors, prototyping, or when you want to avoid the
 overhead of registering actors in the actor registry.
 
 ```kotlin
@@ -258,19 +254,11 @@ This approach is ideal for:
 - Unit testing scenarios where you need lightweight actor instances
 - Cases where you want to avoid actor registry dependencies
 
-#### SimpleActorOf Extension Function
+#### SimpleActorOf Builder (Detached)
 
 The `simpleActorOf` helper builds on top of `actorOf` to make the most common case—single-state update with a simple
 response—concise. Instead of defining a full `ActorProtocol` with typed replies, you can model messages as
 `SimpleMessage<T>` and always receive a `SimpleResponse<T>` where `T` is your state type.
-
-Key ideas:
-
-- Your actor holds a state of type `State`.
-- Messages are lightweight objects extending `SimpleMessage<SimpleResponse<State>>` (you typically write
-  `SimpleMessage<State>` in your code and get `SimpleResponse<State>` back).
-- Your `onReceive` returns the next state, and `simpleActorOf` automatically replies with
-  `SimpleResponse(updatedState)`.
 
 ```kotlin
 // Define lightweight messages
@@ -292,9 +280,6 @@ val counter = simpleActorOf(initial = 0) { state, message ->
 val afterInc = counter.ask(Increment).getOrThrow()
 println(afterInc.value) // 1
 ```
-
-Under the hood, `simpleActorOf` delegates to `actorOf`, wiring a small state container and automatically wrapping your
-returned state into a `Behavior.Reply(SimpleResponse(updatedState))`.
 
 ## Actor types
 

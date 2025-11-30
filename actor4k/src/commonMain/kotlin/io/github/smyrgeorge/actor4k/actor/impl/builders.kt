@@ -1,9 +1,8 @@
-package io.github.smyrgeorge.actor4k.util.extentions
+package io.github.smyrgeorge.actor4k.actor.impl
 
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.Behavior
-import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.channels.BufferOverflow
 
@@ -143,7 +142,7 @@ fun <Req : ActorProtocol, Res : ActorProtocol.Response> routerActorOf(
 }
 
 /**
- * Creates a router actor with a specified strategy and number of workers,
+ * Creates a router actor with a specified strategy and number of workers
  * and ensures it only handles messages through a provided receive function.
  *
  * @param strategy The routing strategy to distribute messages among workers.

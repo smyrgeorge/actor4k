@@ -6,12 +6,12 @@ import assertk.assertions.isInstanceOf
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.Behavior
+import io.github.smyrgeorge.actor4k.actor.impl.SimpleMessage
+import io.github.smyrgeorge.actor4k.actor.impl.actorOf
+import io.github.smyrgeorge.actor4k.actor.impl.simpleActorOf
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
 import io.github.smyrgeorge.actor4k.test.util.Registry
-import io.github.smyrgeorge.actor4k.util.extentions.SimpleMessage
-import io.github.smyrgeorge.actor4k.util.extentions.actorOf
-import io.github.smyrgeorge.actor4k.util.extentions.simpleActorOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
