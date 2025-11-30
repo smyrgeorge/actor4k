@@ -183,7 +183,10 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                     return@consumeEach
                 }
 
-                val msg: Req = pattern.msg.apply { id = stats.receivedMessages }
+                val msg: Req = pattern.msg.apply {
+                    id = stats.receivedMessages
+                    kind = pattern.messageKind
+                }
 
                 // Activation flow.
                 if (msg.isFirst()) {
@@ -224,7 +227,11 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         // Process the message.
         val behavior: Behavior<Res> = try {
             when (val r = onReceive(msg)) {
-                is Behavior.Reply -> r.apply { value.id = pattern.msg.id } // Set the message ID to the response.
+                is Behavior.Reply -> r.apply {
+                    value.id = pattern.msg.id // Set the message ID to the response.
+                    value.kind = pattern.messageKind
+                }
+
                 else -> r
             }
         } catch (e: Exception) {
@@ -423,6 +430,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
      */
     private sealed interface Patterns<Req : ActorProtocol, Res : ActorProtocol.Response> {
         val msg: Req
+        val messageKind: ActorProtocol.Kind
 
         /**
          * Represents a one-way communication pattern for sending messages between actors.
@@ -437,7 +445,9 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
          */
         class Tell<Req : ActorProtocol, Res : ActorProtocol.Response>(
             override val msg: Req
-        ) : Patterns<Req, Res>
+        ) : Patterns<Req, Res> {
+            override val messageKind: ActorProtocol.Kind = ActorProtocol.Kind.Tell
+        }
 
         /**
          * Represents a request-response communication pattern used for interactions between actors.
@@ -452,7 +462,9 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         class Ask<Req : ActorProtocol, Res : ActorProtocol.Response>(
             override val msg: Req,
             val replyTo: Channel<Result<Res>> = Channel(Channel.RENDEZVOUS)
-        ) : Patterns<Req, Res>
+        ) : Patterns<Req, Res> {
+            override val messageKind: ActorProtocol.Kind = ActorProtocol.Kind.Ask
+        }
     }
 
     /**

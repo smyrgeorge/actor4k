@@ -15,7 +15,11 @@ import kotlin.time.ExperimentalTime
  */
 interface ActorProtocol {
     var id: Long
+    var kind: Kind
     val createdAt: Long
+
+    fun isTell(): Boolean = kind == Kind.Tell
+    fun isAsk(): Boolean = kind == Kind.Ask
 
     /**
      * Determines if the current message is the first one.
@@ -34,8 +38,9 @@ interface ActorProtocol {
      */
     @Serializable
     abstract class Message<R : Response> : ActorProtocol {
-        override var id: Long = -1L
-        override val createdAt: Long = Clock.System.now().toEpochMilliseconds()
+        final override var id: Long = -1L
+        final override var kind: Kind = Kind.Unknown
+        final override val createdAt: Long = Clock.System.now().toEpochMilliseconds()
     }
 
     /**
@@ -48,7 +53,15 @@ interface ActorProtocol {
      */
     @Serializable
     abstract class Response : ActorProtocol {
-        override var id: Long = -1L
-        override val createdAt: Long = Clock.System.now().toEpochMilliseconds()
+        final override var id: Long = -1L
+        final override var kind: Kind = Kind.Unknown
+        final override val createdAt: Long = Clock.System.now().toEpochMilliseconds()
+    }
+
+    @Serializable
+    enum class Kind {
+        Tell,
+        Ask,
+        Unknown
     }
 }

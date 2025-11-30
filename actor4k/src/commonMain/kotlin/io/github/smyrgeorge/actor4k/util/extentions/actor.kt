@@ -3,6 +3,7 @@ package io.github.smyrgeorge.actor4k.util.extentions
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.Behavior
+import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import kotlinx.coroutines.channels.BufferOverflow
 
@@ -116,3 +117,49 @@ fun <State> simpleActorOf(
     state.value = updated
     Behavior.Reply(SimpleResponse(updated))
 }
+
+/**
+ * Creates a router-based actor system with a specified routing strategy and number of worker actors.
+ *
+ * @param Req The type of the protocol request, extending `ActorProtocol`.
+ * @param Res The type of the protocol response, extending `ActorProtocol.Response`.
+ * @param strategy The routing strategy that determines how requests are delegated to worker actors.
+ * @param numberOfWorkers The number of worker actors to be created for processing requests.
+ * @param onReceive A suspendable function that defines the behavior executed by each worker actor upon receiving a request.
+ * @return A `RouterActor` instance configured with the specified strategy and worker actors.
+ */
+fun <Req : ActorProtocol, Res : ActorProtocol.Response> routerActorOf(
+    strategy: RouterActor.Strategy,
+    numberOfWorkers: Int,
+    onReceive: suspend (Req) -> Behavior<Res>
+): RouterActor<Req, Res> {
+    val workers = (1..numberOfWorkers).map {
+        object : RouterActor.Worker<Req, Res>() {
+            override suspend fun onReceive(m: Req): Behavior<Res> = onReceive(m)
+        }
+    }.toTypedArray()
+
+    return object : RouterActor<Req, Res>(strategy = strategy) {}.apply { register(*workers) }
+}
+
+/**
+ * Creates a router actor with a specified strategy and number of workers,
+ * and ensures it only handles messages through a provided receive function.
+ *
+ * @param strategy The routing strategy to distribute messages among workers.
+ * @param numberOfWorkers The number of worker actors to be created within the router.
+ * @param onReceive The lambda function to handle incoming messages. It will process
+ * the message and determine the behavior of the actor.
+ * @return A RouterActor instance configured with the given strategy, number of workers,
+ * and message handling logic.
+ */
+fun tellOnlyRouterActorOf(
+    strategy: RouterActor.Strategy,
+    numberOfWorkers: Int,
+    onReceive: suspend (ActorProtocol) -> Unit
+): RouterActor<ActorProtocol, ActorProtocol.Response> =
+    routerActorOf(strategy, numberOfWorkers) { message ->
+        if (message.isAsk()) error("Ask messages are not supported by the simple router actor.")
+        onReceive(message)
+        Behavior.None()
+    }

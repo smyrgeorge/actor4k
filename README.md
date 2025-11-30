@@ -211,13 +211,22 @@ detached.tell(Protocol.Req(message = "[ask] Ping!"))
 detached.shutdown()
 ```
 
+Before diving deeper, note that there are several quick actor builders available
+[here](actor4k/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/util/extentions/actor.kt):
+
+- `actorOf` – Create and activate a lightweight, stateful actor with lifecycle hooks and typed protocol/responses.
+- `simpleActorOf` – Convenience wrapper over `actorOf` that manages state updates and always replies with
+  `SimpleResponse<State>`.
+- `routerActorOf` – Build a `RouterActor` with a routing strategy and N worker actors, each handling messages via
+  `onReceive`.
+- `tellOnlyRouterActorOf` – Create a tell-only `RouterActor` that rejects ask messages and processes fire-and-forget
+  messages.
+
 #### ActorOf Extension Function
 
 The `actorOf` extension function provides a lightweight, functional approach to creating actors without needing to
 define a full actor class. This is particularly useful for simple actors, prototyping, or when you want to avoid the
 overhead of registering actors in the actor registry.
-
-##### Basic Example
 
 ```kotlin
 // Define your protocol
@@ -262,8 +271,6 @@ Key ideas:
   `SimpleMessage<State>` in your code and get `SimpleResponse<State>` back).
 - Your `onReceive` returns the next state, and `simpleActorOf` automatically replies with
   `SimpleResponse(updatedState)`.
-
-##### Basic Example
 
 ```kotlin
 // Define lightweight messages

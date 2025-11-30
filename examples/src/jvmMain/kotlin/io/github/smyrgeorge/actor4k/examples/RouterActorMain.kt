@@ -7,6 +7,8 @@ import io.github.smyrgeorge.actor4k.examples.TestRouterWorker.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
 import io.github.smyrgeorge.actor4k.util.SimpleLoggerFactory
+import io.github.smyrgeorge.actor4k.util.extentions.routerActorOf
+import io.github.smyrgeorge.actor4k.util.extentions.tellOnlyRouterActorOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
@@ -64,6 +66,34 @@ fun main(): Unit = runBlocking {
         )
 
     r2.tell(Protocol.Test).getOrThrow()
-    r2.ask(Protocol.Test).getOrThrow()
+    delay(1000)
+
+    println("routerActorOf:")
+    val log = loggerFactory.getLogger(TestRouterWorker::class)
+    val r3 = routerActorOf<Protocol, Protocol.Ok>(
+        strategy = RouterActor.Strategy.ROUND_ROBIN,
+        numberOfWorkers = 3
+    ) {
+        when (it) {
+            Protocol.Test -> log.info("routerActorOf :: Received Test message: $it")
+        }
+        Behavior.Reply(Protocol.Ok)
+    }
+
+    r3.tell(Protocol.Test).getOrThrow()
+    r3.ask(Protocol.Test).getOrThrow()
+    delay(1000)
+
+    println("tellOnlyRouterActorOf:")
+    val r4 = tellOnlyRouterActorOf(
+        strategy = RouterActor.Strategy.FIRST_AVAILABLE,
+        numberOfWorkers = 3
+    ) {
+        when (it) {
+            Protocol.Test -> log.info("tellOnlyRouterActorOf :: Received Test message: $it")
+        }
+    }
+
+    r4.tell(Protocol.Test).getOrThrow()
     delay(1000)
 }
