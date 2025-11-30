@@ -24,7 +24,7 @@ class MutableState<T>(var value: T)
  * @param State The type of the actor's mutable state.
  * @param Req The type of requests the actor processes, which must extend `ActorProtocol`.
  * @param Res The type of responses the actor produces, which must extend `ActorProtocol.Response`.
- * @param initialState The initial state of the actor, represented as a value of type `State`.
+ * @param initial The initial state of the actor, represented as a value of type `State`.
  * @param key A unique key identifying the actor; defaults to a randomly generated key.
  * @param capacity The size of the actor's mailbox buffer; defaults to the value from `ActorSystem.conf.actorMailboxSize`.
  * @param stashCapacity The size of the actor's stash buffer; defaults to the value from `ActorSystem.conf.actorStashSize`.
@@ -37,67 +37,74 @@ class MutableState<T>(var value: T)
  * @return A newly created `Actor` instance configured with the given parameters and behaviors.
  */
 fun <State, Req : ActorProtocol, Res : ActorProtocol.Response> actorOf(
-    initialState: State,
+    initial: State,
     key: String = Actor.randomKey(),
     capacity: Int = ActorSystem.conf.actorMailboxSize,
     stashCapacity: Int = ActorSystem.conf.actorStashSize,
     onMailboxBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND,
     // Lifecycle handlers
-    onActivate: suspend (MutableState<State>, Req) -> Unit = { _, _ -> },
+    onActivate: suspend (Req) -> Unit = {},
     onShutdown: suspend () -> Unit = {},
     onReceive: suspend (MutableState<State>, Req) -> Behavior<Res>,
 ): Actor<Req, Res> = object : Actor<Req, Res>(key, capacity, stashCapacity, onMailboxBufferOverflow) {
-    private val state = MutableState(initialState)
-    override suspend fun onActivate(m: Req) = onActivate(state, m)
+    private val state = MutableState(initial)
+    override suspend fun onActivate(m: Req) = onActivate(m)
     override suspend fun onReceive(m: Req): Behavior<Res> = onReceive(state, m)
     override suspend fun onShutdown() = onShutdown()
 }.apply { activate() }
 
 /**
- * Represents a simple actor message within the actor protocol.
+ * Represents a simplified message within the actor communication protocol.
  *
- * This abstract class extends the ActorProtocol.Message class, inheriting its properties
- * and behavior while defining a response type parameter. It is designed to serve as a base
- * class for creating specific messages to be exchanged in the communication protocol.
+ * The `SimpleMessage` class serves as an abstraction for protocol messages that expect a
+ * `SimpleResponse` as a reply. It extends the `ActorProtocol.Message` class, inheriting
+ * functionality common to all protocol messages and providing a specific type binding for
+ * responses.
  *
- * @param R The type of the response associated with this message, extending ActorProtocol.Response.
+ * @param R The type of response value expected in the associated `SimpleResponse`.
  */
-abstract class SimpleActorMessage<R : ActorProtocol.Response> : ActorProtocol, ActorProtocol.Message<R>()
+abstract class SimpleMessage<R> : ActorProtocol, ActorProtocol.Message<SimpleResponse<R>>()
 
 /**
- * Represents a simple response within the actor communication protocol.
+ * A generic implementation of a response within the actor protocol.
  *
- * @param T The type of the value encapsulated by this response.
- * @property value The value contained in this response, typically representing the updated state or result of an operation.
+ * This class represents a concrete response type used for replies in the communication protocol,
+ * wrapping a value of a specific type. It extends the ActorProtocol.Response class.
+ *
+ * @param T The type of the value contained within this response.
+ * @property value The value representing the content of this response.
  */
-open class SimpleActorResponse<T>(open val value: T) : ActorProtocol.Response()
+class SimpleResponse<T>(val value: T) : ActorProtocol.Response()
 
 /**
- * Creates a simple actor with specified configuration parameters, state management, and lifecycle handlers.
+ * Creates a simple actor with specified configuration and behavior.
  *
- * @param State The type of the actor's state.
- * @param initialState The initial state of the actor.
- * @param key A unique string representing the actor's key. Defaults to a randomly generated unique key.
- * @param capacity The maximum number of messages that can be held in the actor's mailbox. Defaults to the configured actor mailbox size.
- * @param stashCapacity The maximum number of messages that can be stashed. Defaults to the configured actor stash size.
- * @param onMailboxBufferOverflow The behavior when the mailbox buffer overflows. Defaults to suspending.
- * @param onActivate A lifecycle handler that is invoked when the actor is activated. It receives the mutable state and the activation message.
- * @param onShutdown A lifecycle handler that is invoked when the actor is shutting down. Defaults to an empty handler.
- * @param onReceive A handler invoked whenever the actor receives a message. It takes the current state and the received message and returns the updated state.
- * @return The created actor, which can process messages of type `SimpleActorMessage<SimpleActorResponse<State>>` and respond with `SimpleActorResponse<State>`.
+ * This method constructs an actor that operates using a state-based model with custom lifecycle handlers.
+ * The actor responds to `SimpleMessage<SimpleResponse<State>>` messages and provides a `SimpleResponse<State>`
+ * upon processing.
+ *
+ * @param initial The initial state of the actor.
+ * @param key A unique key for the actor. Default is a randomly generated key.
+ * @param capacity The maximum number of messages the actor's mailbox can hold. Defaults to the system-configured mailbox size.
+ * @param stashCapacity The maximum number of stashed messages the actor can hold. Defaults to the system-configured stash size.
+ * @param onMailboxBufferOverflow Behavior of the actor when the mailbox overflows. Default is `BufferOverflow.SUSPEND`.
+ * @param onActivate Lifecycle handler invoked when the actor is activated. Default is an empty lambda.
+ * @param onShutdown Lifecycle handler invoked when the actor is shut down. Default is an empty lambda.
+ * @param onReceive Handler invoked for processing incoming messages. Updates and returns the new state.
+ * @return An actor that processes `SimpleMessage<SimpleResponse<State>>` messages and returns `SimpleResponse<State>` results.
  */
 fun <State> simpleActorOf(
-    initialState: State,
+    initial: State,
     key: String = Actor.randomKey(),
     capacity: Int = ActorSystem.conf.actorMailboxSize,
     stashCapacity: Int = ActorSystem.conf.actorStashSize,
     onMailboxBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND,
     // Lifecycle handlers
-    onActivate: suspend (MutableState<State>, SimpleActorMessage<SimpleActorResponse<State>>) -> Unit = { _, _ -> },
+    onActivate: suspend (SimpleMessage<SimpleResponse<State>>) -> Unit = {},
     onShutdown: suspend () -> Unit = {},
-    onReceive: suspend (State, SimpleActorMessage<SimpleActorResponse<State>>) -> State,
-): Actor<SimpleActorMessage<SimpleActorResponse<State>>, SimpleActorResponse<State>> = actorOf(
-    initialState = initialState,
+    onReceive: suspend (State, SimpleMessage<SimpleResponse<State>>) -> State,
+): Actor<SimpleMessage<SimpleResponse<State>>, SimpleResponse<State>> = actorOf(
+    initial = initial,
     key = key,
     capacity = capacity,
     stashCapacity = stashCapacity,
@@ -107,5 +114,5 @@ fun <State> simpleActorOf(
 ) { state, message ->
     val updated = onReceive(state.value, message)
     state.value = updated
-    Behavior.Reply(SimpleActorResponse(updated))
+    Behavior.Reply(SimpleResponse(updated))
 }

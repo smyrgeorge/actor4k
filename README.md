@@ -224,17 +224,21 @@ overhead of registering actors in the actor registry.
 sealed interface CounterProtocol : ActorProtocol {
     sealed class Message<R : ActorProtocol.Response> : CounterProtocol, ActorProtocol.Message<R>()
     sealed class Response : ActorProtocol.Response()
-    data class Increment(val by: Int) : Message<CurrentValue>()
+
+    data object GetValue : Message<CurrentValue>()
+    data object Increment : Message<CurrentValue>()
+    data object Decrement : Message<CurrentValue>()
     data class CurrentValue(val value: Int) : Response()
 }
 
 // Create an actor with state
-val counter = actorOf<Int, CounterProtocol, CounterProtocol.Response>(0) { state, message ->
+val counter = actorOf<Int, CounterProtocol, CounterProtocol.Response>(initial = 0) { state, message ->
     when (message) {
-        is CounterProtocol.Increment -> {
-            // Handle your logic here.
-        }
+        is CounterProtocol.GetValue -> Unit
+        is CounterProtocol.Increment -> state.value += 1
+        is CounterProtocol.Decrement -> state.value -= 1
     }
+    Behavior.Reply(CounterProtocol.CurrentValue(state.value))
 }
 ```
 
@@ -244,6 +248,46 @@ This approach is ideal for:
 - Rapid prototyping and experimentation
 - Unit testing scenarios where you need lightweight actor instances
 - Cases where you want to avoid actor registry dependencies
+
+#### SimpleActorOf Extension Function
+
+The `simpleActorOf` helper builds on top of `actorOf` to make the most common case—single-state update with a simple
+response—concise. Instead of defining a full `ActorProtocol` with typed replies, you can model messages as
+`SimpleMessage<T>` and always receive a `SimpleResponse<T>` where `T` is your state type.
+
+Key ideas:
+
+- Your actor holds a state of type `State`.
+- Messages are lightweight objects extending `SimpleMessage<SimpleResponse<State>>` (you typically write
+  `SimpleMessage<State>` in your code and get `SimpleResponse<State>` back).
+- Your `onReceive` returns the next state, and `simpleActorOf` automatically replies with
+  `SimpleResponse(updatedState)`.
+
+##### Basic Example
+
+```kotlin
+// Define lightweight messages
+data object GetValue : SimpleMessage<Int>()
+data object Increment : SimpleMessage<Int>()
+data object Decrement : SimpleMessage<Int>()
+
+// Create a simple stateful actor
+val counter = simpleActorOf(initial = 0) { state, message ->
+    when (message) {
+        is GetValue -> state              // read-only
+        is Increment -> state + 1         // mutate by returning the new state
+        is Decrement -> state - 1
+        else -> state
+    }
+}
+
+// Ask returns SimpleResponse<Int>
+val afterInc = counter.ask(Increment).getOrThrow()
+println(afterInc.value) // 1
+```
+
+Under the hood, `simpleActorOf` delegates to `actorOf`, wiring a small state container and automatically wrapping your
+returned state into a `Behavior.Reply(SimpleResponse(updatedState))`.
 
 ## Actor types
 
