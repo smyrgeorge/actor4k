@@ -49,3 +49,9 @@ kotlin {
         }
     }
 }
+
+tasks.withType<Test> {
+    // Disable parallelism, needed by several tests.
+    maxParallelForks = 1
+    systemProperty("junit.jupiter.execution.parallel.enabled", "false")
+}
