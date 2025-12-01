@@ -3,8 +3,9 @@ package io.github.smyrgeorge.actor4k.examples
 import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
+import io.github.smyrgeorge.actor4k.actor.impl.SimpleMessage
 import io.github.smyrgeorge.actor4k.actor.impl.routerActorOf
-import io.github.smyrgeorge.actor4k.actor.impl.tellOnlyRouterActorOf
+import io.github.smyrgeorge.actor4k.actor.impl.simpleRouterActorOf
 import io.github.smyrgeorge.actor4k.examples.TestRouterWorker.Protocol
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.SimpleActorRegistry
@@ -31,6 +32,8 @@ class TestRouterWorker : RouterActor.Worker<Protocol, Protocol.Ok>() {
         data object Ok : Response()
     }
 }
+
+data object GetValue : SimpleMessage<Unit>()
 
 fun main(): Unit = runBlocking {
     val loggerFactory = SimpleLoggerFactory()
@@ -84,16 +87,15 @@ fun main(): Unit = runBlocking {
     r3.ask(Protocol.Test).getOrThrow()
     delay(1000)
 
-    println("tellOnlyRouterActorOf:")
-    val r4 = tellOnlyRouterActorOf(
-        strategy = RouterActor.Strategy.FIRST_AVAILABLE,
+    println("simpleRouterActorOf:")
+    val r4 = simpleRouterActorOf(
+        strategy = RouterActor.Strategy.ROUND_ROBIN,
         numberOfWorkers = 3
     ) {
         when (it) {
-            Protocol.Test -> log.info("tellOnlyRouterActorOf :: Received Test message: $it")
+            GetValue -> log.info("simpleRouterActorOf :: Received Test message: $it")
         }
     }
-
-    r4.tell(Protocol.Test).getOrThrow()
+    r4.tell(GetValue).getOrThrow()
     delay(1000)
 }

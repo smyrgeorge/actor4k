@@ -142,23 +142,19 @@ fun <Req : ActorProtocol, Res : ActorProtocol.Response> routerActorOf(
 }
 
 /**
- * Creates a router actor with a specified strategy and number of workers
- * and ensures it only handles messages through a provided receive function.
+ * Creates an instance of a simple router actor with the specified routing strategy and workers.
  *
- * @param strategy The routing strategy to distribute messages among workers.
- * @param numberOfWorkers The number of worker actors to be created within the router.
- * @param onReceive The lambda function to handle incoming messages. It will process
- * the message and determine the behavior of the actor.
- * @return A RouterActor instance configured with the given strategy, number of workers,
- * and message handling logic.
+ * @param strategy The routing strategy to be used by the router actor.
+ * @param numberOfWorkers The number of worker actors to manage and distribute the workload.
+ * @param onReceive A suspendable function that processes incoming messages of type SimpleMessage and produces a result of type T.
+ * @return A RouterActor that processes SimpleMessage and provides a SimpleResponse with the processed result.
  */
-fun tellOnlyRouterActorOf(
+fun <T> simpleRouterActorOf(
     strategy: RouterActor.Strategy,
     numberOfWorkers: Int,
-    onReceive: suspend (ActorProtocol) -> Unit
-): RouterActor<ActorProtocol, ActorProtocol.Response> =
+    onReceive: suspend (SimpleMessage<SimpleResponse<T>>) -> T
+): RouterActor<SimpleMessage<SimpleResponse<T>>, SimpleResponse<T>> =
     routerActorOf(strategy, numberOfWorkers) { message ->
-        if (message.isAsk()) error("Ask messages are not supported by the simple router actor.")
-        onReceive(message)
-        Behavior.None()
+        val res = onReceive(message)
+        Behavior.Reply(SimpleResponse(res))
     }

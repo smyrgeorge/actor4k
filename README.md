@@ -216,7 +216,7 @@ Before diving deeper, note that there are several quick actor (detached) builder
 - `actorOf` – Create and activate a lightweight, stateful actor with lifecycle hooks and typed protocol/responses.
 - `simpleActorOf` – Convenience wrapper over `actorOf` that always replies to with`SimpleResponse<State>`.
 - `routerActorOf` – Build a `RouterActor` with a routing strategy and N worker actors.
-- `tellOnlyRouterActorOf` – Create a tell-only `RouterActor` that processes fire-and-forget messages.
+- `simpleRouterActorOf` – Convenience wrapper over `routerActorOf` that always replies to with`SimpleResponse<State>`.
 
 #### ActorOf Builder (Detached)
 
