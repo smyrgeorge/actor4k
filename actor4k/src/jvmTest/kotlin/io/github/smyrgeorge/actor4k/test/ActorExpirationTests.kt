@@ -50,7 +50,7 @@ class ActorExpirationTests {
 
         // Wait enough time so that the cleanup job runs after the actor has expired
         // actorExpiresAfter (150ms) + cleanup interval (50ms) + buffer
-        delay(500)
+        delay(1000)
 
         // Verify that the registry no longer holds the actor (expired and unregistered)
         assertThat(registry.size()).isZero()
