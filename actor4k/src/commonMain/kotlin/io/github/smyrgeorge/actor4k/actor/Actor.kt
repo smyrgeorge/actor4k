@@ -243,7 +243,6 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 val result = when (behavior) {
                     is Behavior.Reply -> Result.success(behavior.value)
                     is Behavior.Error -> Result.failure(behavior.cause)
-                    else -> Result.failure(Exception("Unexpected behavior: $behavior"))
                 }
 
                 // Send the response back to the sender.

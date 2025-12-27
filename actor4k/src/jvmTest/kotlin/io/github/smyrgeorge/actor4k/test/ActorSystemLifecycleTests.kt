@@ -59,19 +59,16 @@ class ActorSystemLifecycleTests {
 
     @Test
     fun `Shutdown with custom polling intervals`(): Unit = testShutdownWithConf(
-        ActorSystem.Conf(
+        conf = ActorSystem.Conf(
             shutdownInitialDelay = 10.milliseconds,
             shutdownPollingInterval = 50.milliseconds,
             shutdownFinalDelay = 10.milliseconds
         ),
-        20L,
-        100L
+        minDuration = 20L,
+        maxDuration = 100L
     )
 
     @Test
-    fun `Shutdown with default polling intervals`(): Unit = testShutdownWithConf(
-        ActorSystem.Conf(),
-        200L,
-        300L
-    )
+    fun `Shutdown with default polling intervals`(): Unit =
+        testShutdownWithConf(conf = ActorSystem.Conf(), minDuration = 200L, maxDuration = 300L)
 }
