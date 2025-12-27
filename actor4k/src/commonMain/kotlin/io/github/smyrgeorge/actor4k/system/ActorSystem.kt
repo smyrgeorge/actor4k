@@ -223,11 +223,11 @@ object ActorSystem {
         if (isCluster()) cluster.shutdown()
 
         // Wait for all actors to finish.
-        delay(100.milliseconds)
+        delay(conf.shutdownInitialDelay)
         var remainingActors = registry.size()
         while (remainingActors > 0) {
             log.info("Waiting $remainingActors actors to finish...")
-            delay(1.seconds)
+            delay(conf.shutdownPollingInterval)
             registry.shutdown()
             remainingActors = registry.size()
         }
@@ -235,7 +235,7 @@ object ActorSystem {
         // Reset cluster's status.
         _status = Status.NOT_READY
         log.info("Shutdown complete.")
-        delay(100.milliseconds)
+        delay(conf.shutdownFinalDelay)
     }
 
     /**
@@ -286,6 +286,9 @@ object ActorSystem {
      * @property systemCollectStatsEvery The frequency at which system-level statistics are collected.
      * @property systemLogStatsEvery The frequency at which system statistics are logged.
      * @property registryCleanupEvery The interval at which the actor registry is cleaned up to remove expired actors.
+     * @property shutdownInitialDelay The initial delay before starting the shutdown process.
+     * @property shutdownPollingInterval The interval at which the system checks for remaining actors during shutdown.
+     * @property shutdownFinalDelay The final delay after shutdown completion before resetting the system status.
      */
     data class Conf(
         val actorMailboxSize: Int = Channel.UNLIMITED,
@@ -298,5 +301,8 @@ object ActorSystem {
         val systemCollectStatsEvery: Duration = 5.seconds,
         val systemLogStatsEvery: Duration = 30.seconds,
         val registryCleanupEvery: Duration = 30.seconds,
+        val shutdownInitialDelay: Duration = 100.milliseconds,
+        val shutdownPollingInterval: Duration = 1.seconds,
+        val shutdownFinalDelay: Duration = 100.milliseconds,
     )
 }
