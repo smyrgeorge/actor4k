@@ -77,6 +77,17 @@ abstract class ActorRef(
     abstract suspend fun shutdown(): Result<Unit>
 
     /**
+     * Shuts down and discards all the messages in the actor's mailbox.
+     *
+     * This method signals the actor to transition into a termination state and
+     * discard all messages in its mailbox. The actor will stop processing messages
+     * after this operation is completed.
+     *
+     * @return A `Result` indicating the completion of the termination operation, either `Unit` on success or an error on failure.
+     */
+    abstract suspend fun terminate(): Result<Unit>
+
+    /**
      * Returns the string representation of the actor reference.
      *
      * @return A string that represents the actor reference, typically including its unique address.

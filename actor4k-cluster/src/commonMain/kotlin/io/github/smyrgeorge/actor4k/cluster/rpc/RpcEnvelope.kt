@@ -34,6 +34,9 @@ interface RpcEnvelope {
 
         @Serializable
         data class Shutdown(override val id: Long, val addr: Address) : Request
+
+        @Serializable
+        data class Terminate(override val id: Long, val addr: Address) : Request
     }
 
     /**

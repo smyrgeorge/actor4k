@@ -126,6 +126,26 @@ class ClusterActorRef(
     }
 
     /**
+     * Terminates the associated actor by sending a termination request to its service.
+     *
+     * This method interacts with the actor's service to initiate a termination operation.
+     * It processes the service's response to determine whether the termination succeeded,
+     * failed, or resulted in an unexpected outcome.
+     *
+     * @return A [Result] wrapping [Unit] if the termination operation is successful.
+     *         If the response indicates a failure, an exception is wrapped in the result.
+     *         An [IllegalStateException] is returned for unexpected response types.
+     */
+    override suspend fun terminate(): Result<Unit> {
+        val res = service.terminate(address).getOrElse { return Result.failure(it) }
+        return when (res) {
+            is RpcEnvelope.Response.Empty -> Result.success(Unit)
+            is RpcEnvelope.Response.Failure -> Result.failure(res.exception())
+            else -> Result.failure(IllegalStateException("Unexpected response $res for ask command."))
+        }
+    }
+
+    /**
      * Provides a string representation of the `ClusterActorRef` instance.
      *
      * @return A string that includes the class name and the node and address information in the format "ClusterActorRef(node//address)".

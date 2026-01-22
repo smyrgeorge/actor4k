@@ -160,6 +160,24 @@ class RpcSendService(
     }
 
     /**
+     * Sends a termination request to the specified actor's address and waits for the corresponding response.
+     * This method ensures that the response ID matches the request ID to maintain consistency.
+     *
+     * @param addr The address of the actor to be terminated.
+     * @return A [Result] containing the [Response] received in response to the termination request,
+     * or an error if the operation fails.
+     * @throws IllegalStateException if the response ID does not match the request ID.
+     */
+    suspend fun terminate(addr: Address): Result<Response> = runCatching {
+        val req = Request.Terminate(nextId(), addr)
+        val res = rpc.request<Response>(req.id) {
+            session.send(req.serialize())
+        }
+        if (res.id != req.id) error("Sanity check failed :: req.id != res.id.")
+        res
+    }
+
+    /**
      * Closes the current session associated with the `RpcSendService`.
      *
      * This method finalizes and safely terminates the session, ensuring

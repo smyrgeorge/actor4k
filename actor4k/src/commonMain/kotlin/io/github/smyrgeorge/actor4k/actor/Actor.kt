@@ -47,8 +47,9 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
     protected val log: Logger = ActorSystem.loggerFactory.getLogger(this::class)
 
     private val stats: Stats = Stats()
-    private var status = Status.CREATED
-    private var initializationFailed: Exception? = null
+    private var status: Status = Status.CREATED
+    private var initializationError: Throwable? = null
+    private var terminationError: Throwable? = null
     private val address: Address = Address.of(this::class, key)
     private val ref: LocalRef = LocalRef(address = address, actor = this)
 
@@ -164,10 +165,10 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 onBeforeActivate()
                 // Set 'ACTIVATING' status.
                 status = Status.ACTIVATING
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 // In case of an error, we need to close the [Actor] immediately.
                 log.error("[$address::onBeforeActivate] Failed to activate, will shutdown (${e.message ?: ""})")
-                initializationFailed = e
+                initializationError = e
                 shutdown()
             }
 
@@ -178,8 +179,15 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 // Case that activation flow failed and we still have messages to consume.
                 // If we get a shutdown event and the actor never initialized successfully,
                 // we need to reply with an error and to drop all the messages.
-                if (initializationFailed != null) {
+                if (initializationError != null) {
                     replyActivationError(pattern)
+                    return@consumeEach
+                }
+
+                // Case that termination flow was triggered.
+                // In this case, we need to reply with an error and to drop all the messages.
+                if (terminationError != null) {
+                    replyTerminationError(pattern)
                     return@consumeEach
                 }
 
@@ -195,10 +203,10 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                         // Set 'READY' status.
                         status = Status.READY
                         stats.initializedAt = Clock.System.now().toEpochMilliseconds()
-                    } catch (e: Exception) {
+                    } catch (e: Throwable) {
                         // In case of an error, we need to close the [Actor] immediately.
                         log.error("[$address::activate] Failed to activate, will shutdown (${e.message ?: ""})")
-                        initializationFailed = e
+                        initializationError = e
                         replyActivationError(pattern)
                         shutdown()
                         return@consumeEach
@@ -234,7 +242,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
 
                 else -> r
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Behavior.Error(e)
         }
 
@@ -262,7 +270,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 // Handle afterReceive hook.
                 try {
                     afterReceive(msg, result)
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     log.warn("[$address::afterReceive] Failed to process afterReceive hook (${e.message ?: ""})")
                 }
             }
@@ -272,12 +280,13 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 // This allows Router workers (FIRST_AVAILABLE) to re-register availability, avoiding deadlocks.
                 try {
                     afterReceive(msg)
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     log.warn("[$address::afterReceive] Failed to process afterReceive hook for Behavior.None (${e.message ?: ""})")
                 }
             }
 
             is Behavior.Shutdown -> shutdown()
+            is Behavior.Terminate -> terminate()
         }
     }
 
@@ -323,7 +332,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 mail.send(ask)
                 ask.replyTo.receive()
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Result.failure(e)
         } finally {
             ask.replyTo.close()
@@ -391,6 +400,8 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         // Drain the stash channel.
         @OptIn(ExperimentalCoroutinesApi::class)
         while (!stash.isEmpty) {
+            // Skip processing if actor cannot handle messages (drain the stash).
+            if (status == Status.SHUT_DOWN || status == Status.TERMINATED) continue
             val pattern = stash.receive()
             stats.stashedMessages -= 1
             process(pattern)
@@ -411,6 +422,24 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         if (!status.canTriggerShutdown) return
         stats.triggeredShutDownAt = Clock.System.now().toEpochMilliseconds()
         status = Status.SHUTTING_DOWN
+        mail.close()
+        stash.close()
+    }
+
+    /**
+     * Initiates the termination process for the system or component.
+     *
+     * This method checks whether termination can be triggered based on the current status.
+     * If termination is allowed, it updates the termination timestamp, changes the status
+     * to `TERMINATING`, and closes associated resources such as mail and stash.
+     *
+     * The method has no effect if termination is not permitted.
+     */
+    fun terminate(error: Throwable? = null) {
+        if (!status.canTriggerTermination) return
+        stats.triggeredTerminationAt = Clock.System.now().toEpochMilliseconds()
+        terminationError = error ?: Exception("Actor terminated by user.")
+        status = Status.TERMINATING
         mail.close()
         stash.close()
     }
@@ -479,17 +508,22 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
      * - `READY`: The actor is fully initialized and ready to process messages. Messages can be accepted during this state.
      * - `SHUTTING_DOWN`: The actor is in the process of shutting down. Messages cannot be accepted during this state.
      * - `SHUT_DOWN`: The actor has completed the shutdown process. Messages cannot be accepted during this state.
+     * - `TERMINATING`: The actor is in the process of terminating. Messages cannot be accepted during this state.
+     * - `TERMINATED`: The actor has terminated and is no longer available for use. Messages cannot be accepted during this state.
      */
     @Serializable
     enum class Status(
         val canAcceptMessages: Boolean,
         val canTriggerShutdown: Boolean,
+        val canTriggerTermination: Boolean,
     ) {
-        CREATED(true, true),
-        ACTIVATING(true, true),
-        READY(true, true),
-        SHUTTING_DOWN(false, false),
-        SHUT_DOWN(false, false)
+        CREATED(true, true, true),
+        ACTIVATING(true, true, true),
+        READY(true, true, true),
+        SHUTTING_DOWN(false, false, false),
+        SHUT_DOWN(false, false, false),
+        TERMINATING(false, false, false),
+        TERMINATED(false, false, false);
     }
 
     /**
@@ -513,6 +547,8 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         var initializedAt: Long? = null,
         var triggeredShutDownAt: Long? = null,
         var shutDownAt: Long? = null,
+        var triggeredTerminationAt: Long? = null,
+        var terminatedAt: Long? = null,
         var lastMessageAt: Long = Clock.System.now().toEpochMilliseconds(),
         var receivedMessages: Long = 0,
         var stashedMessages: Long = 0
@@ -523,6 +559,8 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
             append("initializedAt=${instantFromEpochMilliseconds(initializedAt)}, ")
             append("triggeredShutDownAt=${instantFromEpochMilliseconds(triggeredShutDownAt)}, ")
             append("shutDownAt=${instantFromEpochMilliseconds(shutDownAt)}, ")
+            append("triggeredTerminationAt=${instantFromEpochMilliseconds(triggeredTerminationAt)}, ")
+            append("terminatedAt=${instantFromEpochMilliseconds(terminatedAt)}, ")
             append("lastMessageAt=${instantFromEpochMilliseconds(lastMessageAt)}, ")
             append("receivedMessages=${instantFromEpochMilliseconds(receivedMessages)}, ")
             append("stashedMessages=$stashedMessages")
@@ -544,7 +582,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
             for (e in this) {
                 try {
                     action(e)
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     log.warn("[$address::consume] An error occurred while processing. ${e.message ?: ""}")
                 }
             }
@@ -561,12 +599,16 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
                 }
             } catch (_: TimeoutCancellationException) {
                 log.error("[$address::onShutdown] Shutdown hook timed out after ${ActorSystem.conf.actorShutdownHookTimeout}. Forcing shutdown.")
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 log.error("[$address::onShutdown] Error during shutdown hook: ${e.message ?: "Unknown error"}")
             } finally {
-                // Unregister the actor even if the shutdown hook fails or times out
-                status = Status.SHUT_DOWN
-                stats.shutDownAt = Clock.System.now().toEpochMilliseconds()
+                if (terminationError != null) {
+                    status = Status.TERMINATED
+                    stats.terminatedAt = Clock.System.now().toEpochMilliseconds()
+                } else {
+                    status = Status.SHUT_DOWN
+                    stats.shutDownAt = Clock.System.now().toEpochMilliseconds()
+                }
                 ActorSystem.registry.unregister(this@Actor.ref)
             }
         }
@@ -591,7 +633,7 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
             log.warn("[$address::$operation] Could not reply in time (timeout after ${ActorSystem.conf.actorReplyTimeout}) (the message was processed successfully).")
         } catch (_: ClosedSendChannelException) {
             log.warn("[$address::$operation] Could not reply, the channel is closed (the message was processed successfully).")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             val error = e.message ?: "Unknown error."
             log.warn("[$address::$operation] Could not reply (the message was processed successfully). {}", error)
         }
@@ -607,10 +649,28 @@ abstract class Actor<Req : ActorProtocol, Res : ActorProtocol.Response>(
         when (pattern) {
             is Patterns.Tell -> Unit
             is Patterns.Ask -> {
-                val e = initializationFailed
+                val e = initializationError
                     ?: IllegalStateException("Actor is prematurely closed (could not be initialized).")
                 val r: Result<Res> = Result.failure(e)
                 reply(operation = "activate", pattern = pattern, reply = r)
+            }
+        }
+    }
+
+    /**
+     * Handles the termination error scenario for the provided message pattern.
+     *
+     * @param pattern The message pattern that specifies the type of interaction (e.g., Tell or Ask)
+     * and determines how the termination error is managed.
+     */
+    private suspend fun replyTerminationError(pattern: Patterns<Req, Res>) {
+        when (pattern) {
+            is Patterns.Tell -> Unit
+            is Patterns.Ask -> {
+                val e = terminationError
+                    ?: IllegalStateException("Actor is terminated, all pending messages are replied with errors.")
+                val r: Result<Res> = Result.failure(e)
+                reply(operation = "terminate", pattern = pattern, reply = r)
             }
         }
     }

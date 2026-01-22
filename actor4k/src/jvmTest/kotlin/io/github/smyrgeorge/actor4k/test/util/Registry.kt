@@ -24,6 +24,7 @@ object Registry {
         }
         .factoryFor(ThrowingDuringMessageProcessingAccountActor::class) { ThrowingDuringMessageProcessingAccountActor(it) }
         .factoryFor(StashingActor::class) { StashingActor(it) }
+        .factoryFor(TerminatingAccountActor::class) { TerminatingAccountActor(it) }
 
     init {
         ActorSystem

@@ -58,4 +58,15 @@ sealed interface Behavior<Res : Response> {
      * @param Res The type of `Response` this behavior operates on.
      */
     class Shutdown<Res : Response> : Behavior<Res>
+
+    /**
+     * Represents a termination behavior that extends the capabilities of a `Behavior`.
+     *
+     * The `Terminate` class models the end of a communication or processing process, providing
+     * specialized features tailored for handling scenarios where a response of type `Res` is required.
+     *
+     * @param Res The type of the response that extends the `Response` class. This ensures the termination
+     * behavior conforms to the expected structure and properties of a response defined by the protocol.
+     */
+    class Terminate<Res : Response> : Behavior<Res>
 }

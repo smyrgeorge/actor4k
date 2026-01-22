@@ -91,6 +91,14 @@ class LocalRef : ActorRef {
     }
 
     /**
+     * Terminate the actor and discard all the messages in the mailbox.
+     */
+    override suspend fun terminate(): Result<Unit> {
+        actor().getOrElse { return Result.failure(it) }.shutdown()
+        return Result.success(Unit)
+    }
+
+    /**
      * Invalidates the current actor reference by setting it to `null`.
      *
      * This method is typically used to clear or reset the state of the `LocalRef` by

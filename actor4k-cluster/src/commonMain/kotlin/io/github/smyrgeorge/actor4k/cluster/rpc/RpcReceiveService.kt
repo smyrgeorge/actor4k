@@ -5,7 +5,9 @@ import io.github.smyrgeorge.actor4k.cluster.rpc.RpcEnvelope.Request
 import io.github.smyrgeorge.actor4k.cluster.rpc.RpcEnvelope.Response
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.launch
-import io.ktor.websocket.*
+import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.send
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.protobuf.ProtoBuf
 
@@ -42,14 +44,15 @@ class RpcReceiveService(
                 log.warn("Received non-binary frame: $frame")
                 return@launch
             }
-            val msg = protoBuf.decodeFromByteArray(Request.serializer(), frame.data)
-            val res = when (msg) {
+            val res = when (val msg = protoBuf.decodeFromByteArray(Request.serializer(), frame.data)) {
                 is Request.Echo -> echo(msg)
                 is Request.Tell -> tell(msg)
                 is Request.Ask -> ask(msg)
                 is Request.Status -> status(msg)
                 is Request.Stats -> stats(msg)
                 is Request.Shutdown -> shutdown(msg)
+                is Request.Terminate -> terminate(msg)
+
             }
             session.send(protoBuf.encodeToByteArray(Response.serializer(), res))
         }
@@ -136,6 +139,22 @@ class RpcReceiveService(
         registry.get(msg.addr)
             .getOrElse { return it.failure(msg.id) }
             .shutdown()
+            .getOrElse { return it.failure(msg.id) }
+        return Response.Empty(msg.id)
+    }
+
+    /**
+     * Processes a Terminate request by retrieving the actor associated with the specified address
+     * and attempting to terminate it. Constructs a Response based on the outcome of the operation.
+     *
+     * @param msg The Terminate request containing the unique message ID and the address of the actor to terminate.
+     * @return A `Response.Empty` if the termination is successfully completed, or a `Response.Failure`
+     *         if an error occurs during the operation.
+     */
+    private suspend fun terminate(msg: Request.Terminate): Response {
+        registry.get(msg.addr)
+            .getOrElse { return it.failure(msg.id) }
+            .terminate()
             .getOrElse { return it.failure(msg.id) }
         return Response.Empty(msg.id)
     }
