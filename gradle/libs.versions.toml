@@ -16,7 +16,7 @@ assertk = "0.28.1"
 # https://github.com/Kotlin/kotlinx.serialization
 kotlinx-serialization = "1.9.0"
 # https://github.com/ktorio/ktor
-ktor = "3.3.3"
+ktor = "3.4.0"
 
 [libraries]
 gradle-kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
