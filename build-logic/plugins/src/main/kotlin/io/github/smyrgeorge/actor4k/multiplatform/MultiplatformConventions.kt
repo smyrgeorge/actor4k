@@ -15,6 +15,7 @@ class MultiplatformConventions : Plugin<Project> {
         project.extensions.configure<KotlinMultiplatformExtension> {
             val availableTargets = mapOf(
                 Pair("iosArm64") { iosArm64() },
+                Pair("iosSimulatorArm64") { iosSimulatorArm64() },
                 Pair("androidNativeArm64") { androidNativeArm64() },
                 Pair("androidNativeX64") { androidNativeX64() },
                 Pair("macosArm64") { macosArm64() },
