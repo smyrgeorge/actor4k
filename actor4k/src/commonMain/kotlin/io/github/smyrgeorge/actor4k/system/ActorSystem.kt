@@ -54,6 +54,20 @@ object ActorSystem {
      */
     private var loggingStarted = false
 
+    /**
+     * Indicates whether the shutdown hook has been registered within the actor system.
+     *
+     * This variable ensures that the shutdown hook is registered only once during the lifecycle
+     * of the system, preventing duplicate registrations. A shutdown hook is typically used to perform
+     * cleanup tasks, such as resource deallocation and safe termination of system processes,
+     * when the application is shutting down.
+     *
+     * This variable is utilized within the system's startup process to determine whether
+     * the `registerShutdownHook` function has already been invoked. Once set to `true`,
+     * it prevents further registration attempts during the same lifecycle.
+     */
+    private var shudownHookRegistered = false
+
     val conf: Conf get() = _conf
     val type: Type get() = _type
     val status: Status get() = _status
@@ -62,10 +76,6 @@ object ActorSystem {
     val cluster: Cluster get() = if (!this::_cluster.isInitialized) error("Please register a cluster.") else _cluster
     val registry: ActorRegistry get() = if (!this::_registry.isInitialized) error("Please register an actor registry.") else _registry
     val loggerFactory: Logger.Factory get() = if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.") else _loggerFactory
-
-    init {
-        registerShutdownHook()
-    }
 
     /**
      * Determines whether the current actor system is configured as a cluster.
@@ -172,11 +182,21 @@ object ActorSystem {
      *
      * @param wait If `true`, the method blocks until the server is fully started.
      *             If `false`, it returns immediately after invoking the server's start mechanism.
+     * @param registerShutdownHook If `true`, the method registers a JVM shutdown hook to ensure
+     * the system's resources are properly cleaned up upon JVM termination.
      */
-    fun start(wait: Boolean = false) {
+    fun start(
+        wait: Boolean = false,
+        registerShutdownHook: Boolean = true,
+    ) {
         if (status != Status.NOT_READY) error("Cannot start cluster while it's $status.")
         if (!this::_loggerFactory.isInitialized) error("Please register a Logger factory.")
         if (!this::_registry.isInitialized) error("Please register an actor registry.")
+
+        if (registerShutdownHook && !shudownHookRegistered) {
+            registerShutdownHook()
+            shudownHookRegistered = true
+        }
 
         log.info("Starting actor system...")
 
