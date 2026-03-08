@@ -13,6 +13,7 @@ class MultiplatformClusterConventions : Plugin<Project> {
         project.plugins.apply("org.jetbrains.kotlin.multiplatform")
         project.extensions.configure<KotlinMultiplatformExtension> {
             val availableTargets = mapOf(
+                Pair("iosX64") { iosX64() },
                 Pair("iosArm64") { iosArm64() },
                 Pair("iosSimulatorArm64") { iosSimulatorArm64() },
                 Pair("androidNativeArm64") { androidNativeArm64() },

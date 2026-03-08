@@ -12,6 +12,7 @@ class MultiplatformBinariesConventions : Plugin<Project> {
         project.plugins.apply("org.jetbrains.kotlin.multiplatform")
         project.extensions.configure<KotlinMultiplatformExtension> {
             val availableTargets = mapOf(
+                Pair("iosX64") { iosX64 { binaries { executable() } } },
                 Pair("iosArm64") { iosArm64 { binaries { executable() } } },
                 Pair("iosSimulatorArm64") { iosSimulatorArm64 { binaries { executable() } } },
                 Pair("androidNativeArm64") { androidNativeArm64 { binaries { executable() } } },

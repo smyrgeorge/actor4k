@@ -63,6 +63,7 @@ object Utils {
         (project.properties["targets"] as? String)?.let {
             when (it) {
                 "all" -> listOf(
+                    "iosX64",
                     "iosArm64",
                     "iosSimulatorArm64",
                     "androidNativeX64",
