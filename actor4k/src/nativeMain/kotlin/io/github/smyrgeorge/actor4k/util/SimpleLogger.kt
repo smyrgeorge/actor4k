@@ -1,5 +1,9 @@
 package io.github.smyrgeorge.actor4k.util
 
+import io.github.smyrgeorge.log4k.classic.debug
+import io.github.smyrgeorge.log4k.classic.error
+import io.github.smyrgeorge.log4k.classic.info
+import io.github.smyrgeorge.log4k.classic.warn
 import io.github.smyrgeorge.log4k.Logger as Log4kLogger
 
 @Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
