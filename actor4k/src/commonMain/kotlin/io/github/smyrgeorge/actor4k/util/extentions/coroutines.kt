@@ -41,9 +41,16 @@ fun doEvery(
 ): Job {
     return launch(dispatcher) {
         while (true) {
-            runCatching {
-                delay(delay)
+            // `delay` is outside the catch so a CancellationException from cancelling the returned
+            // Job propagates and stops the loop. Catching it turns cancel() into a hot 100%-CPU spin,
+            // since every subsequent delay() on a cancelled job throws.
+            delay(delay)
+            try {
                 f()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                // Swallow errors from the action so the periodic loop keeps ticking.
             }
         }
     }
