@@ -466,7 +466,7 @@ example [here](examples/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/examp
 You can also build for specific targets.
 
 ```shell
-./gradlew build -Ptargets=macosArm64,macosX64
+./gradlew build -Ptargets=macosArm64,linuxX64
 ```
 
 To build for all available targets, run:

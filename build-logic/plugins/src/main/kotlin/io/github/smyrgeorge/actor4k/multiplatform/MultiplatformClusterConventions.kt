@@ -19,7 +19,6 @@ class MultiplatformClusterConventions : Plugin<Project> {
                 Pair("androidNativeArm64") { androidNativeArm64() },
                 Pair("androidNativeX64") { androidNativeX64() },
                 Pair("macosArm64") { macosArm64() },
-                Pair("macosX64") { macosX64() },
                 Pair("linuxArm64") { linuxArm64() },
                 Pair("linuxX64") { linuxX64() },
                 Pair("mingwX64") { mingwX64() },
