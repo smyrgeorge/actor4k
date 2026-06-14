@@ -1,5 +1,5 @@
 group = "io.github.smyrgeorge"
-version = "1.4.11"
+version = "1.4.12"
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
