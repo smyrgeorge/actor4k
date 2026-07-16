@@ -38,7 +38,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">1.4.12
+        <div class="library-version" id="library-version">1.5.0
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
@@ -94,7 +94,7 @@
   <div class="cover ">
     <h1 class="cover"><span><span>close</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="close.html"><span class="token function">close</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/smyrgeorge/actor4k/tree/main/actor4k-cluster/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/cluster/rpc/RpcWebSocketSession.kt#L71">source</a>)</span></span></div><p class="paragraph">Closes the current WebSocket session and marks the session as closed.</p><p class="paragraph">This method sets the internal state of the session to closed and performs the necessary cleanup by closing the active WebSocket session, if any. Once called, no further communication through this session is possible.</p><p class="paragraph">Throws no exceptions and ensures safe cleanup of resources.</p></div></div>
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":actor4k-cluster/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="close.html"><span class="token function">close</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/smyrgeorge/actor4k/tree/main/actor4k-cluster/src/commonMain/kotlin/io/github/smyrgeorge/actor4k/cluster/rpc/RpcWebSocketSession.kt#L81">source</a>)</span></span></div><p class="paragraph">Closes the current WebSocket session and marks the session as closed.</p><p class="paragraph">This method sets the internal state of the session to closed and performs the necessary cleanup by closing the active WebSocket session, if any. Marking the session as closed also stops the reconnection loop. Once called, no further communication through this session is possible.</p><p class="paragraph">Throws no exceptions and ensures safe cleanup of resources.</p></div></div>
 </div>
     <div class="footer">
         <div class="footer--container">
