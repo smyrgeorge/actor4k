@@ -3,11 +3,15 @@ package io.github.smyrgeorge.actor4k.cluster.rpc
 import io.github.smyrgeorge.actor4k.cluster.util.ClusterNode
 import io.github.smyrgeorge.actor4k.util.Logger
 import io.github.smyrgeorge.actor4k.util.extentions.launch
-import io.ktor.client.*
-import io.ktor.client.plugins.websocket.*
-import io.ktor.websocket.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
+import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.websocket.Frame
+import io.ktor.websocket.close
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlin.concurrent.Volatile
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Maintains a WebSocket connection to a remote node and provides mechanisms for sending and
@@ -31,11 +35,15 @@ class RpcWebSocketSession(
 ) {
     private val log: Logger = loggerFactory.getLogger(this::class)
 
-    private val address: String = node.address
-    private var closed = false
     private val retryConnectMillis = 200L
+    private val retryConnectMaxMillis = 5_000L
     private val retrySendMillis = 100L
     private val retrySendMaxAttempts = 10
+
+    @Volatile
+    private var closed = false
+
+    @Volatile
     private var session: DefaultClientWebSocketSession? = null
 
     init {
@@ -52,7 +60,8 @@ class RpcWebSocketSession(
         if (closed) error("Session permanently closed. Cannot send message to $node")
         var retryCount = 0
         while (session == null) {
-            delay(retrySendMillis * (retryCount + 1))
+            if (closed) error("Session permanently closed. Cannot send message to $node")
+            delay((retrySendMillis * (retryCount + 1)).milliseconds)
             retryCount++
             if (retryCount >= retrySendMaxAttempts) error("Connection to $node lost.")
         }
@@ -63,7 +72,8 @@ class RpcWebSocketSession(
      * Closes the current WebSocket session and marks the session as closed.
      *
      * This method sets the internal state of the session to closed and performs the
-     * necessary cleanup by closing the active WebSocket session, if any.
+     * necessary cleanup by closing the active WebSocket session, if any. Marking the
+     * session as closed also stops the reconnection loop.
      * Once called, no further communication through this session is possible.
      *
      * Throws no exceptions and ensures safe cleanup of resources.
@@ -73,31 +83,41 @@ class RpcWebSocketSession(
         session?.close()
     }
 
+    /**
+     * Establishes and maintains the WebSocket connection, reconnecting on any disconnection.
+     *
+     * A single loop owns the connection lifecycle: it connects, processes incoming frames until
+     * the connection ends (peer close, error, or [close]), then reconnects with a bounded,
+     * incremental backoff. The loop terminates only once [close] has been called.
+     */
     private suspend fun create() {
-        if (closed) return
-
-        session = null
         var retryCount = 0
-        while (session == null) {
+        while (!closed) {
             try {
-                client.webSocket("ws://$address/cluster") {
+                client.webSocket("ws://${node.address}/cluster") {
                     log.info("Connection established with $node")
                     session = this
+                    retryCount = 0 // Reset the backoff after a successful connection.
                     try {
                         for (e in incoming) {
                             if (e !is Frame.Binary) continue
                             runCatching { RpcSendService.rpcHandleResponse(e.data) }
+                                .onFailure { log.warn("Failed to handle response from $node (${it.message})") }
                         }
-                    } catch (e: Exception) {
-                        log.error("Connection error for $node (${e.message}), reopening...")
-                        // Reopen session
-                        launch { create() }
+                    } finally {
+                        // The connection ended (peer closed, error, or close() was called).
+                        // Clear the session so send() waits for a fresh one instead of using a dead one.
+                        session = null
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 log.warn("Connection failed for $node (${e.message ?: ""}), retrying...")
             }
-            delay(retryConnectMillis * (retryCount + 1))
+            if (closed) break
+            val backoff = (retryConnectMillis * (retryCount + 1)).coerceAtMost(retryConnectMaxMillis)
+            delay(backoff.milliseconds)
             retryCount++
         }
     }
