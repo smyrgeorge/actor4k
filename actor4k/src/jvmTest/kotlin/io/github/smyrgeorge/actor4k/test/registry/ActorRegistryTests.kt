@@ -1,12 +1,21 @@
-package io.github.smyrgeorge.actor4k.test
+package io.github.smyrgeorge.actor4k.test.registry
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isNotZero
+import assertk.assertions.isTrue
+import assertk.assertions.isZero
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.actor.*
+import io.github.smyrgeorge.actor4k.test.actor.AccountActor
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
+import io.github.smyrgeorge.actor4k.test.actor.InitMethodFailsAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.NotRegisteredAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.ShortLivedAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.SlowInitAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.ThrowingDuringMessageProcessingAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
 import io.github.smyrgeorge.actor4k.test.util.forEachParallel
 import kotlinx.coroutines.async
@@ -15,8 +24,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertFails
+import kotlin.time.Duration.Companion.milliseconds
 
-class ActorRegistryLifecycleTests {
+class ActorRegistryTests {
     private val registry: ActorRegistry = Registry.registry
 
     init {
@@ -53,7 +63,7 @@ class ActorRegistryLifecycleTests {
         val ref = registry.get(AccountActor::class, ACC0001)
         val actor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.key).isEqualTo(ACC0001)
-        delay(1000) // Ensure that all messages are processed.
+        delay(1000.milliseconds) // Ensure that all messages are processed.
         assertThat(actor.stats().receivedMessages).isEqualTo(4 * 100)
     }
 
@@ -68,7 +78,7 @@ class ActorRegistryLifecycleTests {
         actor.shutdown()
 
         // Wait for shutdown to complete
-        delay(1000)
+        delay(1000.milliseconds)
 
         // Verify actor is removed from registry
         assertThat(registry.size()).isZero()
@@ -93,7 +103,7 @@ class ActorRegistryLifecycleTests {
 
         // Shutdown system
         ActorSystem.shutdown()
-        delay(1000) // Allow time for shutdown
+        delay(1000.milliseconds) // Allow time for shutdown
 
         // Verify registry is empty
         assertThat(registry.size()).isZero()
@@ -110,7 +120,7 @@ class ActorRegistryLifecycleTests {
 
         // Shutdown the actor
         actor1.shutdown()
-        delay(1000)
+        delay(1000.milliseconds)
 
         // Create new actor with same key
         val ref2 = registry.get(AccountActor::class, ACC0006)
@@ -145,7 +155,7 @@ class ActorRegistryLifecycleTests {
         // Actor should be properly initialized
         val ref = registry.get(SlowInitAccountActor::class, ACC0009)
         ref.tell(Protocol.Req("Test"))
-        delay(500)
+        delay(500.milliseconds)
         val actor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.stats().receivedMessages).isNotZero()
     }
@@ -157,14 +167,14 @@ class ActorRegistryLifecycleTests {
 
         // Send a message that will cause an exception
         ref.tell(Protocol.Req("THROW"))
-        delay(500) // Give time for message processing
+        delay(500.milliseconds) // Give time for message processing
 
         // Actor should remain in registry despite error
         assertThat(registry.size()).isEqualTo(1)
 
         // Actor should still be able to process messages
         ref.tell(Protocol.Req("Normal"))
-        delay(500)
+        delay(500.milliseconds)
 
         val actor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.stats().receivedMessages).isEqualTo(2)
@@ -179,7 +189,7 @@ class ActorRegistryLifecycleTests {
         ref.tell(Protocol.Req("Shutdown"))
 
         // Give time for processing and shutdown
-        delay(1000)
+        delay(1000.milliseconds)
 
         // Verify actor is removed from registry
         assertThat(registry.size()).isZero()
@@ -196,7 +206,7 @@ class ActorRegistryLifecycleTests {
 
         // Restart the system
         ActorSystem.shutdown()
-        delay(1000)
+        delay(1000.milliseconds)
         ActorSystem.start()
 
         // Registry should be empty after restart
@@ -219,7 +229,7 @@ class ActorRegistryLifecycleTests {
         actor.shutdown() // Should not throw
 
         // Wait for shutdown
-        delay(1000)
+        delay(1000.milliseconds)
 
         // Registry should be empty
         assertThat(registry.size()).isZero()

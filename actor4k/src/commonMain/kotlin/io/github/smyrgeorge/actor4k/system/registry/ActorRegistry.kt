@@ -193,6 +193,14 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
     suspend fun size(): Int = lock { registry.size }
 
     /**
+     * Checks whether an actor with the given [address] is currently registered locally.
+     *
+     * @param address The address of the actor to look up.
+     * @return `true` if an actor is registered for the address, `false` otherwise.
+     */
+    protected suspend fun contains(address: Address): Boolean = lock { registry.containsKey(address) }
+
+    /**
      * Calculates the total number of messages processed by all actors in the local registry.
      *
      * @return The total count of messages processed by all actors.
@@ -232,7 +240,7 @@ abstract class ActorRegistry(loggerFactory: Logger.Factory) {
      * within a lock to ensure thread safety and prevent concurrent modifications to the
      * registry.
      */
-    private suspend fun stopLocalExpired() {
+    protected suspend fun stopLocalExpired() {
         log.debug("Stopping local expired actors.")
         lock { registry.values.toList() }.forEach {
             val df = Clock.System.now().toEpochMilliseconds() - it.stats().lastMessageAt
