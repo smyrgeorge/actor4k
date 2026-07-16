@@ -2,10 +2,11 @@ package io.github.smyrgeorge.actor4k.test.actor
 
 import io.github.smyrgeorge.actor4k.actor.Behavior
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 open class SlowProcessingAccountActor(key: String) : AccountActor(key) {
     override suspend fun onReceive(m: Protocol): Behavior<Protocol.Response> {
-        delay(1000)
+        delay(1000.milliseconds)
         log.info("[${address()}] Received message: $m")
         return Behavior.Reply(Protocol.Resp("Pong!"))
     }

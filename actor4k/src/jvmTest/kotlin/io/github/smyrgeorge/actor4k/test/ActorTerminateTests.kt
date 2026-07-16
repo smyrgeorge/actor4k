@@ -1,7 +1,14 @@
 package io.github.smyrgeorge.actor4k.test
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isGreaterThanOrEqualTo
+import assertk.assertions.isLessThan
+import assertk.assertions.isNotNull
+import assertk.assertions.isNull
+import assertk.assertions.isTrue
+import assertk.assertions.isZero
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
@@ -12,8 +19,13 @@ import io.github.smyrgeorge.actor4k.test.actor.SlowProcessingAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.TerminatingAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
-import kotlinx.coroutines.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 class ActorTerminateTests {
     private val registry: ActorRegistry = Registry.registry
@@ -34,7 +46,7 @@ class ActorTerminateTests {
         repeat(5) { ref.tell(Protocol.Req("Ping-$it")) }
 
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
-        delay(100) // Allow first message to start processing
+        delay(100.milliseconds) // Allow first message to start processing
 
         // Terminate the actor
         actor.terminate()
@@ -42,7 +54,7 @@ class ActorTerminateTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATING)
 
         // Wait for termination to complete
-        delay(2000)
+        delay(2000.milliseconds)
 
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATED)
         assertThat(actor.stats().terminatedAt).isNotNull()
@@ -61,7 +73,7 @@ class ActorTerminateTests {
 
         // Send a slow message first
         launch { ref.tell(Protocol.Req("SlowMessage")) }
-        delay(100)
+        delay(100.milliseconds)
 
         // Send ask messages that will be discarded
         val askResults = (1..3).map {
@@ -70,13 +82,13 @@ class ActorTerminateTests {
             }
         }
 
-        delay(100)
+        delay(100.milliseconds)
 
         // Terminate while asks are pending
         actor.terminate()
 
         // Wait for termination
-        delay(2000)
+        delay(2000.milliseconds)
 
         // Verify ask results are failures
         askResults.forEach { deferred ->
@@ -99,7 +111,7 @@ class ActorTerminateTests {
         ref.tell(Protocol.Req("Terminate"))
 
         // Wait for termination
-        delay(1500)
+        delay(1500.milliseconds)
 
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATED)
         assertThat(actor.stats().terminatedAt).isNotNull()
@@ -118,7 +130,7 @@ class ActorTerminateTests {
         ref.tell(Protocol.Req("Terminate"))
 
         // Wait for termination to complete
-        delay(1500)
+        delay(1500.milliseconds)
 
         // Verify onShutdown hook was executed
         assertThat(TerminatingAccountActor.shutdownHookExecuted).isTrue()
@@ -140,7 +152,7 @@ class ActorTerminateTests {
         assertThat(result.isFailure).isTrue()
 
         // Wait for termination to complete
-        delay(1500)
+        delay(1500.milliseconds)
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATED)
     }
 
@@ -155,7 +167,7 @@ class ActorTerminateTests {
         actor.terminate(customError)
 
         // Wait for termination
-        delay(1500)
+        delay(1500.milliseconds)
 
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATED)
         assertThat(actor.stats().terminatedAt).isNotNull()
@@ -182,7 +194,7 @@ class ActorTerminateTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATING)
 
         // Wait for termination to complete
-        delay(2000)
+        delay(2000.milliseconds)
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATED)
     }
 
@@ -201,14 +213,14 @@ class ActorTerminateTests {
             terminateRef.tell(Protocol.Req("Ping-$it"))
         }
 
-        delay(100) // Let first message start processing
+        delay(100.milliseconds) // Let first message start processing
 
         val terminateStart = System.currentTimeMillis()
         terminateActor.terminate()
 
         // Wait for terminate to complete
         while (terminateActor.status() != Actor.Status.TERMINATED) {
-            delay(50)
+            delay(50.milliseconds)
         }
         val terminateDuration = System.currentTimeMillis() - terminateStart
 
@@ -217,7 +229,7 @@ class ActorTerminateTests {
 
         // Wait for shutdown to complete
         while (shutdownActor.status() != Actor.Status.SHUT_DOWN) {
-            delay(50)
+            delay(50.milliseconds)
         }
         val shutdownDuration = System.currentTimeMillis() - shutdownStart
 
@@ -232,7 +244,7 @@ class ActorTerminateTests {
 
         // Terminate the actor
         terminateActor.terminate()
-        delay(1500)
+        delay(1500.milliseconds)
 
         val stats = terminateActor.stats()
 
@@ -252,7 +264,7 @@ class ActorTerminateTests {
 
         // Send a message and start termination
         ref.tell(Protocol.Req("Ping"))
-        delay(100)
+        delay(100.milliseconds)
 
         actor.terminate()
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATING)
@@ -264,7 +276,7 @@ class ActorTerminateTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATING)
 
         // Wait for termination
-        delay(1500)
+        delay(1500.milliseconds)
         assertThat(actor.status()).isEqualTo(Actor.Status.TERMINATED)
     }
 
@@ -275,7 +287,7 @@ class ActorTerminateTests {
 
         // Send a message and start shutdown
         ref.tell(Protocol.Req("Ping"))
-        delay(100)
+        delay(100.milliseconds)
 
         actor.shutdown()
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
@@ -287,7 +299,7 @@ class ActorTerminateTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
 
         // Wait for shutdown
-        delay(2000)
+        delay(2000.milliseconds)
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
     }
 

@@ -1,14 +1,23 @@
 package io.github.smyrgeorge.actor4k.test.router
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThan
+import assertk.assertions.isGreaterThanOrEqualTo
+import assertk.assertions.isNotNull
+import assertk.assertions.isSuccess
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.util.*
+import io.github.smyrgeorge.actor4k.test.util.Registry
+import io.github.smyrgeorge.actor4k.test.util.TestProtocol
+import io.github.smyrgeorge.actor4k.test.util.TestRouter
+import io.github.smyrgeorge.actor4k.test.util.TestWorker
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerThatFailsOccasionally
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class FirstAvailableRouterActorTests {
@@ -35,10 +44,10 @@ class FirstAvailableRouterActorTests {
         // Send 5 messages in quick succession
         repeat(5) {
             router.tell(TestProtocol.Ping).getOrThrow()
-            delay(50) // Small delay between sends
+            delay(50.milliseconds) // Small delay between sends
         }
 
-        delay(1000) // Allow time for all message processing
+        delay(1000.milliseconds) // Allow time for all message processing
 
         // Fast worker should have processed more messages than slow worker
         assertThat(fastWorker.messageCount).isGreaterThan(slowWorker.messageCount)
@@ -63,7 +72,7 @@ class FirstAvailableRouterActorTests {
             router.tell(TestProtocol.Ping).getOrThrow()
         }
 
-        delay(2000) // Allow time for all message processing
+        delay(2000.milliseconds) // Allow time for all message processing
 
         // Very fast worker should process significantly more messages than others
         assertThat(veryFastWorker.messageCount).isGreaterThan(mediumWorker.messageCount)
@@ -96,7 +105,7 @@ class FirstAvailableRouterActorTests {
         // which should take approximately 300ms
         assertThat(endTime - startTime).isGreaterThanOrEqualTo(250)
 
-        delay(500) // Allow time for all message processing
+        delay(500.milliseconds) // Allow time for all message processing
 
         // Total messages should be 3
         assertThat(worker1.messageCount + worker2.messageCount).isEqualTo(3)
@@ -116,10 +125,10 @@ class FirstAvailableRouterActorTests {
         repeat(10) {
             // Use tell which doesn't propagate failures
             router.tell(TestProtocol.Ping).getOrThrow()
-            delay(50) // Small delay between sends
+            delay(50.milliseconds) // Small delay between sends
         }
 
-        delay(1000) // Allow time for message processing
+        delay(1000.milliseconds) // Allow time for message processing
 
         // The reliable worker should have processed some messages
         assertThat(reliableWorker.messageCount).isGreaterThan(0)
@@ -145,7 +154,7 @@ class FirstAvailableRouterActorTests {
             router.tell(TestProtocol.Ping).getOrThrow()
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // The worker should have processed all messages
         assertThat(worker.messageCount).isEqualTo(5)

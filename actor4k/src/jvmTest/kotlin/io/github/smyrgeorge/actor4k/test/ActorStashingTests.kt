@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.milliseconds
 
 class ActorStashingTests {
     private val registry: ActorRegistry = Registry.registry
@@ -42,7 +43,7 @@ class ActorStashingTests {
         ref.tell(Protocol.Req("message3"))
 
         // Verify that no messages have been processed yet
-        delay(100) // Give time for messages to be received
+        delay(100.milliseconds) // Give time for messages to be received
         val processedCount = ref.ask(Protocol.Req("get_processed_count")).getOrThrow() as Protocol.Resp
         assertThat(processedCount.message).isEqualTo("Processed count: 0")
 
@@ -53,7 +54,7 @@ class ActorStashingTests {
         ref.ask(Protocol.Req("switch_mode")).getOrThrow()
 
         // Give time for unstashed messages to be processed
-        delay(200)
+        delay(200.milliseconds)
 
         // Verify that all messages have been processed
         val finalProcessedCount = ref.ask(Protocol.Req("get_processed_count")).getOrThrow() as Protocol.Resp
@@ -81,7 +82,7 @@ class ActorStashingTests {
         ref.tell(Protocol.Req("message2"))
 
         // Give time for messages to be processed
-        delay(100)
+        delay(100.milliseconds)
 
         // Verify that messages have been processed
         val processedCount = ref.ask(Protocol.Req("get_processed_count")).getOrThrow() as Protocol.Resp
@@ -110,7 +111,7 @@ class ActorStashingTests {
         ref.tell(Protocol.Req("immediate2"))
 
         // Give time for all messages to be processed
-        delay(200)
+        delay(200.milliseconds)
 
         // Verify that all messages have been processed
         val processedCount = ref.ask(Protocol.Req("get_processed_count")).getOrThrow() as Protocol.Resp
@@ -139,18 +140,18 @@ class ActorStashingTests {
         ref.tell(Protocol.Req("batch1-message2"))
 
         // Verify that messages have been stashed
-        delay(100)
+        delay(100.milliseconds)
         assertThat(actor.stats().stashedMessages).isEqualTo(2)
 
         // Switch to processing mode which should unstash all messages
         ref.ask(Protocol.Req("switch_mode")).getOrThrow()
 
         // Give time for unstashed messages to be processed
-        delay(200)
+        delay(200.milliseconds)
 
         // Switch back to stashing mode
         ref.tell(Protocol.Req("switch_mode"))
-        delay(100)
+        delay(100.milliseconds)
 
         // Second batch of messages to be stashed
         ref.tell(Protocol.Req("batch2-message1"))
@@ -158,14 +159,14 @@ class ActorStashingTests {
         ref.tell(Protocol.Req("batch2-message3"))
 
         // Verify that new messages have been stashed
-        delay(100)
+        delay(100.milliseconds)
         assertThat(actor.stats().stashedMessages).isEqualTo(3)
 
         // Switch to processing mode again to unstash the second batch
         ref.ask(Protocol.Req("switch_mode")).getOrThrow()
 
         // Give time for unstashed messages to be processed
-        delay(200)
+        delay(200.milliseconds)
 
         // Verify that all messages have been processed
         val finalProcessedCount = ref.ask(Protocol.Req("get_processed_count")).getOrThrow() as Protocol.Resp
@@ -202,14 +203,14 @@ class ActorStashingTests {
         }
 
         // Verify that messages have been stashed
-        delay(200)
+        delay(200.milliseconds)
         assertThat(actor.stats().stashedMessages).isEqualTo(50)
 
         // Switch to processing mode which should unstash all messages
         ref.ask(Protocol.Req("switch_mode")).getOrThrow()
 
         // Give time for unstashed messages to be processed
-        delay(500)
+        delay(500.milliseconds)
 
         // Verify that all messages have been processed
         val finalProcessedCount = ref.ask(Protocol.Req("get_processed_count")).getOrThrow() as Protocol.Resp
@@ -235,16 +236,16 @@ class ActorStashingTests {
 
         // Switch to processing mode which should unstash the first batch
         ref.ask(Protocol.Req("switch_mode")).getOrThrow()
-        delay(100)
+        delay(100.milliseconds)
 
         // Send messages to be processed immediately
         ref.tell(Protocol.Req("immediate-1"))
         ref.tell(Protocol.Req("immediate-2"))
-        delay(100)
+        delay(100.milliseconds)
 
         // Switch back to stashing mode
         ref.tell(Protocol.Req("switch_mode"))
-        delay(100)
+        delay(100.milliseconds)
 
         // Second batch to be stashed
         ref.tell(Protocol.Req("stashed-batch2-1"))
@@ -252,14 +253,14 @@ class ActorStashingTests {
 
         // Switch to processing mode again to unstash the second batch
         ref.ask(Protocol.Req("switch_mode")).getOrThrow()
-        delay(100)
+        delay(100.milliseconds)
 
         // Send more messages to be processed immediately
         ref.tell(Protocol.Req("immediate-3"))
         ref.tell(Protocol.Req("immediate-4"))
 
         // Give time for all messages to be processed
-        delay(200)
+        delay(200.milliseconds)
 
         // Verify the order of processed messages
         val processedMessages =

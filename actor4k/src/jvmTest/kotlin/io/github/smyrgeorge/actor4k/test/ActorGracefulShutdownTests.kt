@@ -1,7 +1,11 @@
 package io.github.smyrgeorge.actor4k.test
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
+import assertk.assertions.isZero
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
@@ -13,8 +17,13 @@ import io.github.smyrgeorge.actor4k.test.actor.ResourceHoldingAccountActor
 import io.github.smyrgeorge.actor4k.test.actor.SlowProcessingAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
-import kotlinx.coroutines.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 class ActorGracefulShutdownTests {
     private val registry: ActorRegistry = Registry.registry
@@ -32,10 +41,10 @@ class ActorGracefulShutdownTests {
         assertThat(registry.size()).isEqualTo(1)
         repeat(2) { ref.tell(Protocol.Req("Ping!")) }
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
-        delay(1000)
+        delay(1000.milliseconds)
         actor.shutdown()
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
-        delay(1500)
+        delay(1500.milliseconds)
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
         assertThat(actor.stats().shutDownAt).isNotNull()
         assertThat(registry.size()).isZero()
@@ -55,7 +64,7 @@ class ActorGracefulShutdownTests {
         actor.shutdown()
 
         // Give time for onShutdown to complete
-        delay(2000)
+        delay(2000.milliseconds)
 
         // Verify hooks were executed
         assertThat(LongOnShutdownActor.shutdownHookExecuted).isTrue()
@@ -78,13 +87,13 @@ class ActorGracefulShutdownTests {
         }
 
         // Small delay to ensure messages are queued
-        delay(100)
+        delay(100.milliseconds)
 
         // Shutdown the entire system
         ActorSystem.shutdown()
 
         // Wait for the graceful shutdown
-        delay(3000)
+        delay(3000.milliseconds)
 
         // Verify all actors are gone
         assertThat(registry.size()).isZero()
@@ -101,7 +110,7 @@ class ActorGracefulShutdownTests {
 
         // Use the resource
         ref.tell(Protocol.Req("OpenResource"))
-        delay(500)
+        delay(500.milliseconds)
 
         // Verify the resource is open
         assertThat(ResourceHoldingAccountActor.resourceClosed).isFalse()
@@ -110,7 +119,7 @@ class ActorGracefulShutdownTests {
         actor.shutdown()
 
         // Wait for shutdown to complete
-        delay(1500)
+        delay(1500.milliseconds)
 
         // Verify resources were released
         assertThat(ResourceHoldingAccountActor.resourceClosed).isTrue()
@@ -133,7 +142,7 @@ class ActorGracefulShutdownTests {
         assertThat(result.isFailure).isTrue()
 
         // Wait for shutdown to complete
-        delay(2000)
+        delay(2000.milliseconds)
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
     }
 
@@ -144,10 +153,10 @@ class ActorGracefulShutdownTests {
         val actor = registry.getLocalActor(ref as LocalRef)
 
         // Start shutdown with timeout
-        val shutdownCompleted = withTimeoutOrNull(500) {
+        val shutdownCompleted = withTimeoutOrNull(500.milliseconds) {
             actor.shutdown()
             while (actor.status() != Actor.Status.SHUT_DOWN) {
-                delay(100)
+                delay(100.milliseconds)
             }
             true
         }
@@ -156,7 +165,7 @@ class ActorGracefulShutdownTests {
         assertThat(shutdownCompleted).isEqualTo(null) // Should time out
 
         // Wait for the actual shutdown to complete for cleanup
-        delay(2000)
+        delay(2000.milliseconds)
     }
 
     @Test
@@ -181,7 +190,7 @@ class ActorGracefulShutdownTests {
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUTTING_DOWN)
 
         // Wait for shutdown to complete
-        delay(3000)
+        delay(3000.milliseconds)
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
     }
 

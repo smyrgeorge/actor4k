@@ -1,14 +1,23 @@
 package io.github.smyrgeorge.actor4k.test.router
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isIn
+import assertk.assertions.isNotNull
+import assertk.assertions.isSuccess
+import assertk.assertions.isTrue
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.util.*
+import io.github.smyrgeorge.actor4k.test.util.Registry
+import io.github.smyrgeorge.actor4k.test.util.TestProtocol
+import io.github.smyrgeorge.actor4k.test.util.TestRouter
+import io.github.smyrgeorge.actor4k.test.util.TestWorker
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerThatFailsOnce
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class RoundRobinRouterActorTests {
@@ -38,7 +47,7 @@ class RoundRobinRouterActorTests {
             router.tell(TestProtocol.Ping).getOrThrow()
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // Verify each worker received exactly 3 messages
         assertThat(worker1.messageCount).isEqualTo(3)
@@ -63,7 +72,7 @@ class RoundRobinRouterActorTests {
             router.tell(TestProtocol.Ping).getOrThrow()
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // Verify total messages
         val totalMessages = worker1.messageCount + worker2.messageCount +
@@ -103,7 +112,7 @@ class RoundRobinRouterActorTests {
             router.tell(TestProtocol.Ping).getOrThrow()
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // Each worker should have received exactly 10 messages
         assertThat(worker1.messageCount).isEqualTo(10)
@@ -131,7 +140,7 @@ class RoundRobinRouterActorTests {
             }
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // Worker2 should have received 3 messages (one failed, two succeeded)
         // Other workers should have received 3 messages each

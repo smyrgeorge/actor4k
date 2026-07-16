@@ -4,11 +4,15 @@ import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.util.*
+import io.github.smyrgeorge.actor4k.test.util.Registry
+import io.github.smyrgeorge.actor4k.test.util.TestProtocol
+import io.github.smyrgeorge.actor4k.test.util.TestRouter
+import io.github.smyrgeorge.actor4k.test.util.TestWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class DeadlockVerifyTests {
@@ -26,6 +30,7 @@ class DeadlockVerifyTests {
     class SelfShutdownWorker : RouterActor.Worker<TestProtocol, TestProtocol.Ok>() {
         var count = 0
             private set
+
         override suspend fun onReceive(m: TestProtocol): Behavior<TestProtocol.Ok> {
             count++
             return Behavior.Shutdown()
@@ -41,7 +46,7 @@ class DeadlockVerifyTests {
         // Two messages consume the two seeded tokens; both workers self-shutdown (no afterReceive => no re-register).
         router.tell(TestProtocol.Ping).getOrThrow()
         router.tell(TestProtocol.Ping).getOrThrow()
-        delay(200) // let both workers process & shutdown
+        delay(200.milliseconds) // let both workers process & shutdown
 
         // Third tell: available is now empty, no worker will ever re-register.
         val result = withTimeoutOrNull(3.seconds) {
@@ -59,7 +64,7 @@ class DeadlockVerifyTests {
         val router = TestRouter(RouterActor.Strategy.FIRST_AVAILABLE).register(w1, w2)
 
         router.shutdown()
-        delay(200)
+        delay(200.milliseconds)
         println(">>> SCENARIO B router status after shutdown = ${router.status()}")
         println(">>> w1 status=${w1.status()} w2 status=${w2.status()}")
 

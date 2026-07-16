@@ -15,6 +15,7 @@ import io.github.smyrgeorge.actor4k.test.util.Registry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 class ActorCreateExtensionsTests {
     @Suppress("unused")
@@ -67,7 +68,7 @@ class ActorCreateExtensionsTests {
         assertThat(result4.value).isEqualTo(1)
 
         counter.shutdown()
-        delay(100) // Allow the actor to shut down
+        delay(100.milliseconds) // Allow the actor to shut down
         assertThat(counter.status()).isEqualTo(Actor.Status.SHUT_DOWN)
     }
 
@@ -103,7 +104,7 @@ class ActorCreateExtensionsTests {
         assertThat(result4.value).isEqualTo(1)
 
         counter.shutdown()
-        delay(100) // Allow the actor to shut down
+        delay(100.milliseconds) // Allow the actor to shut down
         assertThat(counter.status()).isEqualTo(Actor.Status.SHUT_DOWN)
     }
 }

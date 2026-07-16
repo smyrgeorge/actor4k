@@ -2,6 +2,7 @@ package io.github.smyrgeorge.actor4k.test.actor
 
 import io.github.smyrgeorge.actor4k.actor.Behavior
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 class TerminatingAccountActor(key: String) : AccountActor(key) {
     companion object {
@@ -13,7 +14,7 @@ class TerminatingAccountActor(key: String) : AccountActor(key) {
             return when (m.message) {
                 "Terminate" -> Behavior.Terminate()
                 "TerminateWithDelay" -> {
-                    delay(500)
+                    delay(500.milliseconds)
                     Behavior.Terminate()
                 }
                 else -> super.onReceive(m)

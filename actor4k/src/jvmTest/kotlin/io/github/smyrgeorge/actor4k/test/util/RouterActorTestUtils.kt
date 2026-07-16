@@ -4,6 +4,7 @@ import io.github.smyrgeorge.actor4k.actor.ActorProtocol
 import io.github.smyrgeorge.actor4k.actor.Behavior
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 // Test protocol for messages
 sealed interface TestProtocol : ActorProtocol {
@@ -27,7 +28,7 @@ class TestWorker(private val processingTime: Long = 0) :
     override suspend fun onReceive(m: TestProtocol): Behavior<TestProtocol.Ok> {
         messageCount++
         if (processingTime > 0) {
-            delay(processingTime)
+            delay(processingTime.milliseconds)
         }
         return Behavior.Reply(TestProtocol.Ok)
     }

@@ -1,14 +1,24 @@
 package io.github.smyrgeorge.actor4k.test.router
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isFailure
+import assertk.assertions.isInstanceOf
+import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.util.*
+import io.github.smyrgeorge.actor4k.test.util.Registry
+import io.github.smyrgeorge.actor4k.test.util.TestProtocol
+import io.github.smyrgeorge.actor4k.test.util.TestRouter
+import io.github.smyrgeorge.actor4k.test.util.TestWorker
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerThatFails
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerWithMultipleMessages
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class RouterActorTests {
@@ -90,7 +100,7 @@ class RouterActorTests {
         router.tell(TestProtocol.Ping).getOrThrow()
         router.tell(TestProtocol.Echo("Hello")).getOrThrow()
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // Verify messages were processed
         assertThat(worker.pingCount).isEqualTo(1)

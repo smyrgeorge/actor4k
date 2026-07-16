@@ -1,14 +1,27 @@
 package io.github.smyrgeorge.actor4k.test.router
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThan
+import assertk.assertions.isGreaterThanOrEqualTo
+import assertk.assertions.isLessThan
+import assertk.assertions.isLessThanOrEqualTo
+import assertk.assertions.isNotNull
+import assertk.assertions.isSuccess
+import assertk.assertions.isTrue
 import io.github.smyrgeorge.actor4k.actor.impl.RouterActor
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.util.*
+import io.github.smyrgeorge.actor4k.test.util.Registry
+import io.github.smyrgeorge.actor4k.test.util.TestProtocol
+import io.github.smyrgeorge.actor4k.test.util.TestRouter
+import io.github.smyrgeorge.actor4k.test.util.TestWorker
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerThatFailsOnce
+import io.github.smyrgeorge.actor4k.test.util.TestWorkerWithMultipleMessages
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class RandomRouterActorTests {
@@ -38,7 +51,7 @@ class RandomRouterActorTests {
             router.tell(TestProtocol.Ping).getOrThrow()
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // Verify that at least some workers received messages
         // Note: There's a small chance all messages go to one worker, but it's unlikely
@@ -65,7 +78,7 @@ class RandomRouterActorTests {
             router.tell(TestProtocol.Ping).getOrThrow()
         }
 
-        delay(1000) // Allow time for message processing
+        delay(1000.milliseconds) // Allow time for message processing
 
         // Verify total messages
         val totalMessages = worker1.messageCount + worker2.messageCount + worker3.messageCount
@@ -97,7 +110,7 @@ class RandomRouterActorTests {
             router.tell(TestProtocol.Ping).getOrThrow()
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // The single worker should receive all messages
         assertThat(worker.messageCount).isEqualTo(10)
@@ -126,7 +139,7 @@ class RandomRouterActorTests {
             }
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // We should have some successes and possibly some failures
         assertThat(successCount).isGreaterThan(0)
@@ -163,7 +176,7 @@ class RandomRouterActorTests {
             router.tell(TestProtocol.Echo("Message $it")).getOrThrow()
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // Verify all messages were processed
         assertThat(worker.pingCount).isEqualTo(5)

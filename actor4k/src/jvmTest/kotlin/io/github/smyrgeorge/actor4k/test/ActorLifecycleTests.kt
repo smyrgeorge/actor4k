@@ -1,17 +1,30 @@
 package io.github.smyrgeorge.actor4k.test
 
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThan
+import assertk.assertions.isNotEqualTo
+import assertk.assertions.isNotNull
+import assertk.assertions.isZero
 import io.github.smyrgeorge.actor4k.actor.Actor
 import io.github.smyrgeorge.actor4k.actor.ref.ActorRef
 import io.github.smyrgeorge.actor4k.actor.ref.LocalRef
 import io.github.smyrgeorge.actor4k.system.ActorSystem
 import io.github.smyrgeorge.actor4k.system.registry.ActorRegistry
-import io.github.smyrgeorge.actor4k.test.actor.*
+import io.github.smyrgeorge.actor4k.test.actor.AccountActor
 import io.github.smyrgeorge.actor4k.test.actor.AccountActor.Protocol
+import io.github.smyrgeorge.actor4k.test.actor.ErrorThrowingAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.OnBeforeActivateFailsAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.SlowActivateAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.SlowActivateWithErrorInActivationAccountActor
+import io.github.smyrgeorge.actor4k.test.actor.SlowProcessingAccountActor
 import io.github.smyrgeorge.actor4k.test.util.Registry
 import io.github.smyrgeorge.actor4k.util.extentions.AnyActor
-import kotlinx.coroutines.*
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertFails
 import kotlin.time.Duration.Companion.milliseconds
@@ -31,7 +44,7 @@ class ActorLifecycleTests {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
         assertThat(actor.key).isEqualTo(ACC0000)
-        delay(100)
+        delay(100.milliseconds)
         assertThat(actor.status()).isEqualTo(Actor.Status.ACTIVATING)
         assertThat(actor.stats().receivedMessages).isZero()
     }
@@ -52,7 +65,7 @@ class ActorLifecycleTests {
         val ref: ActorRef = ActorSystem.get(AccountActor::class, ACC0000)
         ref.tell(Protocol.Req("Ping!"))
         val actor: AnyActor = registry.getLocalActor(ref as LocalRef)
-        delay(100) // Ensure that the message is processed.
+        delay(100.milliseconds) // Ensure that the message is processed.
         assertThat(actor.stats().receivedMessages).isEqualTo(1)
         assertThat(actor.status()).isEqualTo(Actor.Status.READY)
     }
@@ -75,7 +88,7 @@ class ActorLifecycleTests {
         assertThat(actor.key).isEqualTo(ACC0000)
         assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
-        delay(100) // Ensure that the actor shut down.
+        delay(100.milliseconds) // Ensure that the actor shut down.
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
         assertThat(actor.stats().shutDownAt).isNotNull()
         assertThat(registry.size()).isZero()
@@ -89,7 +102,7 @@ class ActorLifecycleTests {
         assertThat(actor.key).isEqualTo(ACC0000)
         assertThat(actor.stats().receivedMessages).isZero()
         actor.shutdown()
-        delay(100) // Ensure that the actor shut down.
+        delay(100.milliseconds) // Ensure that the actor shut down.
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
         assertFails { actor.tell(Protocol.Req("Ping!")).getOrThrow() }
         assertThat(actor.stats().shutDownAt).isNotNull()
@@ -134,7 +147,7 @@ class ActorLifecycleTests {
         assertThat(result.isFailure).isEqualTo(true)
         assertThat(result.exceptionOrNull()?.message).isEqualTo("boom!")
         // Give some time for shutdown/unregister to complete
-        delay(200)
+        delay(200.milliseconds)
         assertThat(registry.size()).isZero()
     }
 
@@ -168,16 +181,16 @@ class ActorLifecycleTests {
         }
 
         // Give some time for processing to start
-        delay(50)
+        delay(50.milliseconds)
 
         // Trigger shutdown
         actor.shutdown()
 
         // Check that already in-process messages are handled
-        responses.awaitAll().map { it.getOrNull()?.message ?: "failed" }
+        responses.awaitAll().forEach { it.getOrNull()?.message ?: "failed" }
 
         // Verify the actor is shut down
-        delay(100)
+        delay(100.milliseconds)
         assertThat(actor.status()).isEqualTo(Actor.Status.SHUT_DOWN)
 
         // Verify that at least some messages were processed
@@ -223,7 +236,7 @@ class ActorLifecycleTests {
 
         // Force a shutdown
         actor.shutdown()
-        delay(100)
+        delay(100.milliseconds)
 
         // Try to access the actor again, which should create a new instance
         val newRef: ActorRef = ActorSystem.get(AccountActor::class, ACC0003)

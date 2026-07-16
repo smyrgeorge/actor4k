@@ -15,6 +15,7 @@ import io.github.smyrgeorge.actor4k.test.util.TestWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class BroadcastRouterActorTests {
@@ -44,7 +45,7 @@ class BroadcastRouterActorTests {
             router.tell(TestProtocol.Ping).getOrThrow()
         }
 
-        delay(500) // Allow time for message processing
+        delay(500.milliseconds) // Allow time for message processing
 
         // Verify each worker received all 5 messages
         assertThat(worker1.messageCount).isEqualTo(5)
