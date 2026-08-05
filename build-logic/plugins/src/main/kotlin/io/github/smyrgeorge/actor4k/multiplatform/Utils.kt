@@ -60,7 +60,7 @@ object Utils {
      * @return a list of target strings for the project
      */
     fun targetsOf(project: Project): List<String> =
-        (project.properties["targets"] as? String)?.let {
+        project.providers.gradleProperty("targets").orNull?.let {
             when (it) {
                 "all" -> listOf(
                     "iosX64",
