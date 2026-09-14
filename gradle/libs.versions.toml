@@ -10,7 +10,7 @@ dokka = "2.2.0"
 # https://github.com/smyrgeorge/log4k
 log4k = "2.5.0"
 # https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-slf4j = "2.0.18"
+slf4j = "2.0.19"
 # https://github.com/willowtreeapps/assertk
 assertk = "0.28.1"
 # https://github.com/Kotlin/kotlinx.serialization
